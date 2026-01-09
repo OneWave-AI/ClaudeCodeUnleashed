@@ -168,6 +168,8 @@ export function useSuperAgent() {
   const waitingStartRef = useRef<number | null>(null) // Track when Claude started waiting
   const consecutiveWaitsRef = useRef(0) // Track consecutive WAIT responses
   const lastStatusRef = useRef<ClaudeStatus>('unknown') // Track last status to avoid duplicate logs
+  const lastStatusTimeRef = useRef<number>(0) // Debounce status changes
+  const statusDebounceRef = useRef<NodeJS.Timeout | null>(null) // Debounce timer
 
   // Load config function - stable, no dependencies
   const loadConfig = useCallback(async () => {
@@ -412,14 +414,34 @@ export function useSuperAgent() {
     store.appendOutput(data)
     console.log('[SuperAgent] Received data, setting idle timer')
 
-    // Detect Claude's current status and log state changes
+    // Detect Claude's current status with debouncing to avoid flip-flopping
     const currentStatus = detectClaudeStatus(outputBuffer + data)
+    const now = Date.now()
+
+    // Clear any pending status update
+    if (statusDebounceRef.current) {
+      clearTimeout(statusDebounceRef.current)
+    }
+
+    // Only update status if it's different and we haven't changed recently (debounce 1.5s)
     if (currentStatus !== lastStatusRef.current && currentStatus !== 'unknown') {
-      lastStatusRef.current = currentStatus
-      if (currentStatus === 'working') {
+      const timeSinceLastChange = now - lastStatusTimeRef.current
+
+      // If changing to 'working', update immediately (Claude started doing something)
+      // If changing to 'waiting', debounce to avoid false positives
+      if (currentStatus === 'working' && timeSinceLastChange > 500) {
+        lastStatusRef.current = currentStatus
+        lastStatusTimeRef.current = now
         store.addLog('working', 'Claude is working...')
       } else if (currentStatus === 'waiting') {
-        store.addLog('waiting', 'Claude is waiting for input')
+        // Debounce waiting detection - only log after output has stopped for 1.5s
+        statusDebounceRef.current = setTimeout(() => {
+          if (lastStatusRef.current !== 'waiting') {
+            lastStatusRef.current = 'waiting'
+            lastStatusTimeRef.current = Date.now()
+            store.addLog('waiting', 'Claude is waiting for input')
+          }
+        }, 1500)
       }
     }
 
@@ -498,6 +520,11 @@ export function useSuperAgent() {
       clearTimeout(durationTimerRef.current)
       durationTimerRef.current = null
     }
+    if (statusDebounceRef.current) {
+      clearTimeout(statusDebounceRef.current)
+      statusDebounceRef.current = null
+    }
+    lastStatusRef.current = 'unknown'
     getStore().stopSession()
   }, [])
 
@@ -506,6 +533,7 @@ export function useSuperAgent() {
     return () => {
       if (idleTimerRef.current) clearTimeout(idleTimerRef.current)
       if (durationTimerRef.current) clearTimeout(durationTimerRef.current)
+      if (statusDebounceRef.current) clearTimeout(statusDebounceRef.current)
     }
   }, [])
 
