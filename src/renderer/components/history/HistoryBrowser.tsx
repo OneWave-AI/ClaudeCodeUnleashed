@@ -100,6 +100,9 @@ export default function HistoryBrowser({ onBack, onResumeSession }: HistoryBrows
   const [superAgentSessions, setSuperAgentSessions] = useState<SuperAgentSession[]>([])
   const [loadingSuperAgent, setLoadingSuperAgent] = useState(false)
   const [selectedSession, setSelectedSession] = useState<SuperAgentSession | null>(null)
+  const [linkedConversation, setLinkedConversation] = useState<Conversation | null>(null)
+  const [linkedMessages, setLinkedMessages] = useState<ConversationMessage[]>([])
+  const [loadingLinkedMessages, setLoadingLinkedMessages] = useState(false)
 
   // Delete confirmation modal
   const [deleteTarget, setDeleteTarget] = useState<Conversation | null>(null)
@@ -207,6 +210,69 @@ export default function HistoryBrowser({ onBack, onResumeSession }: HistoryBrows
 
     loadMessages()
   }, [selectedConversation])
+
+  // Find and load linked Claude conversation when Super Agent session is selected
+  useEffect(() => {
+    if (!selectedSession) {
+      setLinkedConversation(null)
+      setLinkedMessages([])
+      return
+    }
+
+    const findLinkedConversation = async () => {
+      setLoadingLinkedMessages(true)
+      try {
+        // Find conversation that matches the Super Agent session's time window and project
+        const matchingConversation = conversations.find(conv => {
+          // Check if conversation happened during the Super Agent session
+          const convTime = conv.timestamp
+          const sessionStart = selectedSession.startTime
+          const sessionEnd = selectedSession.endTime
+
+          // Match by project folder and time overlap
+          const sameProject = conv.projectFolder === selectedSession.projectFolder ||
+            conv.projectFolder.endsWith(selectedSession.projectFolder.split('/').pop() || '')
+          const timeOverlap = convTime >= sessionStart - 60000 && convTime <= sessionEnd + 60000
+
+          return sameProject && timeOverlap
+        })
+
+        if (matchingConversation) {
+          setLinkedConversation(matchingConversation)
+          // Load messages
+          const messages = await window.api.getConversationMessages(
+            matchingConversation.id,
+            matchingConversation.projectFolder
+          )
+          setLinkedMessages(messages)
+        } else {
+          // Try to find by project folder only if no time match
+          const projectMatch = conversations.find(conv =>
+            conv.projectFolder === selectedSession.projectFolder
+          )
+          if (projectMatch) {
+            setLinkedConversation(projectMatch)
+            const messages = await window.api.getConversationMessages(
+              projectMatch.id,
+              projectMatch.projectFolder
+            )
+            setLinkedMessages(messages)
+          } else {
+            setLinkedConversation(null)
+            setLinkedMessages([])
+          }
+        }
+      } catch (err) {
+        console.error('Failed to load linked conversation:', err)
+        setLinkedConversation(null)
+        setLinkedMessages([])
+      } finally {
+        setLoadingLinkedMessages(false)
+      }
+    }
+
+    findLinkedConversation()
+  }, [selectedSession, conversations])
 
   // Infinite scroll handler
   useEffect(() => {
@@ -866,7 +932,7 @@ export default function HistoryBrowser({ onBack, onResumeSession }: HistoryBrows
         {/* Right Panel - Preview */}
         {showPreviewPanel && (
           <div className="flex-1 flex flex-col bg-[#0a0a0a] overflow-hidden">
-            {/* Super Agent Session Preview */}
+            {/* Super Agent Session Preview - Side by Side */}
             {activeTab === 'superagent' && selectedSession ? (
               <>
                 {/* Session Header */}
@@ -907,33 +973,95 @@ export default function HistoryBrowser({ onBack, onResumeSession }: HistoryBrows
                   </div>
                 </div>
 
-                {/* Activity Log */}
-                <div className="flex-1 overflow-y-auto p-4">
-                  <h4 className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-3">Activity Log ({selectedSession.activityLog.length} events)</h4>
-                  <div className="space-y-2">
-                    {selectedSession.activityLog.map((entry, idx) => (
-                      <div
-                        key={idx}
-                        className={`p-2.5 rounded-lg border text-xs ${
-                          entry.type === 'start' ? 'bg-green-500/10 border-green-500/20 text-green-300' :
-                          entry.type === 'stop' || entry.type === 'complete' ? 'bg-purple-500/10 border-purple-500/20 text-purple-300' :
-                          entry.type === 'error' ? 'bg-red-500/10 border-red-500/20 text-red-300' :
-                          entry.type === 'input' ? 'bg-blue-500/10 border-blue-500/20 text-blue-300' :
-                          entry.type === 'working' ? 'bg-orange-500/10 border-orange-500/20 text-orange-300' :
-                          entry.type === 'waiting' ? 'bg-yellow-500/10 border-yellow-500/20 text-yellow-300' :
-                          entry.type === 'decision' ? 'bg-cyan-500/10 border-cyan-500/20 text-cyan-300' :
-                          'bg-white/5 border-white/10 text-gray-400'
-                        }`}
-                      >
-                        <div className="flex items-center gap-2 mb-1">
-                          <span className="font-mono text-[10px] opacity-60">
-                            {new Date(entry.timestamp).toLocaleTimeString()}
-                          </span>
-                          <span className="uppercase text-[10px] font-semibold opacity-80">{entry.type}</span>
+                {/* Side by Side: Activity Log + Claude Conversation */}
+                <div className="flex-1 flex overflow-hidden">
+                  {/* Left: Activity Log */}
+                  <div className="w-1/2 border-r border-white/[0.06] overflow-y-auto p-4">
+                    <h4 className="text-xs font-medium text-purple-400 uppercase tracking-wider mb-3 flex items-center gap-2">
+                      <Zap size={12} />
+                      Super Agent Log ({selectedSession.activityLog.length})
+                    </h4>
+                    <div className="space-y-2">
+                      {selectedSession.activityLog.map((entry, idx) => (
+                        <div
+                          key={idx}
+                          className={`p-2.5 rounded-lg border text-xs ${
+                            entry.type === 'start' ? 'bg-green-500/10 border-green-500/20 text-green-300' :
+                            entry.type === 'stop' || entry.type === 'complete' ? 'bg-purple-500/10 border-purple-500/20 text-purple-300' :
+                            entry.type === 'error' ? 'bg-red-500/10 border-red-500/20 text-red-300' :
+                            entry.type === 'input' ? 'bg-blue-500/10 border-blue-500/20 text-blue-300' :
+                            entry.type === 'working' ? 'bg-orange-500/10 border-orange-500/20 text-orange-300' :
+                            entry.type === 'waiting' ? 'bg-yellow-500/10 border-yellow-500/20 text-yellow-300' :
+                            entry.type === 'decision' ? 'bg-cyan-500/10 border-cyan-500/20 text-cyan-300' :
+                            'bg-white/5 border-white/10 text-gray-400'
+                          }`}
+                        >
+                          <div className="flex items-center gap-2 mb-1">
+                            <span className="font-mono text-[10px] opacity-60">
+                              {new Date(entry.timestamp).toLocaleTimeString()}
+                            </span>
+                            <span className="uppercase text-[10px] font-semibold opacity-80">{entry.type}</span>
+                          </div>
+                          <p className="break-words">{entry.message}</p>
                         </div>
-                        <p className="break-words">{entry.message}</p>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Right: Claude Conversation */}
+                  <div className="w-1/2 overflow-y-auto p-4">
+                    <h4 className="text-xs font-medium text-[#cc785c] uppercase tracking-wider mb-3 flex items-center gap-2">
+                      <MessageSquare size={12} />
+                      Claude Conversation {linkedMessages.length > 0 ? `(${linkedMessages.length})` : ''}
+                    </h4>
+                    {loadingLinkedMessages ? (
+                      <div className="flex items-center justify-center py-8">
+                        <div className="flex flex-col items-center gap-3 text-gray-500">
+                          <div className="w-6 h-6 border-2 border-[#cc785c]/30 border-t-[#cc785c] rounded-full animate-spin" />
+                          <span className="text-xs">Loading conversation...</span>
+                        </div>
                       </div>
-                    ))}
+                    ) : linkedMessages.length === 0 ? (
+                      <div className="flex flex-col items-center justify-center py-8 text-gray-500">
+                        <MessageSquare size={24} className="mb-2 opacity-50" />
+                        <span className="text-xs">No linked conversation found</span>
+                        <span className="text-[10px] text-gray-600 mt-1">Conversations are matched by project folder and time</span>
+                      </div>
+                    ) : (
+                      <div className="space-y-3">
+                        {linkedMessages.map((message, idx) => (
+                          <div
+                            key={idx}
+                            className={`p-3 rounded-lg text-xs ${
+                              message.type === 'human'
+                                ? 'bg-blue-500/10 border border-blue-500/20 text-blue-200'
+                                : 'bg-[#1a1a1a] border border-white/[0.06] text-gray-300'
+                            }`}
+                          >
+                            <div className="flex items-center gap-2 mb-1.5">
+                              {message.type === 'human' ? (
+                                <User size={10} className="text-blue-400" />
+                              ) : (
+                                <Bot size={10} className="text-[#cc785c]" />
+                              )}
+                              <span className="text-[10px] font-medium opacity-70">
+                                {message.type === 'human' ? 'User' : 'Claude'}
+                              </span>
+                              {message.timestamp && (
+                                <span className="font-mono text-[10px] opacity-50">
+                                  {new Date(message.timestamp).toLocaleTimeString()}
+                                </span>
+                              )}
+                            </div>
+                            <p className="break-words whitespace-pre-wrap leading-relaxed">
+                              {message.content.length > 500
+                                ? message.content.slice(0, 500) + '...'
+                                : message.content}
+                            </p>
+                          </div>
+                        ))}
+                      </div>
+                    )}
                   </div>
                 </div>
               </>
