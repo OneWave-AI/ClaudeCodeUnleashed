@@ -165,6 +165,8 @@ export function useSuperAgent() {
   const processingRef = useRef(false)
   const taskSentRef = useRef(false) // Track if initial task has been sent
   const lastResponseRef = useRef<string>('') // Track last response to avoid repeats
+  const waitingStartRef = useRef<number | null>(null) // Track when Claude started waiting
+  const consecutiveWaitsRef = useRef(0) // Track consecutive WAIT responses
 
   // Load config function - stable, no dependencies
   const loadConfig = useCallback(async () => {
@@ -218,6 +220,14 @@ export function useSuperAgent() {
     }
     if (lastResponseRef.current) {
       stateContext += `\n\nYour last response was: "${lastResponseRef.current}" - DO NOT repeat it.`
+    }
+
+    // Check if Claude has been waiting too long (>7 seconds)
+    const waitingTooLong = waitingStartRef.current && (Date.now() - waitingStartRef.current > 7000)
+    const tooManyWaits = consecutiveWaitsRef.current >= 2
+
+    if (waitingTooLong || tooManyWaits) {
+      stateContext += `\n\n🚨 URGENT: Claude has been WAITING for input for ${Math.floor((Date.now() - (waitingStartRef.current || Date.now())) / 1000)} seconds! You've said WAIT ${consecutiveWaitsRef.current} times. DO NOT say WAIT again. You MUST provide actual input now - suggest an improvement, answer a question, or give Claude something to do. The terminal shows the ❯ prompt which means Claude is READY for your input.`
     }
 
     const cleanedOutput = stripAnsi(output).slice(-3500)
@@ -317,10 +327,20 @@ export function useSuperAgent() {
       }
 
       if (upperDecision === 'WAIT') {
-        store.addLog('decision', 'Waiting for Claude to continue...')
+        consecutiveWaitsRef.current++
+        // Start tracking waiting time if not already
+        if (!waitingStartRef.current) {
+          waitingStartRef.current = Date.now()
+        }
+        const waitTime = Math.floor((Date.now() - waitingStartRef.current) / 1000)
+        store.addLog('decision', `Waiting for Claude... (${waitTime}s, ${consecutiveWaitsRef.current} checks)`)
+
         // Set a new idle timer to check again - don't get stuck!
         const cfg = getStore().config
-        const idleTimeout = (cfg?.idleTimeout || 5) * 1000
+        // Use shorter timeout if we've been waiting too long
+        const baseTimeout = (cfg?.idleTimeout || 5) * 1000
+        const idleTimeout = consecutiveWaitsRef.current >= 2 ? Math.min(baseTimeout, 3000) : baseTimeout
+
         if (idleTimerRef.current) clearTimeout(idleTimerRef.current)
         idleTimerRef.current = setTimeout(() => {
           console.log('[SuperAgent] Re-checking after WAIT...')
@@ -329,27 +349,37 @@ export function useSuperAgent() {
       } else if (upperDecision === 'DONE') {
         // LLM tried to stop - override and ask for improvements instead
         store.addLog('decision', 'Overriding DONE - asking for improvements')
+        waitingStartRef.current = null
+        consecutiveWaitsRef.current = 0
         await sendToTerminal('Please add more polish, error handling, or improvements to make this even better')
         store.clearOutput()
       } else if (upperDecision === 'ENTER') {
         // Just press Enter - terminalSendText adds \r automatically
         store.addLog('input', 'Pressing Enter')
+        waitingStartRef.current = null
+        consecutiveWaitsRef.current = 0
         await window.api.terminalSendText('', getStore().activeTerminalId!)
         store.clearOutput()
       } else if (upperDecision === 'TASK') {
         // Send the actual task instruction
         const currentTask = getStore().task
         store.addLog('input', `Sending task: ${currentTask}`)
+        waitingStartRef.current = null
+        consecutiveWaitsRef.current = 0
         taskSentRef.current = true
         await sendToTerminal(currentTask)
         store.clearOutput()
       } else if (upperDecision === 'Y' || upperDecision === 'N') {
         // Simple y/n approval
+        waitingStartRef.current = null
+        consecutiveWaitsRef.current = 0
         await sendToTerminal(trimmedDecision.toLowerCase())
         store.clearOutput()
       } else {
         // This is likely a task instruction or detailed response
         // Mark task as sent if it's a long instruction (> 20 chars)
+        waitingStartRef.current = null
+        consecutiveWaitsRef.current = 0
         if (trimmedDecision.length > 20 && !taskSentRef.current) {
           taskSentRef.current = true
         }
@@ -416,6 +446,8 @@ export function useSuperAgent() {
     // Reset state for new session
     taskSentRef.current = false
     lastResponseRef.current = ''
+    waitingStartRef.current = null
+    consecutiveWaitsRef.current = 0
 
     // Set options
     if (options?.timeLimit !== undefined) store.setTimeLimit(options.timeLimit)
