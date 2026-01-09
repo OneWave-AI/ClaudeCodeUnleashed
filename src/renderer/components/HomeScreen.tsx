@@ -243,7 +243,9 @@ export default function HomeScreen({
             <span className="bg-gradient-to-r from-[#cc785c] to-[#e8956e] bg-clip-text text-transparent">Code</span>
             <span className="bg-gradient-to-r from-purple-400 to-purple-300 bg-clip-text text-transparent ml-2">Arena</span>
           </h1>
-          <p className="text-gray-500 text-sm">AI-powered autonomous development</p>
+          <p className="text-gray-400 text-sm max-w-md mx-auto">
+            Your autonomous AI coding companion. Let Claude build, debug, and ship while you focus on what matters.
+          </p>
 
           {/* Stats inline */}
           {loadingState === 'loaded' && (

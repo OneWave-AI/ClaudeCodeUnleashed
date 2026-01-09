@@ -6,6 +6,7 @@ import TerminalWrapper from './components/terminal/TerminalWrapper'
 import SkillsManager from './components/skills/SkillsManager'
 import HistoryBrowser from './components/history/HistoryBrowser'
 import SettingsPanel from './components/settings/SettingsPanel'
+import SplashScreen from './components/SplashScreen'
 import { ToastProvider } from './components/common/Toast'
 import { useAppStore } from './store'
 import { SuperAgentModal, SuperAgentStatusBar } from './components/superagent'
@@ -14,6 +15,7 @@ import { useSuperAgent } from './hooks/useSuperAgent'
 type Screen = 'home' | 'terminal' | 'skills' | 'history'
 
 function App() {
+  const [showSplash, setShowSplash] = useState(true)
   const [screen, setScreen] = useState<Screen>('home')
   const [claudeInstalled, setClaudeInstalled] = useState<boolean | null>(null)
   const [settingsOpen, setSettingsOpen] = useState(false)
@@ -58,6 +60,11 @@ function App() {
       navigateTo(screenName as Screen)
     }
   }, [navigateTo])
+
+  // Show splash screen on first load
+  if (showSplash) {
+    return <SplashScreen onComplete={() => setShowSplash(false)} />
+  }
 
   return (
     <ToastProvider>
