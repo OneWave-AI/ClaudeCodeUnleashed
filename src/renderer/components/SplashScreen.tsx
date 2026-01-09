@@ -5,190 +5,244 @@ interface SplashScreenProps {
 }
 
 export default function SplashScreen({ onComplete }: SplashScreenProps) {
-  const [phase, setPhase] = useState<'logo' | 'text' | 'fadeout'>('logo')
+  const [progress, setProgress] = useState(0)
+  const [statusText, setStatusText] = useState('Initializing systems...')
+  const [phase, setPhase] = useState<'loading' | 'complete' | 'fadeout'>('loading')
 
   useEffect(() => {
-    // Phase 1: Logo animation (0-800ms)
-    const textTimer = setTimeout(() => setPhase('text'), 800)
-    // Phase 2: Text appears (800-1800ms)
-    const fadeTimer = setTimeout(() => setPhase('fadeout'), 1800)
-    // Phase 3: Fade out and complete (1800-2200ms)
-    const completeTimer = setTimeout(() => onComplete(), 2200)
+    // Simulate loading progress with status updates
+    const stages = [
+      { progress: 15, text: 'Loading core modules...', delay: 300 },
+      { progress: 35, text: 'Connecting to Claude...', delay: 600 },
+      { progress: 55, text: 'Preparing workspace...', delay: 900 },
+      { progress: 75, text: 'Loading skills & agents...', delay: 1200 },
+      { progress: 90, text: 'Almost ready...', delay: 1500 },
+      { progress: 100, text: 'Ready!', delay: 1800 },
+    ]
 
-    return () => {
-      clearTimeout(textTimer)
-      clearTimeout(fadeTimer)
-      clearTimeout(completeTimer)
-    }
+    const timers: NodeJS.Timeout[] = []
+
+    stages.forEach(({ progress: p, text, delay }) => {
+      timers.push(setTimeout(() => {
+        setProgress(p)
+        setStatusText(text)
+        if (p === 100) setPhase('complete')
+      }, delay))
+    })
+
+    // Fade out
+    timers.push(setTimeout(() => setPhase('fadeout'), 2200))
+    // Complete
+    timers.push(setTimeout(() => onComplete(), 2600))
+
+    return () => timers.forEach(clearTimeout)
   }, [onComplete])
 
   return (
     <div
-      className={`fixed inset-0 z-50 flex items-center justify-center bg-[#0a0a0c] transition-opacity duration-400 ${
+      className={`fixed inset-0 z-50 flex items-center justify-center bg-[#030308] transition-opacity duration-400 ${
         phase === 'fadeout' ? 'opacity-0' : 'opacity-100'
       }`}
     >
-      {/* Background gradient orbs */}
+      {/* Animated background */}
       <div className="absolute inset-0 overflow-hidden">
-        <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-purple-600/10 rounded-full blur-3xl animate-pulse" />
-        <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-[#cc785c]/10 rounded-full blur-3xl animate-pulse delay-500" />
+        {/* Grid pattern */}
+        <div
+          className="absolute inset-0 opacity-[0.03]"
+          style={{
+            backgroundImage: `
+              linear-gradient(rgba(255,255,255,0.1) 1px, transparent 1px),
+              linear-gradient(90deg, rgba(255,255,255,0.1) 1px, transparent 1px)
+            `,
+            backgroundSize: '50px 50px',
+            transform: 'perspective(500px) rotateX(60deg)',
+            transformOrigin: 'center top'
+          }}
+        />
+
+        {/* Floating orbs */}
+        <div className="absolute top-1/4 left-1/3 w-[500px] h-[500px] bg-purple-600/20 rounded-full blur-[120px] animate-pulse" />
+        <div className="absolute bottom-1/3 right-1/4 w-[400px] h-[400px] bg-[#cc785c]/20 rounded-full blur-[100px] animate-pulse" style={{ animationDelay: '500ms' }} />
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-blue-600/10 rounded-full blur-[150px] animate-pulse" style={{ animationDelay: '1000ms' }} />
+
+        {/* Moving particles */}
+        {[...Array(20)].map((_, i) => (
+          <div
+            key={i}
+            className="absolute w-1 h-1 bg-white/30 rounded-full"
+            style={{
+              left: `${Math.random() * 100}%`,
+              top: `${Math.random() * 100}%`,
+              animation: `float ${3 + Math.random() * 4}s ease-in-out infinite`,
+              animationDelay: `${Math.random() * 2}s`
+            }}
+          />
+        ))}
       </div>
 
-      {/* Content */}
-      <div className="relative flex flex-col items-center">
-        {/* Animated Logo */}
-        <div className={`relative transition-all duration-700 ${phase !== 'logo' ? 'scale-90' : 'scale-100'}`}>
-          {/* Outer ring - rotating */}
-          <svg
-            width="120"
-            height="120"
-            viewBox="0 0 120 120"
-            className="animate-spin-slow"
-            style={{ animationDuration: '8s' }}
+      {/* Main content */}
+      <div className="relative z-10 flex flex-col items-center px-8">
+        {/* 3D Cube Loader */}
+        <div className="relative w-24 h-24 mb-10" style={{ perspective: '200px' }}>
+          <div
+            className="absolute inset-0"
+            style={{
+              transformStyle: 'preserve-3d',
+              animation: 'rotateCube 3s ease-in-out infinite'
+            }}
           >
-            <defs>
-              <linearGradient id="ringGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-                <stop offset="0%" stopColor="#cc785c" stopOpacity="0.8" />
-                <stop offset="50%" stopColor="#8b5cf6" stopOpacity="0.4" />
-                <stop offset="100%" stopColor="#cc785c" stopOpacity="0.8" />
-              </linearGradient>
-            </defs>
-            <circle
-              cx="60"
-              cy="60"
-              r="55"
-              fill="none"
-              stroke="url(#ringGrad)"
-              strokeWidth="2"
-              strokeDasharray="40 20"
-            />
-          </svg>
+            {/* Cube faces */}
+            {['front', 'back', 'left', 'right', 'top', 'bottom'].map((face, i) => {
+              const transforms: Record<string, string> = {
+                front: 'translateZ(48px)',
+                back: 'translateZ(-48px) rotateY(180deg)',
+                left: 'translateX(-48px) rotateY(-90deg)',
+                right: 'translateX(48px) rotateY(90deg)',
+                top: 'translateY(-48px) rotateX(90deg)',
+                bottom: 'translateY(48px) rotateX(-90deg)'
+              }
+              return (
+                <div
+                  key={face}
+                  className="absolute inset-0 border-2 rounded-xl"
+                  style={{
+                    transform: transforms[face],
+                    background: `linear-gradient(135deg, rgba(139, 92, 246, ${0.1 + i * 0.05}), rgba(204, 120, 92, ${0.1 + i * 0.05}))`,
+                    borderColor: `rgba(139, 92, 246, ${0.3 + i * 0.1})`,
+                    boxShadow: 'inset 0 0 30px rgba(139, 92, 246, 0.1)'
+                  }}
+                />
+              )
+            })}
 
-          {/* Inner logo container */}
-          <div className="absolute inset-0 flex items-center justify-center">
+            {/* Inner glow */}
             <div
-              className={`w-24 h-24 rounded-2xl bg-gradient-to-br from-purple-900/60 to-[#1a0a2e] border border-purple-500/30 flex items-center justify-center shadow-2xl shadow-purple-500/20 transition-all duration-500 ${
-                phase === 'logo' ? 'scale-0 rotate-180' : 'scale-100 rotate-0'
-              }`}
-              style={{ transitionDelay: '100ms' }}
+              className="absolute inset-4 rounded-lg"
+              style={{
+                transform: 'translateZ(24px)',
+                background: 'radial-gradient(circle, rgba(204, 120, 92, 0.4) 0%, transparent 70%)',
+                animation: 'pulse 2s ease-in-out infinite'
+              }}
+            />
+          </div>
+
+          {/* Orbiting rings */}
+          <div
+            className="absolute inset-[-20px] border border-purple-500/20 rounded-full"
+            style={{ animation: 'spin 4s linear infinite' }}
+          />
+          <div
+            className="absolute inset-[-35px] border border-[#cc785c]/20 rounded-full"
+            style={{ animation: 'spin 6s linear infinite reverse' }}
+          />
+          <div
+            className="absolute inset-[-50px] border border-purple-500/10 rounded-full"
+            style={{ animation: 'spin 8s linear infinite' }}
+          />
+        </div>
+
+        {/* Title */}
+        <h1 className="text-3xl font-bold mb-2 tracking-tight">
+          <span className="text-white">Claude</span>
+          <span className="bg-gradient-to-r from-[#cc785c] to-[#e8956e] bg-clip-text text-transparent">Code</span>
+          <span className="bg-gradient-to-r from-purple-400 to-purple-300 bg-clip-text text-transparent ml-2">Arena</span>
+        </h1>
+
+        {/* Status text */}
+        <p className={`text-sm mb-8 transition-all duration-300 ${
+          phase === 'complete' ? 'text-green-400' : 'text-gray-500'
+        }`}>
+          {statusText}
+        </p>
+
+        {/* Progress bar container */}
+        <div className="w-80 relative">
+          {/* Background track */}
+          <div className="h-2 bg-white/5 rounded-full overflow-hidden backdrop-blur-sm border border-white/10">
+            {/* Progress fill */}
+            <div
+              className="h-full rounded-full relative transition-all duration-500 ease-out"
+              style={{
+                width: `${progress}%`,
+                background: 'linear-gradient(90deg, #8b5cf6 0%, #cc785c 50%, #e8956e 100%)'
+              }}
             >
-              {/* Arena logo SVG */}
-              <svg width="56" height="56" viewBox="0 0 48 48" fill="none">
-                <defs>
-                  <linearGradient id="splashGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-                    <stop offset="0%" stopColor="#cc785c" />
-                    <stop offset="100%" stopColor="#e8956e" />
-                  </linearGradient>
-                </defs>
-                {/* Hexagon arena */}
-                <polygon
-                  points="24,4 44,14 44,34 24,44 4,34 4,14"
-                  fill="none"
-                  stroke="url(#splashGrad)"
-                  strokeWidth="2"
-                  opacity="0.6"
-                  className={`transition-all duration-500 ${phase !== 'logo' ? 'opacity-60' : 'opacity-0'}`}
-                  style={{ transitionDelay: '200ms' }}
-                />
-                {/* Inner hexagon */}
-                <polygon
-                  points="24,10 38,17 38,31 24,38 10,31 10,17"
-                  fill="none"
-                  stroke="url(#splashGrad)"
-                  strokeWidth="1.5"
-                  opacity="0.4"
-                  className={`transition-all duration-500 ${phase !== 'logo' ? 'opacity-40' : 'opacity-0'}`}
-                  style={{ transitionDelay: '300ms' }}
-                />
-                {/* Code brackets */}
-                <path
-                  d="M17,17 Q12,24 17,31"
-                  fill="none"
-                  stroke="url(#splashGrad)"
-                  strokeWidth="3.5"
-                  strokeLinecap="round"
-                  className={`transition-all duration-500 ${phase !== 'logo' ? 'opacity-100' : 'opacity-0'}`}
-                  style={{ transitionDelay: '400ms' }}
-                />
-                <path
-                  d="M31,17 Q36,24 31,31"
-                  fill="none"
-                  stroke="url(#splashGrad)"
-                  strokeWidth="3.5"
-                  strokeLinecap="round"
-                  className={`transition-all duration-500 ${phase !== 'logo' ? 'opacity-100' : 'opacity-0'}`}
-                  style={{ transitionDelay: '400ms' }}
-                />
-                {/* Center cursor - blinking */}
-                <rect
-                  x="21"
-                  y="19"
-                  width="6"
-                  height="10"
-                  rx="1"
-                  fill="url(#splashGrad)"
-                  className={`transition-all duration-300 ${phase !== 'logo' ? 'opacity-100' : 'opacity-0'}`}
-                  style={{ transitionDelay: '500ms' }}
-                >
-                  <animate attributeName="opacity" values="1;0.4;1" dur="1s" repeatCount="indefinite" />
-                </rect>
-              </svg>
+              {/* Shimmer effect */}
+              <div
+                className="absolute inset-0 rounded-full"
+                style={{
+                  background: 'linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.3) 50%, transparent 100%)',
+                  animation: 'shimmer 1.5s ease-in-out infinite'
+                }}
+              />
             </div>
           </div>
 
-          {/* Particles */}
-          <div className="absolute inset-0">
-            {[...Array(6)].map((_, i) => (
-              <div
-                key={i}
-                className="absolute w-1.5 h-1.5 bg-[#cc785c] rounded-full animate-ping"
-                style={{
-                  left: `${50 + 45 * Math.cos((i * Math.PI * 2) / 6)}%`,
-                  top: `${50 + 45 * Math.sin((i * Math.PI * 2) / 6)}%`,
-                  animationDelay: `${i * 150}ms`,
-                  animationDuration: '1.5s'
-                }}
-              />
-            ))}
+          {/* Progress percentage */}
+          <div className="flex justify-between mt-2">
+            <span className="text-xs text-gray-600">Loading</span>
+            <span className="text-xs text-gray-400 font-mono">{progress}%</span>
           </div>
-        </div>
 
-        {/* Text */}
-        <div
-          className={`mt-8 text-center transition-all duration-500 ${
-            phase === 'text' || phase === 'fadeout'
-              ? 'opacity-100 translate-y-0'
-              : 'opacity-0 translate-y-4'
-          }`}
-        >
-          <h1 className="text-2xl font-bold tracking-tight">
-            <span className="text-white">Claude</span>
-            <span className="bg-gradient-to-r from-[#cc785c] to-[#e8956e] bg-clip-text text-transparent">Code</span>
-            <span className="bg-gradient-to-r from-purple-400 to-purple-300 bg-clip-text text-transparent ml-1">Arena</span>
-          </h1>
-          <p className="mt-2 text-sm text-gray-500">Initializing...</p>
-        </div>
-
-        {/* Loading bar */}
-        <div
-          className={`mt-6 w-48 h-1 bg-white/10 rounded-full overflow-hidden transition-all duration-500 ${
-            phase === 'text' || phase === 'fadeout' ? 'opacity-100' : 'opacity-0'
-          }`}
-        >
+          {/* Glow under progress bar */}
           <div
-            className="h-full bg-gradient-to-r from-[#cc785c] to-purple-500 rounded-full transition-all duration-1000"
-            style={{ width: phase === 'fadeout' ? '100%' : '60%' }}
+            className="absolute -bottom-4 left-0 h-8 rounded-full blur-xl transition-all duration-500"
+            style={{
+              width: `${progress}%`,
+              background: 'linear-gradient(90deg, rgba(139, 92, 246, 0.3), rgba(204, 120, 92, 0.3))'
+            }}
           />
+        </div>
+
+        {/* System info */}
+        <div className="mt-12 flex items-center gap-6 text-xs text-gray-600">
+          <div className="flex items-center gap-2">
+            <div className={`w-2 h-2 rounded-full ${progress > 30 ? 'bg-green-500' : 'bg-gray-600'} transition-colors`} />
+            <span>Core</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <div className={`w-2 h-2 rounded-full ${progress > 50 ? 'bg-green-500' : 'bg-gray-600'} transition-colors`} />
+            <span>Claude CLI</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <div className={`w-2 h-2 rounded-full ${progress > 70 ? 'bg-green-500' : 'bg-gray-600'} transition-colors`} />
+            <span>Workspace</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <div className={`w-2 h-2 rounded-full ${progress === 100 ? 'bg-green-500' : 'bg-gray-600'} transition-colors`} />
+            <span>Ready</span>
+          </div>
         </div>
       </div>
 
       <style>{`
-        @keyframes spin-slow {
+        @keyframes rotateCube {
+          0%, 100% { transform: rotateX(-20deg) rotateY(0deg); }
+          25% { transform: rotateX(-20deg) rotateY(90deg); }
+          50% { transform: rotateX(-20deg) rotateY(180deg); }
+          75% { transform: rotateX(-20deg) rotateY(270deg); }
+        }
+
+        @keyframes spin {
           from { transform: rotate(0deg); }
           to { transform: rotate(360deg); }
         }
-        .animate-spin-slow {
-          animation: spin-slow linear infinite;
+
+        @keyframes pulse {
+          0%, 100% { opacity: 0.4; }
+          50% { opacity: 0.8; }
+        }
+
+        @keyframes shimmer {
+          0% { transform: translateX(-100%); }
+          100% { transform: translateX(200%); }
+        }
+
+        @keyframes float {
+          0%, 100% { transform: translateY(0px) translateX(0px); opacity: 0.3; }
+          25% { transform: translateY(-20px) translateX(10px); opacity: 0.6; }
+          50% { transform: translateY(-10px) translateX(-10px); opacity: 0.3; }
+          75% { transform: translateY(-30px) translateX(5px); opacity: 0.5; }
         }
       `}</style>
     </div>
