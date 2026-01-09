@@ -189,10 +189,43 @@ const Terminal = forwardRef<TerminalRef, TerminalProps>(({ onResize, scanLinesEn
   // Context menu state
   const [contextMenu, setContextMenu] = useState<{ x: number; y: number } | null>(null)
 
-  // Thinking indicator state
-  const [isThinking, setIsThinking] = useState(false)
+  // Activity state tracking
+  type ActivityState = 'idle' | 'user_typing' | 'claude_working' | 'claude_waiting'
+  const [activityState, setActivityState] = useState<ActivityState>('idle')
+  const [activityLog, setActivityLog] = useState<{ state: ActivityState; time: Date }[]>([])
   const lastOutputRef = useRef<number>(Date.now())
-  const thinkingTimeoutRef = useRef<NodeJS.Timeout | null>(null)
+  const activityTimeoutRef = useRef<NodeJS.Timeout | null>(null)
+  const outputAccumulatorRef = useRef<string>('')
+
+  // Detect if Claude is waiting for input (prompt patterns)
+  const PROMPT_PATTERNS = [
+    />\s*$/,           // Simple prompt
+    /\$\s*$/,          // Shell prompt
+    /❯\s*$/,           // Fancy prompt
+    /claude>\s*$/i,    // Claude prompt
+    /\?\s*$/,          // Question prompt
+    /\[Y\/n\]/i,       // Yes/no prompt
+    /Press enter/i,    // Press enter prompt
+  ]
+
+  const isPromptLine = (text: string): boolean => {
+    const lines = text.split('\n')
+    const lastLine = lines[lines.length - 1] || lines[lines.length - 2] || ''
+    return PROMPT_PATTERNS.some(pattern => pattern.test(lastLine.trim()))
+  }
+
+  // Add to activity log
+  const logActivity = useCallback((newState: ActivityState) => {
+    setActivityLog(prev => {
+      // Only add if state actually changed
+      if (prev.length > 0 && prev[prev.length - 1].state === newState) {
+        return prev
+      }
+      // Keep last 10 activities
+      const updated = [...prev, { state: newState, time: new Date() }]
+      return updated.slice(-10)
+    })
+  }, [])
 
   // Calculate effective font size with zoom
   const effectiveFontSize = Math.round(fontSize * (zoomLevel / 100))
@@ -453,14 +486,29 @@ const Terminal = forwardRef<TerminalRef, TerminalProps>(({ onResize, scanLinesEn
           onTerminalData(data, terminalIdRef.current)
         }
 
-        // Reset thinking state on output
+        // Track activity state based on output
         lastOutputRef.current = Date.now()
-        setIsThinking(false)
+        outputAccumulatorRef.current += data
 
-        // Set thinking timeout - if no output for 500ms after user input, show thinking
-        if (thinkingTimeoutRef.current) {
-          clearTimeout(thinkingTimeoutRef.current)
+        // Check if this looks like a prompt (Claude waiting for input)
+        if (activityTimeoutRef.current) {
+          clearTimeout(activityTimeoutRef.current)
         }
+
+        // Set state to working while receiving output
+        if (activityState !== 'claude_working') {
+          setActivityState('claude_working')
+          logActivity('claude_working')
+        }
+
+        // After output stops for 300ms, check if it's a prompt
+        activityTimeoutRef.current = setTimeout(() => {
+          if (isPromptLine(outputAccumulatorRef.current)) {
+            setActivityState('claude_waiting')
+            logActivity('claude_waiting')
+          }
+          outputAccumulatorRef.current = ''
+        }, 300)
 
         // Scan for localhost URLs (only trigger if URL changed)
         if (onLocalhostDetected) {
@@ -517,13 +565,17 @@ const Terminal = forwardRef<TerminalRef, TerminalProps>(({ onResize, scanLinesEn
       if (terminalIdRef.current) {
         window.api.terminalInput(data, terminalIdRef.current)
 
-        // Start thinking indicator after user presses Enter
+        // Track user typing activity
         if (data.includes('\r') || data.includes('\n')) {
-          thinkingTimeoutRef.current = setTimeout(() => {
-            if (Date.now() - lastOutputRef.current > 400) {
-              setIsThinking(true)
-            }
-          }, 500)
+          // User submitted input - expect Claude to start working
+          setActivityState('claude_working')
+          logActivity('user_typing')
+          logActivity('claude_working')
+        } else {
+          // User is typing
+          if (activityState !== 'user_typing') {
+            setActivityState('user_typing')
+          }
         }
       }
     })
@@ -546,8 +598,8 @@ const Terminal = forwardRef<TerminalRef, TerminalProps>(({ onResize, scanLinesEn
       if (terminalIdRef.current) {
         window.api.stopTerminal(terminalIdRef.current)
       }
-      if (thinkingTimeoutRef.current) {
-        clearTimeout(thinkingTimeoutRef.current)
+      if (activityTimeoutRef.current) {
+        clearTimeout(activityTimeoutRef.current)
       }
     }
   }, []) // Empty deps - only run once
@@ -603,30 +655,101 @@ const Terminal = forwardRef<TerminalRef, TerminalProps>(({ onResize, scanLinesEn
         />
       )}
 
-      {/* Thinking Indicator */}
-      {isThinking && (
+      {/* Activity Indicator */}
+      {activityState !== 'idle' && (
         <div
-          className="absolute top-2 left-2 z-10 flex items-center gap-2 px-3 py-1.5 rounded-lg border backdrop-blur-sm"
-          style={{
-            backgroundColor: `${themeConfig.background}ee`,
-            borderColor: 'rgba(204, 120, 92, 0.3)'
-          }}
+          className="absolute top-2 left-2 z-10 flex flex-col gap-2"
         >
-          <div className="flex items-center gap-1">
-            <span
-              className="w-1.5 h-1.5 rounded-full bg-[#cc785c] animate-bounce"
-              style={{ animationDelay: '0ms' }}
-            />
-            <span
-              className="w-1.5 h-1.5 rounded-full bg-[#cc785c] animate-bounce"
-              style={{ animationDelay: '150ms' }}
-            />
-            <span
-              className="w-1.5 h-1.5 rounded-full bg-[#cc785c] animate-bounce"
-              style={{ animationDelay: '300ms' }}
-            />
+          {/* Current State */}
+          <div
+            className="flex items-center gap-2 px-3 py-1.5 rounded-lg border backdrop-blur-sm"
+            style={{
+              backgroundColor: `${themeConfig.background}ee`,
+              borderColor: activityState === 'claude_working'
+                ? 'rgba(204, 120, 92, 0.4)'
+                : activityState === 'claude_waiting'
+                  ? 'rgba(139, 92, 246, 0.4)'
+                  : 'rgba(100, 200, 100, 0.4)'
+            }}
+          >
+            {activityState === 'claude_working' && (
+              <>
+                <div className="flex items-center gap-1">
+                  <span className="w-1.5 h-1.5 rounded-full bg-[#cc785c] animate-bounce" style={{ animationDelay: '0ms' }} />
+                  <span className="w-1.5 h-1.5 rounded-full bg-[#cc785c] animate-bounce" style={{ animationDelay: '150ms' }} />
+                  <span className="w-1.5 h-1.5 rounded-full bg-[#cc785c] animate-bounce" style={{ animationDelay: '300ms' }} />
+                </div>
+                <span className="text-xs text-[#cc785c] font-medium">Claude working...</span>
+              </>
+            )}
+            {activityState === 'claude_waiting' && (
+              <>
+                <div className="w-2 h-2 rounded-full bg-purple-500 animate-pulse" />
+                <span className="text-xs text-purple-400 font-medium">Waiting for input</span>
+              </>
+            )}
+            {activityState === 'user_typing' && (
+              <>
+                <div className="w-2 h-2 rounded-full bg-green-500" />
+                <span className="text-xs text-green-400 font-medium">You're typing...</span>
+              </>
+            )}
           </div>
-          <span className="text-xs text-[#cc785c] font-medium">Claude is thinking...</span>
+
+          {/* Activity Timeline */}
+          {activityLog.length > 1 && (
+            <div
+              className="flex items-center gap-0.5 px-2 py-1 rounded-md"
+              style={{
+                backgroundColor: `${themeConfig.background}dd`,
+              }}
+            >
+              {activityLog.slice(-8).map((activity, index) => (
+                <div
+                  key={index}
+                  className="group relative"
+                >
+                  <div
+                    className={`w-2 h-2 rounded-full transition-all ${
+                      index === activityLog.slice(-8).length - 1 ? 'scale-125' : ''
+                    }`}
+                    style={{
+                      backgroundColor:
+                        activity.state === 'claude_working' ? '#cc785c' :
+                        activity.state === 'claude_waiting' ? '#8b5cf6' :
+                        activity.state === 'user_typing' ? '#22c55e' :
+                        '#666',
+                      opacity: 0.4 + (index / activityLog.slice(-8).length) * 0.6
+                    }}
+                  />
+                  {/* Connector line */}
+                  {index < activityLog.slice(-8).length - 1 && (
+                    <div
+                      className="absolute top-1/2 left-2 w-1.5 h-0.5 -translate-y-1/2"
+                      style={{ backgroundColor: 'rgba(255,255,255,0.1)' }}
+                    />
+                  )}
+                  {/* Tooltip */}
+                  <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 hidden group-hover:block z-20">
+                    <div className="px-2 py-1 rounded text-[10px] whitespace-nowrap" style={{ backgroundColor: '#1a1a1a', border: '1px solid rgba(255,255,255,0.1)' }}>
+                      <div className="font-medium" style={{
+                        color: activity.state === 'claude_working' ? '#cc785c' :
+                               activity.state === 'claude_waiting' ? '#8b5cf6' :
+                               activity.state === 'user_typing' ? '#22c55e' : '#666'
+                      }}>
+                        {activity.state === 'claude_working' ? 'Working' :
+                         activity.state === 'claude_waiting' ? 'Waiting' :
+                         activity.state === 'user_typing' ? 'User input' : 'Idle'}
+                      </div>
+                      <div className="text-gray-500">
+                        {activity.time.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       )}
 
