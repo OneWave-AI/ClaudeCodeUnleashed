@@ -863,10 +863,89 @@ export default function HistoryBrowser({ onBack, onResumeSession }: HistoryBrows
           )}
         </div>
 
-        {/* Right Panel - Message Preview */}
+        {/* Right Panel - Preview */}
         {showPreviewPanel && (
           <div className="flex-1 flex flex-col bg-[#0a0a0a] overflow-hidden">
-            {selectedConversation ? (
+            {/* Super Agent Session Preview */}
+            {activeTab === 'superagent' && selectedSession ? (
+              <>
+                {/* Session Header */}
+                <div className="px-4 py-3 border-b border-white/[0.06]">
+                  <div className="flex items-center gap-2 mb-2">
+                    <div className={`p-1.5 rounded-lg ${
+                      selectedSession.status === 'completed' ? 'bg-green-500/20' :
+                      selectedSession.status === 'error' ? 'bg-red-500/20' : 'bg-purple-500/20'
+                    }`}>
+                      <Zap size={14} className={
+                        selectedSession.status === 'completed' ? 'text-green-400' :
+                        selectedSession.status === 'error' ? 'text-red-400' : 'text-purple-400'
+                      } />
+                    </div>
+                    <span className={`text-xs font-medium uppercase tracking-wider ${
+                      selectedSession.status === 'completed' ? 'text-green-400' :
+                      selectedSession.status === 'error' ? 'text-red-400' : 'text-purple-400'
+                    }`}>
+                      {selectedSession.status}
+                    </span>
+                  </div>
+                  <p className="text-sm text-white mb-2">{selectedSession.task}</p>
+                  <div className="flex items-center gap-3 text-xs text-gray-500">
+                    <span className="flex items-center gap-1">
+                      <Clock size={10} />
+                      {formatDate(selectedSession.startTime)}
+                    </span>
+                    <span className="flex items-center gap-1">
+                      <Zap size={10} />
+                      {Math.floor(selectedSession.duration / 60)}m {selectedSession.duration % 60}s
+                    </span>
+                    {selectedSession.projectFolder && (
+                      <span className="flex items-center gap-1">
+                        <Folder size={10} />
+                        {selectedSession.projectFolder.split('/').pop()}
+                      </span>
+                    )}
+                  </div>
+                </div>
+
+                {/* Activity Log */}
+                <div className="flex-1 overflow-y-auto p-4">
+                  <h4 className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-3">Activity Log ({selectedSession.activityLog.length} events)</h4>
+                  <div className="space-y-2">
+                    {selectedSession.activityLog.map((entry, idx) => (
+                      <div
+                        key={idx}
+                        className={`p-2.5 rounded-lg border text-xs ${
+                          entry.type === 'start' ? 'bg-green-500/10 border-green-500/20 text-green-300' :
+                          entry.type === 'stop' || entry.type === 'complete' ? 'bg-purple-500/10 border-purple-500/20 text-purple-300' :
+                          entry.type === 'error' ? 'bg-red-500/10 border-red-500/20 text-red-300' :
+                          entry.type === 'input' ? 'bg-blue-500/10 border-blue-500/20 text-blue-300' :
+                          entry.type === 'working' ? 'bg-orange-500/10 border-orange-500/20 text-orange-300' :
+                          entry.type === 'waiting' ? 'bg-yellow-500/10 border-yellow-500/20 text-yellow-300' :
+                          entry.type === 'decision' ? 'bg-cyan-500/10 border-cyan-500/20 text-cyan-300' :
+                          'bg-white/5 border-white/10 text-gray-400'
+                        }`}
+                      >
+                        <div className="flex items-center gap-2 mb-1">
+                          <span className="font-mono text-[10px] opacity-60">
+                            {new Date(entry.timestamp).toLocaleTimeString()}
+                          </span>
+                          <span className="uppercase text-[10px] font-semibold opacity-80">{entry.type}</span>
+                        </div>
+                        <p className="break-words">{entry.message}</p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </>
+            ) : activeTab === 'superagent' ? (
+              <div className="flex-1 flex flex-col items-center justify-center text-gray-500">
+                <div className="p-4 rounded-2xl bg-purple-500/10 mb-4">
+                  <Zap size={40} strokeWidth={1.5} className="text-purple-400" />
+                </div>
+                <h3 className="text-base font-medium text-gray-400 mb-1">Select a session</h3>
+                <p className="text-sm text-gray-600">Click on a session to view its activity log</p>
+              </div>
+            ) : selectedConversation ? (
               <>
                 {/* Preview Header */}
                 <div className="flex items-center justify-between px-4 py-3 border-b border-white/[0.06]">
