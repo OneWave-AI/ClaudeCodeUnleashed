@@ -167,6 +167,7 @@ export function useSuperAgent() {
   const lastResponseRef = useRef<string>('') // Track last response to avoid repeats
   const waitingStartRef = useRef<number | null>(null) // Track when Claude started waiting
   const consecutiveWaitsRef = useRef(0) // Track consecutive WAIT responses
+  const lastStatusRef = useRef<ClaudeStatus>('unknown') // Track last status to avoid duplicate logs
 
   // Load config function - stable, no dependencies
   const loadConfig = useCallback(async () => {
@@ -314,8 +315,11 @@ export function useSuperAgent() {
       const trimmedDecision = decision.trim()
       const upperDecision = trimmedDecision.toUpperCase()
 
-      // Avoid repeating the exact same response (except WAIT - always re-check)
-      if (trimmedDecision === lastResponseRef.current && upperDecision !== 'WAIT') {
+      // Avoid repeating the exact same response, EXCEPT:
+      // - WAIT (always re-check)
+      // - Short responses like numbers/letters (menu selections) - these are OK to repeat
+      const isShortResponse = trimmedDecision.length <= 3
+      if (trimmedDecision === lastResponseRef.current && upperDecision !== 'WAIT' && !isShortResponse) {
         store.addLog('decision', `Skipping repeated response: ${trimmedDecision}`)
         processingRef.current = false
         return
@@ -394,7 +398,7 @@ export function useSuperAgent() {
   // Process incoming terminal output
   const processOutput = useCallback((data: string, terminalId: string) => {
     const store = getStore()
-    const { isRunning: running, activeTerminalId, config: cfg } = store
+    const { isRunning: running, activeTerminalId, config: cfg, outputBuffer } = store
 
     // Debug: log why we might skip processing
     if (!running) {
@@ -407,6 +411,17 @@ export function useSuperAgent() {
 
     store.appendOutput(data)
     console.log('[SuperAgent] Received data, setting idle timer')
+
+    // Detect Claude's current status and log state changes
+    const currentStatus = detectClaudeStatus(outputBuffer + data)
+    if (currentStatus !== lastStatusRef.current && currentStatus !== 'unknown') {
+      lastStatusRef.current = currentStatus
+      if (currentStatus === 'working') {
+        store.addLog('working', 'Claude is working...')
+      } else if (currentStatus === 'waiting') {
+        store.addLog('waiting', 'Claude is waiting for input')
+      }
+    }
 
     // Reset idle timer
     if (idleTimerRef.current) {

@@ -27,6 +27,8 @@ const LOG_CONFIG = {
   error: { icon: AlertCircle, color: 'text-red-400', bg: 'bg-red-400/10', border: 'border-red-400/20', label: 'Error' },
   complete: { icon: CheckCircle2, color: 'text-green-400', bg: 'bg-green-400/10', border: 'border-green-400/20', label: 'Done' },
   stop: { icon: Square, color: 'text-orange-400', bg: 'bg-orange-400/10', border: 'border-orange-400/20', label: 'Stopped' },
+  working: { icon: Loader2, color: 'text-[#cc785c]', bg: 'bg-[#cc785c]/10', border: 'border-[#cc785c]/20', label: 'Working' },
+  waiting: { icon: Clock, color: 'text-purple-400', bg: 'bg-purple-400/10', border: 'border-purple-400/20', label: 'Waiting' },
   default: { icon: Brain, color: 'text-gray-400', bg: 'bg-gray-400/10', border: 'border-gray-400/20', label: 'Info' }
 }
 
@@ -222,6 +224,7 @@ export function SuperAgentStatusBar({ onStop }: SuperAgentStatusBarProps) {
           {activityLog.map((entry, i) => {
             const config = LOG_CONFIG[entry.type as keyof typeof LOG_CONFIG] || LOG_CONFIG.default
             const Icon = config.icon
+            const isWorkingType = entry.type === 'working'
 
             // Clean up message for display
             let displayMsg = entry.message
@@ -235,7 +238,7 @@ export function SuperAgentStatusBar({ onStop }: SuperAgentStatusBarProps) {
                 className={`p-2 rounded-lg ${config.bg} border ${config.border}`}
               >
                 <div className="flex items-center gap-1.5 mb-0.5">
-                  <Icon size={10} className={config.color} />
+                  <Icon size={10} className={`${config.color} ${isWorkingType ? 'animate-spin' : ''}`} />
                   <span className={`text-[9px] font-medium uppercase tracking-wider ${config.color}`}>
                     {config.label}
                   </span>
