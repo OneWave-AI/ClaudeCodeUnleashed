@@ -36,6 +36,15 @@ export function registerTerminalHandlers(): void {
     const shell = process.platform === 'win32' ? 'powershell.exe' : process.env.SHELL || '/bin/zsh'
 
     try {
+      // Extend PATH to include common locations for npm/homebrew binaries
+      const extraPaths = [
+        `${homedir()}/.npm-global/bin`,
+        `${homedir()}/.nvm/versions/node/${process.version}/bin`,
+        '/usr/local/bin',
+        '/opt/homebrew/bin',
+        `${homedir()}/.local/bin`
+      ].join(':')
+
       const ptyProcess = pty.spawn(shell, [], {
         name: 'xterm-256color',
         cols: cols || 80,
@@ -44,7 +53,8 @@ export function registerTerminalHandlers(): void {
         env: {
           ...process.env,
           TERM: 'xterm-256color',
-          COLORTERM: 'truecolor'
+          COLORTERM: 'truecolor',
+          PATH: `${extraPaths}:${process.env.PATH || ''}`
         }
       })
 

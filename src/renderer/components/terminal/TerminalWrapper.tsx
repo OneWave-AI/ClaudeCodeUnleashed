@@ -357,10 +357,10 @@ export default function TerminalWrapper({ onOpenSettings, onTerminalData, onTerm
     // Listen for file changes
     window.api.onFileChanged((changedPath) => {
       if (changedPath === filePath) {
-        // Refresh the iframe
-        const iframe = document.getElementById('preview-iframe') as HTMLIFrameElement
-        if (iframe) {
-          iframe.src = iframe.src
+        // Refresh the webview
+        const webview = document.getElementById('preview-iframe') as Electron.WebviewTag | null
+        if (webview && 'reload' in webview) {
+          webview.reload()
         }
       }
     })
@@ -748,8 +748,10 @@ export default function TerminalWrapper({ onOpenSettings, onTerminalData, onTerm
                 <div className="flex items-center gap-1">
                   <button
                     onClick={() => {
-                      const iframe = document.getElementById('preview-iframe') as HTMLIFrameElement
-                      if (iframe) iframe.src = iframe.src
+                      const webview = document.getElementById('preview-iframe') as Electron.WebviewTag | null
+                      if (webview && 'reload' in webview) {
+                        webview.reload()
+                      }
                     }}
                     className="p-1 rounded hover:bg-white/[0.06] text-gray-500 hover:text-white transition-colors"
                     title="Refresh"
@@ -773,12 +775,12 @@ export default function TerminalWrapper({ onOpenSettings, onTerminalData, onTerm
                 </div>
               </div>
               {/* Preview Content */}
-              <div className="flex-1 bg-white">
-                <iframe
+              <div className="flex-1 bg-white overflow-hidden">
+                <webview
                   id="preview-iframe"
-                  src={`local-file://${previewUrl.replace('file://', '')}`}
-                  className="w-full h-full border-0"
-                  title="File Preview"
+                  src={`file://${previewUrl.replace('file://', '')}`}
+                  className="w-full h-full"
+                  style={{ display: 'flex', flex: 1 }}
                 />
               </div>
             </div>

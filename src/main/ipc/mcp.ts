@@ -4,7 +4,19 @@ import { join } from 'path'
 import { homedir } from 'os'
 
 const CLAUDE_DIR = join(homedir(), '.claude')
-const MCP_CONFIG_PATH = join(CLAUDE_DIR, 'claude_desktop_config.json')
+// MCP config can be in two locations - check Claude Desktop first, then .claude
+const CLAUDE_DESKTOP_CONFIG = join(homedir(), 'Library', 'Application Support', 'Claude', 'claude_desktop_config.json')
+const CLAUDE_CLI_CONFIG = join(CLAUDE_DIR, 'claude_desktop_config.json')
+
+// Helper to find the correct MCP config path
+async function getMCPConfigPath(): Promise<string> {
+  try {
+    await fs.access(CLAUDE_DESKTOP_CONFIG)
+    return CLAUDE_DESKTOP_CONFIG
+  } catch {
+    return CLAUDE_CLI_CONFIG
+  }
+}
 
 export interface MCPServerConfig {
   command: string
@@ -25,7 +37,8 @@ async function ensureClaudeDir(): Promise<void> {
 
 async function loadMCPConfig(): Promise<MCPConfig> {
   try {
-    const data = await fs.readFile(MCP_CONFIG_PATH, 'utf-8')
+    const configPath = await getMCPConfigPath()
+    const data = await fs.readFile(configPath, 'utf-8')
     return JSON.parse(data)
   } catch {
     return { mcpServers: {} }
@@ -33,8 +46,11 @@ async function loadMCPConfig(): Promise<MCPConfig> {
 }
 
 async function saveMCPConfig(config: MCPConfig): Promise<void> {
-  await ensureClaudeDir()
-  await fs.writeFile(MCP_CONFIG_PATH, JSON.stringify(config, null, 2))
+  const configPath = await getMCPConfigPath()
+  // Ensure parent directory exists
+  const dir = configPath.substring(0, configPath.lastIndexOf('/'))
+  await fs.mkdir(dir, { recursive: true })
+  await fs.writeFile(configPath, JSON.stringify(config, null, 2))
 }
 
 async function loadDisabledServers(): Promise<string[]> {
@@ -207,11 +223,12 @@ export function registerMCPHandlers(): void {
 
   // Check if MCP config file exists
   ipcMain.handle('mcp-check-config', async () => {
+    const configPath = await getMCPConfigPath()
     try {
-      await fs.access(MCP_CONFIG_PATH)
-      return { exists: true, path: MCP_CONFIG_PATH }
+      await fs.access(configPath)
+      return { exists: true, path: configPath }
     } catch {
-      return { exists: false, path: MCP_CONFIG_PATH }
+      return { exists: false, path: configPath }
     }
   })
 

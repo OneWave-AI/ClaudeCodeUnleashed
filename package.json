@@ -51,7 +51,7 @@
   },
   "build": {
     "appId": "com.claudecodeui.app",
-    "productName": "ClaudeCodeUI",
+    "productName": "ClaudeCodeArena",
     "directories": {
       "output": "dist"
     },

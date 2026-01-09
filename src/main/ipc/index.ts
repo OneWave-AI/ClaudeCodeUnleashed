@@ -66,8 +66,31 @@ export function registerIpcHandlers(): void {
   // Claude CLI check
   ipcMain.handle('check-claude-installed', async () => {
     const { exec } = await import('child_process')
+    const { existsSync } = await import('fs')
+    const { join } = await import('path')
+
+    // Check common installation paths first
+    const commonPaths = [
+      join(homedir(), '.npm-global', 'bin', 'claude'),
+      join(homedir(), '.nvm', 'versions', 'node', process.version, 'bin', 'claude'),
+      '/usr/local/bin/claude',
+      '/opt/homebrew/bin/claude',
+      join(homedir(), '.local', 'bin', 'claude')
+    ]
+
+    for (const claudePath of commonPaths) {
+      if (existsSync(claudePath)) {
+        return true
+      }
+    }
+
+    // Fallback to which command with user's shell
     return new Promise<boolean>((resolve) => {
-      exec('which claude', (error) => {
+      // Use login shell to get proper PATH
+      exec('source ~/.zshrc 2>/dev/null || source ~/.bashrc 2>/dev/null; which claude', {
+        shell: '/bin/zsh',
+        env: { ...process.env, PATH: `${process.env.PATH}:${homedir()}/.npm-global/bin:/usr/local/bin:/opt/homebrew/bin` }
+      }, (error) => {
         resolve(!error)
       })
     })
