@@ -1,0 +1,1249 @@
+import { useState, useEffect, useCallback, useMemo } from 'react'
+import {
+  X, Monitor, Type, Palette, Keyboard, Info, Check, Download, Upload,
+  Trash2, RefreshCw, Key, Bell, BellOff, Eye, EyeOff, Plus, Settings,
+  AlertTriangle, ExternalLink, Loader2, FolderOpen, Sparkles, Zap, CheckCircle, Save
+} from 'lucide-react'
+import { useAppStore } from '../../store'
+import type { CustomTheme, UpdateInfo, SuperAgentConfig, LLMProvider, SafetyLevel } from '../../../shared/types'
+
+interface SettingsPanelProps {
+  isOpen: boolean
+  onClose: () => void
+}
+
+const BUILT_IN_THEMES = [
+  { id: 'default', name: 'Default', bg: '#1a1a1a', accent: '#cc785c' },
+  { id: 'pro', name: 'Pro', bg: '#1e1e1e', accent: '#569cd6' },
+  { id: 'homebrew', name: 'Homebrew', bg: '#000000', accent: '#00ff00' },
+  { id: 'ocean', name: 'Ocean', bg: '#1b2b34', accent: '#5fb3b3' },
+  { id: 'dracula', name: 'Dracula', bg: '#282a36', accent: '#ff79c6' },
+  { id: 'neon', name: 'Neon', bg: '#0a0a0f', accent: '#00ffff' },
+  { id: 'aurora', name: 'Aurora', bg: '#0d0d0d', accent: '#ff9500' },
+  { id: 'solarized', name: 'Solarized', bg: '#002b36', accent: '#b58900' }
+]
+
+const FONT_FAMILIES = [
+  'JetBrains Mono',
+  'Fira Code',
+  'SF Mono',
+  'Menlo',
+  'Monaco',
+  'Source Code Pro'
+]
+
+const FONT_SIZES = [12, 13, 14, 15, 16, 18, 20]
+const LINE_HEIGHTS = [1.0, 1.2, 1.4, 1.6, 1.8, 2.0]
+const SCROLLBACK_SIZES = [1000, 5000, 10000, 25000, 50000, 100000]
+
+type SectionType = 'appearance' | 'terminal' | 'behavior' | 'api' | 'superagent' | 'data' | 'shortcuts' | 'about'
+
+export default function SettingsPanel({ isOpen, onClose }: SettingsPanelProps) {
+  const {
+    theme, setTheme,
+    fontSize, setFontSize,
+    fontFamily, setFontFamily,
+    lineHeight, setLineHeight,
+    cursorStyle, setCursorStyle,
+    cursorBlink, setCursorBlink,
+    bellSound, setBellSound,
+    scrollbackBuffer, setScrollbackBuffer,
+    windowOpacity, setWindowOpacity,
+    confirmBeforeClose, setConfirmBeforeClose,
+    autoUpdate, setAutoUpdate,
+    claudeApiKey, setClaudeApiKey,
+    customThemes, addCustomTheme, removeCustomTheme,
+    initializeSettings, settings
+  } = useAppStore()
+
+  const [activeSection, setActiveSection] = useState<SectionType>('appearance')
+  const [showApiKey, setShowApiKey] = useState(false)
+  const [appVersion, setAppVersion] = useState('2.0.0')
+  const [updateInfo, setUpdateInfo] = useState<UpdateInfo | null>(null)
+  const [isCheckingUpdate, setIsCheckingUpdate] = useState(false)
+  const [showClearConfirm, setShowClearConfirm] = useState(false)
+  const [showResetConfirm, setShowResetConfirm] = useState(false)
+  const [showThemeCreator, setShowThemeCreator] = useState(false)
+  const [newTheme, setNewTheme] = useState<CustomTheme>({
+    id: '',
+    name: '',
+    background: '#1a1a1a',
+    foreground: '#ffffff',
+    accent: '#cc785c',
+    cursor: '#cc785c',
+    selection: '#3d3d3d',
+    black: '#000000',
+    red: '#ff5555',
+    green: '#50fa7b',
+    yellow: '#f1fa8c',
+    blue: '#6272a4',
+    magenta: '#ff79c6',
+    cyan: '#8be9fd',
+    white: '#ffffff'
+  })
+  const [statusMessage, setStatusMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null)
+
+  // Local state for API key input (sync on blur only - prevents freeze)
+  const [localApiKey, setLocalApiKey] = useState(claudeApiKey)
+
+  // Super Agent state
+  const [superAgentConfig, setSuperAgentConfig] = useState<SuperAgentConfig | null>(null)
+  const [showGroqKey, setShowGroqKey] = useState(false)
+  const [showOpenAIKey, setShowOpenAIKey] = useState(false)
+  const [savingSuperAgent, setSavingSuperAgent] = useState(false)
+  const [superAgentSaved, setSuperAgentSaved] = useState(false)
+
+  // Sync local API key when store changes (e.g., on initial load)
+  useEffect(() => {
+    setLocalApiKey(claudeApiKey)
+  }, [claudeApiKey])
+
+  useEffect(() => {
+    if (isOpen) {
+      initializeSettings()
+      window.api?.getAppVersion().then(setAppVersion)
+
+      // Default Super Agent config
+      const defaultConfig: SuperAgentConfig = {
+        groqApiKey: '',
+        groqModel: 'llama-3.3-70b-versatile',
+        openaiApiKey: '',
+        openaiModel: 'gpt-4o-mini',
+        defaultProvider: 'groq',
+        idleTimeout: 5,
+        maxDuration: 30,
+        defaultSafetyLevel: 'safe'
+      }
+
+      // Set default immediately to prevent stuck loading
+      setSuperAgentConfig(defaultConfig)
+
+      // Then try to load saved config and overwrite
+      if (window.api?.loadSuperAgentConfig) {
+        window.api.loadSuperAgentConfig()
+          .then((config) => {
+            if (config) {
+              setSuperAgentConfig(config)
+            }
+          })
+          .catch((err) => {
+            console.error('Failed to load Super Agent config:', err)
+          })
+      }
+    }
+  }, [isOpen, initializeSettings])
+
+  useEffect(() => {
+    if (statusMessage) {
+      const timer = setTimeout(() => setStatusMessage(null), 3000)
+      return () => clearTimeout(timer)
+    }
+  }, [statusMessage])
+
+  // Simple visibility state - no complex animations
+  const [isVisible, setIsVisible] = useState(false)
+
+  useEffect(() => {
+    if (isOpen) {
+      // Small delay to trigger CSS transition
+      requestAnimationFrame(() => setIsVisible(true))
+    } else {
+      setIsVisible(false)
+    }
+  }, [isOpen])
+
+  if (!isOpen) return null
+
+  const allThemes = [
+    ...BUILT_IN_THEMES,
+    ...customThemes.map(t => ({ id: t.id, name: t.name, bg: t.background, accent: t.accent }))
+  ]
+
+  const handleCheckForUpdates = async () => {
+    setIsCheckingUpdate(true)
+    try {
+      const info = await window.api?.checkForUpdates()
+      setUpdateInfo(info || null)
+      if (info && !info.hasUpdate && !info.error) {
+        setStatusMessage({ type: 'success', text: 'You are running the latest version!' })
+      }
+    } catch (error) {
+      setStatusMessage({ type: 'error', text: 'Failed to check for updates' })
+    }
+    setIsCheckingUpdate(false)
+  }
+
+  const handleExportSettings = async () => {
+    try {
+      const result = await window.api?.exportSettings()
+      if (result?.success) {
+        setStatusMessage({ type: 'success', text: 'Settings exported successfully!' })
+      }
+    } catch (error) {
+      setStatusMessage({ type: 'error', text: 'Failed to export settings' })
+    }
+  }
+
+  const handleImportSettings = async () => {
+    try {
+      const result = await window.api?.importSettings()
+      if (result?.success && result.settings) {
+        useAppStore.getState().setSettings(result.settings)
+        setStatusMessage({ type: 'success', text: 'Settings imported successfully!' })
+      } else if (result?.error) {
+        setStatusMessage({ type: 'error', text: result.error })
+      }
+    } catch (error) {
+      setStatusMessage({ type: 'error', text: 'Failed to import settings' })
+    }
+  }
+
+  const handleResetToDefaults = async () => {
+    try {
+      const defaults = await window.api?.resetSettings()
+      if (defaults) {
+        useAppStore.getState().setSettings(defaults)
+        setStatusMessage({ type: 'success', text: 'Settings reset to defaults!' })
+      }
+    } catch (error) {
+      setStatusMessage({ type: 'error', text: 'Failed to reset settings' })
+    }
+    setShowResetConfirm(false)
+  }
+
+  const handleClearAllData = async () => {
+    try {
+      const result = await window.api?.clearAllData()
+      if (result?.success) {
+        setStatusMessage({ type: 'success', text: 'All data cleared! Restart the app for changes to take effect.' })
+      } else {
+        setStatusMessage({ type: 'error', text: result?.error || 'Failed to clear data' })
+      }
+    } catch (error) {
+      setStatusMessage({ type: 'error', text: 'Failed to clear data' })
+    }
+    setShowClearConfirm(false)
+  }
+
+  const handleSaveCustomTheme = async () => {
+    if (!newTheme.name.trim()) {
+      setStatusMessage({ type: 'error', text: 'Please enter a theme name' })
+      return
+    }
+
+    const themeToSave = {
+      ...newTheme,
+      id: newTheme.id || `custom-${Date.now()}`
+    }
+
+    try {
+      await window.api?.saveCustomTheme(themeToSave)
+      addCustomTheme(themeToSave)
+      setShowThemeCreator(false)
+      setNewTheme({
+        id: '',
+        name: '',
+        background: '#1a1a1a',
+        foreground: '#ffffff',
+        accent: '#cc785c',
+        cursor: '#cc785c',
+        selection: '#3d3d3d',
+        black: '#000000',
+        red: '#ff5555',
+        green: '#50fa7b',
+        yellow: '#f1fa8c',
+        blue: '#6272a4',
+        magenta: '#ff79c6',
+        cyan: '#8be9fd',
+        white: '#ffffff'
+      })
+      setStatusMessage({ type: 'success', text: 'Custom theme saved!' })
+    } catch (error) {
+      setStatusMessage({ type: 'error', text: 'Failed to save theme' })
+    }
+  }
+
+  const handleDeleteCustomTheme = async (themeId: string) => {
+    try {
+      await window.api?.deleteCustomTheme(themeId)
+      removeCustomTheme(themeId)
+      if (theme === themeId) {
+        setTheme('default')
+      }
+      setStatusMessage({ type: 'success', text: 'Theme deleted!' })
+    } catch (error) {
+      setStatusMessage({ type: 'error', text: 'Failed to delete theme' })
+    }
+  }
+
+  const renderToggle = (
+    enabled: boolean,
+    onChange: (value: boolean) => void,
+    label: string,
+    description?: string
+  ) => (
+    <div className="flex items-center justify-between p-4 rounded-xl bg-white/[0.02] border border-white/[0.04]">
+      <div>
+        <div className="text-sm text-white">{label}</div>
+        {description && <div className="text-xs text-gray-500 mt-1">{description}</div>}
+      </div>
+      <button
+        onClick={() => onChange(!enabled)}
+        className={`relative w-11 h-6 rounded-full transition-colors ${
+          enabled ? 'bg-[#cc785c]' : 'bg-white/10'
+        }`}
+      >
+        <div
+          className={`absolute top-1 w-4 h-4 rounded-full bg-white transition-transform ${
+            enabled ? 'left-6' : 'left-1'
+          }`}
+        />
+      </button>
+    </div>
+  )
+
+  const renderSlider = (
+    value: number,
+    min: number,
+    max: number,
+    step: number,
+    onChange: (value: number) => void,
+    label: string,
+    formatValue?: (value: number) => string
+  ) => (
+    <div className="p-4 rounded-xl bg-white/[0.02] border border-white/[0.04]">
+      <div className="flex items-center justify-between mb-3">
+        <div className="text-sm text-white">{label}</div>
+        <div className="text-sm text-[#cc785c] font-medium">
+          {formatValue ? formatValue(value) : value}
+        </div>
+      </div>
+      <input
+        type="range"
+        min={min}
+        max={max}
+        step={step}
+        value={value}
+        onChange={(e) => onChange(parseFloat(e.target.value))}
+        className="w-full h-1.5 bg-white/10 rounded-full appearance-none cursor-pointer
+          [&::-webkit-slider-thumb]:appearance-none
+          [&::-webkit-slider-thumb]:w-4
+          [&::-webkit-slider-thumb]:h-4
+          [&::-webkit-slider-thumb]:rounded-full
+          [&::-webkit-slider-thumb]:bg-[#cc785c]
+          [&::-webkit-slider-thumb]:cursor-pointer
+          [&::-webkit-slider-thumb]:transition-transform
+          [&::-webkit-slider-thumb]:hover:scale-110"
+      />
+    </div>
+  )
+
+  return (
+    <>
+      {/* Backdrop */}
+      <div
+        className="fixed inset-0 bg-black/70 z-40"
+        onClick={onClose}
+        aria-hidden="true"
+      />
+
+      {/* Panel */}
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="settings-title"
+        className={`fixed inset-y-0 right-0 w-[540px] bg-[#0d0d0d] border-l border-white/[0.06] z-50 flex flex-col shadow-2xl transition-transform duration-200 ${
+          isVisible ? 'translate-x-0' : 'translate-x-full'
+        }`}
+      >
+        {/* Header */}
+        <div className="flex items-center justify-between px-6 py-4 border-b border-white/[0.06]">
+          <h2 id="settings-title" className="text-lg font-semibold text-white">Settings</h2>
+          <button
+            onClick={onClose}
+            className="p-2 rounded-lg text-gray-400 hover:text-white hover:bg-white/5 transition-colors focus-ring"
+            aria-label="Close settings"
+          >
+            <X size={20} aria-hidden="true" />
+          </button>
+        </div>
+
+        {/* Status Message */}
+        {statusMessage && (
+          <div className={`mx-6 mt-4 px-4 py-3 rounded-lg text-sm animate-fade-in-up ${
+            statusMessage.type === 'success'
+              ? 'bg-green-500/10 text-green-400 border border-green-500/20'
+              : 'bg-red-500/10 text-red-400 border border-red-500/20 animate-shake-subtle'
+          }`}>
+            {statusMessage.text}
+          </div>
+        )}
+
+        {/* Content */}
+        <div className="flex-1 flex overflow-hidden">
+          {/* Sidebar */}
+          <nav className="w-44 border-r border-white/[0.06] py-4" aria-label="Settings sections">
+            <div className="space-y-1 px-3" role="tablist" aria-orientation="vertical">
+              {[
+                { id: 'appearance', icon: Palette, label: 'Appearance' },
+                { id: 'terminal', icon: Monitor, label: 'Terminal' },
+                { id: 'behavior', icon: Settings, label: 'Behavior' },
+                { id: 'api', icon: Key, label: 'API' },
+                { id: 'superagent', icon: Zap, label: 'Super Agent' },
+                { id: 'data', icon: FolderOpen, label: 'Data' },
+                { id: 'shortcuts', icon: Keyboard, label: 'Shortcuts' },
+                { id: 'about', icon: Info, label: 'About' }
+              ].map((item) => (
+                <button
+                  key={item.id}
+                  role="tab"
+                  aria-selected={activeSection === item.id}
+                  aria-controls={`settings-panel-${item.id}`}
+                  id={`settings-tab-${item.id}`}
+                  onClick={() => setActiveSection(item.id as SectionType)}
+                  className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium ${
+                    activeSection === item.id
+                      ? 'bg-[#cc785c]/15 text-[#cc785c]'
+                      : 'text-gray-400 hover:text-white hover:bg-white/5'
+                  }`}
+                >
+                  <item.icon size={16} aria-hidden="true" />
+                  <span>{item.label}</span>
+                </button>
+              ))}
+            </div>
+          </nav>
+
+          {/* Main Content */}
+          <div className="flex-1 overflow-y-auto p-6">
+            {/* Appearance Section */}
+            {activeSection === 'appearance' && (
+              <div className="space-y-8">
+                {/* Theme Selection */}
+                <div>
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="text-sm font-medium text-white">Terminal Theme</h3>
+                    <button
+                      onClick={() => setShowThemeCreator(true)}
+                      className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-[#cc785c]/10 text-[#cc785c] text-xs font-medium hover:bg-[#cc785c]/20 transition-colors"
+                    >
+                      <Plus size={14} />
+                      Create Theme
+                    </button>
+                  </div>
+                  <div className="grid grid-cols-2 gap-3">
+                    {allThemes.map((t) => {
+                      const isCustom = customThemes.some(ct => ct.id === t.id)
+                      return (
+                        <div key={t.id} className="relative group">
+                          <button
+                            onClick={() => setTheme(t.id)}
+                            className={`w-full flex items-center gap-3 p-3 rounded-xl border transition-colors ${
+                              theme === t.id
+                                ? 'border-[#cc785c] bg-[#cc785c]/10'
+                                : 'border-white/[0.06] bg-white/[0.02] hover:border-white/[0.1]'
+                            }`}
+                          >
+                            <div
+                              className="w-10 h-10 rounded-lg border border-white/10 flex items-center justify-center"
+                              style={{ backgroundColor: t.bg }}
+                            >
+                              <div
+                                className="w-3 h-3 rounded-full"
+                                style={{ backgroundColor: t.accent }}
+                              />
+                            </div>
+                            <span className="text-sm text-white">{t.name}</span>
+                            {theme === t.id && (
+                              <Check size={16} className="absolute right-3 text-[#cc785c]" />
+                            )}
+                          </button>
+                          {isCustom && (
+                            <button
+                              onClick={() => handleDeleteCustomTheme(t.id)}
+                              className="absolute -top-2 -right-2 p-1.5 rounded-full bg-red-500/20 text-red-400 opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-500/30"
+                            >
+                              <X size={12} />
+                            </button>
+                          )}
+                        </div>
+                      )
+                    })}
+                  </div>
+                </div>
+
+                {/* Window Opacity */}
+                {renderSlider(
+                  windowOpacity,
+                  0.5,
+                  1.0,
+                  0.05,
+                  setWindowOpacity,
+                  'Window Opacity',
+                  (v) => `${Math.round(v * 100)}%`
+                )}
+
+                {/* Custom Theme Creator Modal */}
+                {showThemeCreator && (
+                  <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center">
+                    <div className="bg-[#1a1a1a] rounded-2xl border border-white/[0.06] w-[500px] max-h-[80vh] overflow-hidden">
+                      <div className="flex items-center justify-between px-6 py-4 border-b border-white/[0.06]">
+                        <h3 className="text-lg font-semibold text-white flex items-center gap-2">
+                          <Sparkles size={18} className="text-[#cc785c]" />
+                          Create Custom Theme
+                        </h3>
+                        <button
+                          onClick={() => setShowThemeCreator(false)}
+                          className="p-2 rounded-lg text-gray-400 hover:text-white hover:bg-white/5"
+                        >
+                          <X size={18} />
+                        </button>
+                      </div>
+                      <div className="p-6 space-y-4 overflow-y-auto max-h-[60vh]">
+                        <div>
+                          <label className="block text-xs text-gray-400 mb-2">Theme Name</label>
+                          <input
+                            type="text"
+                            value={newTheme.name}
+                            onChange={(e) => setNewTheme({ ...newTheme, name: e.target.value })}
+                            placeholder="My Custom Theme"
+                            className="w-full px-4 py-2.5 rounded-lg bg-white/5 border border-white/[0.06] text-white text-sm placeholder-gray-500 focus:outline-none focus:border-[#cc785c]/50"
+                          />
+                        </div>
+                        <div className="grid grid-cols-2 gap-4">
+                          {[
+                            { key: 'background', label: 'Background' },
+                            { key: 'foreground', label: 'Foreground' },
+                            { key: 'accent', label: 'Accent' },
+                            { key: 'cursor', label: 'Cursor' },
+                            { key: 'selection', label: 'Selection' },
+                            { key: 'black', label: 'Black' },
+                            { key: 'red', label: 'Red' },
+                            { key: 'green', label: 'Green' },
+                            { key: 'yellow', label: 'Yellow' },
+                            { key: 'blue', label: 'Blue' },
+                            { key: 'magenta', label: 'Magenta' },
+                            { key: 'cyan', label: 'Cyan' },
+                            { key: 'white', label: 'White' }
+                          ].map((color) => (
+                            <div key={color.key} className="flex items-center gap-3">
+                              <input
+                                type="color"
+                                value={newTheme[color.key as keyof CustomTheme] as string}
+                                onChange={(e) => setNewTheme({ ...newTheme, [color.key]: e.target.value })}
+                                className="w-8 h-8 rounded-lg cursor-pointer border border-white/10"
+                              />
+                              <div>
+                                <div className="text-xs text-gray-400">{color.label}</div>
+                                <div className="text-xs text-gray-600 font-mono">
+                                  {newTheme[color.key as keyof CustomTheme]}
+                                </div>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                        {/* Preview */}
+                        <div
+                          className="p-4 rounded-xl border border-white/[0.06] font-mono text-sm"
+                          style={{ backgroundColor: newTheme.background }}
+                        >
+                          <div style={{ color: newTheme.foreground }}>$ claude</div>
+                          <div style={{ color: newTheme.green }}>Welcome to Claude Code!</div>
+                          <div style={{ color: newTheme.accent }}>Ready to assist...</div>
+                        </div>
+                      </div>
+                      <div className="flex justify-end gap-3 px-6 py-4 border-t border-white/[0.06]">
+                        <button
+                          onClick={() => setShowThemeCreator(false)}
+                          className="px-4 py-2 rounded-lg text-sm text-gray-400 hover:text-white hover:bg-white/5 transition-colors"
+                        >
+                          Cancel
+                        </button>
+                        <button
+                          onClick={handleSaveCustomTheme}
+                          className="px-4 py-2 rounded-lg text-sm bg-[#cc785c] text-white hover:bg-[#cc785c]/90 transition-colors"
+                        >
+                          Save Theme
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Terminal Section */}
+            {activeSection === 'terminal' && (
+              <div className="space-y-6">
+                {/* Font Family */}
+                <div>
+                  <h3 className="text-sm font-medium text-white mb-4">Font Family</h3>
+                  <div className="grid grid-cols-2 gap-2">
+                    {FONT_FAMILIES.map((family) => (
+                      <button
+                        key={family}
+                        onClick={() => setFontFamily(family)}
+                        className={`px-4 py-2.5 rounded-lg text-sm font-medium transition-colors ${
+                          fontFamily === family
+                            ? 'bg-[#cc785c] text-white'
+                            : 'bg-white/5 text-gray-400 hover:bg-white/10 hover:text-white'
+                        }`}
+                        style={{ fontFamily: family }}
+                      >
+                        {family}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Font Size */}
+                <div>
+                  <h3 className="text-sm font-medium text-white mb-4">Font Size</h3>
+                  <div className="flex flex-wrap gap-2">
+                    {FONT_SIZES.map((size) => (
+                      <button
+                        key={size}
+                        onClick={() => setFontSize(size)}
+                        className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                          fontSize === size
+                            ? 'bg-[#cc785c] text-white'
+                            : 'bg-white/5 text-gray-400 hover:bg-white/10 hover:text-white'
+                        }`}
+                      >
+                        {size}px
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Line Height */}
+                <div>
+                  <h3 className="text-sm font-medium text-white mb-4">Line Height</h3>
+                  <div className="flex flex-wrap gap-2">
+                    {LINE_HEIGHTS.map((height) => (
+                      <button
+                        key={height}
+                        onClick={() => setLineHeight(height)}
+                        className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                          lineHeight === height
+                            ? 'bg-[#cc785c] text-white'
+                            : 'bg-white/5 text-gray-400 hover:bg-white/10 hover:text-white'
+                        }`}
+                      >
+                        {height}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Cursor Style */}
+                <div>
+                  <h3 className="text-sm font-medium text-white mb-4">Cursor Style</h3>
+                  <div className="flex gap-2">
+                    {(['block', 'underline', 'bar'] as const).map((style) => (
+                      <button
+                        key={style}
+                        onClick={() => setCursorStyle(style)}
+                        className={`flex-1 px-4 py-2.5 rounded-lg text-sm font-medium transition-colors capitalize ${
+                          cursorStyle === style
+                            ? 'bg-[#cc785c] text-white'
+                            : 'bg-white/5 text-gray-400 hover:bg-white/10 hover:text-white'
+                        }`}
+                      >
+                        {style}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Cursor Blink */}
+                {renderToggle(cursorBlink, setCursorBlink, 'Cursor Blink', 'Enable blinking cursor animation')}
+
+                {/* Bell Sound */}
+                {renderToggle(bellSound, setBellSound, 'Bell Sound', 'Play sound on terminal bell character')}
+
+                {/* Scrollback Buffer */}
+                <div>
+                  <h3 className="text-sm font-medium text-white mb-4">Scrollback Buffer</h3>
+                  <div className="flex flex-wrap gap-2">
+                    {SCROLLBACK_SIZES.map((size) => (
+                      <button
+                        key={size}
+                        onClick={() => setScrollbackBuffer(size)}
+                        className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                          scrollbackBuffer === size
+                            ? 'bg-[#cc785c] text-white'
+                            : 'bg-white/5 text-gray-400 hover:bg-white/10 hover:text-white'
+                        }`}
+                      >
+                        {size >= 1000 ? `${size / 1000}k` : size}
+                      </button>
+                    ))}
+                  </div>
+                  <p className="text-xs text-gray-500 mt-2">Number of lines to keep in terminal history</p>
+                </div>
+
+                {/* Font Preview */}
+                <div>
+                  <h3 className="text-sm font-medium text-white mb-4">Preview</h3>
+                  <div
+                    className="p-4 rounded-xl bg-[#1a1a1a] border border-white/[0.06]"
+                    style={{ fontFamily, fontSize: `${fontSize}px`, lineHeight }}
+                  >
+                    <div className="text-gray-400">$ claude</div>
+                    <div className="text-green-400">Welcome to Claude Code!</div>
+                    <div className="text-gray-500">Type your message...</div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Behavior Section */}
+            {activeSection === 'behavior' && (
+              <div className="space-y-6">
+                <h3 className="text-sm font-medium text-white mb-4">Tab Behavior</h3>
+                {renderToggle(
+                  confirmBeforeClose,
+                  setConfirmBeforeClose,
+                  'Confirm Before Close',
+                  'Ask for confirmation before closing tabs with active sessions'
+                )}
+
+                <h3 className="text-sm font-medium text-white mb-4 mt-8">Updates</h3>
+                {renderToggle(
+                  autoUpdate,
+                  setAutoUpdate,
+                  'Auto-Update',
+                  'Automatically check for and install updates'
+                )}
+
+                <button
+                  onClick={handleCheckForUpdates}
+                  disabled={isCheckingUpdate}
+                  className="w-full flex items-center justify-center gap-2 py-3 rounded-lg bg-white/5 text-gray-400 hover:bg-white/10 hover:text-white transition-colors disabled:opacity-50"
+                >
+                  {isCheckingUpdate ? (
+                    <Loader2 size={16} className="animate-spin" />
+                  ) : (
+                    <RefreshCw size={16} />
+                  )}
+                  <span>{isCheckingUpdate ? 'Checking...' : 'Check for Updates'}</span>
+                </button>
+
+                {updateInfo && updateInfo.hasUpdate && (
+                  <div className="p-4 rounded-xl bg-[#cc785c]/10 border border-[#cc785c]/20">
+                    <div className="flex items-center gap-2 text-[#cc785c] mb-2">
+                      <Sparkles size={16} />
+                      <span className="font-medium">Update Available!</span>
+                    </div>
+                    <p className="text-sm text-gray-400 mb-3">
+                      Version {updateInfo.latestVersion} is available (you have {updateInfo.currentVersion})
+                    </p>
+                    {updateInfo.releaseUrl && (
+                      <button
+                        onClick={() => window.api?.openUrlExternal(updateInfo.releaseUrl!)}
+                        className="flex items-center gap-2 text-sm text-[#cc785c] hover:underline"
+                      >
+                        <ExternalLink size={14} />
+                        View Release Notes
+                      </button>
+                    )}
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* API Section */}
+            {activeSection === 'api' && (
+              <div className="space-y-6">
+                <div className="p-4 rounded-xl bg-blue-500/10 border border-blue-500/20">
+                  <p className="text-sm text-blue-400">
+                    Configure your Claude API key if you want to use the API directly instead of the CLI.
+                    This is optional if you have the Claude CLI installed and authenticated.
+                  </p>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-white mb-2">Claude API Key</label>
+                  <div className="relative">
+                    <input
+                      type={showApiKey ? 'text' : 'password'}
+                      value={localApiKey}
+                      onChange={(e) => setLocalApiKey(e.target.value)}
+                      onBlur={() => {
+                        if (localApiKey !== claudeApiKey) {
+                          setClaudeApiKey(localApiKey)
+                        }
+                      }}
+                      placeholder="sk-ant-..."
+                      className="w-full px-4 py-3 pr-12 rounded-lg bg-white/5 border border-white/[0.06] text-white text-sm placeholder-gray-500 focus:outline-none focus:border-[#cc785c]/50 font-mono"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowApiKey(!showApiKey)}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 p-1.5 rounded text-gray-400 hover:text-white"
+                    >
+                      {showApiKey ? <EyeOff size={16} /> : <Eye size={16} />}
+                    </button>
+                  </div>
+                  <p className="text-xs text-gray-500 mt-2">
+                    Your API key is stored locally and never sent anywhere except to Anthropic servers.
+                  </p>
+                </div>
+
+                <button
+                  onClick={() => window.api?.openUrlExternal('https://console.anthropic.com/settings/keys')}
+                  className="flex items-center gap-2 text-sm text-[#cc785c] hover:underline"
+                >
+                  <ExternalLink size={14} />
+                  Get API Key from Anthropic Console
+                </button>
+              </div>
+            )}
+
+            {/* Super Agent Section */}
+            {activeSection === 'superagent' && (
+              <div className="space-y-6">
+                {/* Header */}
+                <div className="flex items-center gap-3 p-4 rounded-xl bg-gradient-to-r from-purple-900/30 to-pink-900/30 border border-purple-500/30">
+                  <div className="p-2 bg-gradient-to-br from-purple-500 to-pink-500 rounded-lg">
+                    <Zap className="w-5 h-5 text-white" />
+                  </div>
+                  <div>
+                    <h3 className="text-sm font-semibold text-white">Super Agent Mode</h3>
+                    <p className="text-xs text-purple-300/70">Configure LLM providers for autonomous operation</p>
+                  </div>
+                </div>
+
+                {superAgentConfig && (
+                  <>
+                    {/* Groq Section */}
+                    <div className="p-4 rounded-xl bg-white/[0.02] border border-white/[0.04]">
+                      <div className="flex items-center justify-between mb-4">
+                        <h4 className="text-sm font-medium text-white flex items-center gap-2">
+                          <span className="w-2 h-2 rounded-full bg-green-500"></span>
+                          Groq API (Fast)
+                        </h4>
+                        <a
+                          href="#"
+                          onClick={(e) => {
+                            e.preventDefault()
+                            window.api?.openUrlExternal('https://console.groq.com/keys')
+                          }}
+                          className="text-xs text-purple-400 hover:text-purple-300"
+                        >
+                          Get API Key →
+                        </a>
+                      </div>
+
+                      <div className="space-y-4">
+                        <div>
+                          <label className="block text-xs text-gray-500 mb-2">API Key</label>
+                          <div className="relative">
+                            <input
+                              type={showGroqKey ? 'text' : 'password'}
+                              value={superAgentConfig.groqApiKey}
+                              onChange={(e) => {
+                                setSuperAgentConfig({ ...superAgentConfig, groqApiKey: e.target.value })
+                                setSuperAgentSaved(false)
+                              }}
+                              placeholder="gsk_..."
+                              className="w-full px-4 py-2.5 pr-12 rounded-lg bg-black/30 border border-white/[0.06] text-white text-sm placeholder-gray-600 focus:outline-none focus:border-purple-500/50 font-mono"
+                            />
+                            <button
+                              onClick={() => setShowGroqKey(!showGroqKey)}
+                              className="absolute right-3 top-1/2 -translate-y-1/2 p-1.5 rounded text-gray-500 hover:text-gray-300"
+                            >
+                              {showGroqKey ? <EyeOff size={14} /> : <Eye size={14} />}
+                            </button>
+                          </div>
+                        </div>
+
+                        <div>
+                          <label className="block text-xs text-gray-500 mb-2">Model</label>
+                          <select
+                            value={superAgentConfig.groqModel}
+                            onChange={(e) => {
+                              setSuperAgentConfig({ ...superAgentConfig, groqModel: e.target.value })
+                              setSuperAgentSaved(false)
+                            }}
+                            className="w-full px-4 py-2.5 rounded-lg bg-black/30 border border-white/[0.06] text-white text-sm focus:outline-none focus:border-purple-500/50"
+                          >
+                            <option value="llama-3.3-70b-versatile">Llama 3.3 70B (Recommended)</option>
+                            <option value="llama-3.1-70b-versatile">Llama 3.1 70B</option>
+                            <option value="llama-3.1-8b-instant">Llama 3.1 8B (Fast)</option>
+                            <option value="mixtral-8x7b-32768">Mixtral 8x7B</option>
+                          </select>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* OpenAI Section */}
+                    <div className="p-4 rounded-xl bg-white/[0.02] border border-white/[0.04]">
+                      <div className="flex items-center justify-between mb-4">
+                        <h4 className="text-sm font-medium text-white flex items-center gap-2">
+                          <span className="w-2 h-2 rounded-full bg-blue-500"></span>
+                          OpenAI API
+                        </h4>
+                        <a
+                          href="#"
+                          onClick={(e) => {
+                            e.preventDefault()
+                            window.api?.openUrlExternal('https://platform.openai.com/api-keys')
+                          }}
+                          className="text-xs text-purple-400 hover:text-purple-300"
+                        >
+                          Get API Key →
+                        </a>
+                      </div>
+
+                      <div className="space-y-4">
+                        <div>
+                          <label className="block text-xs text-gray-500 mb-2">API Key</label>
+                          <div className="relative">
+                            <input
+                              type={showOpenAIKey ? 'text' : 'password'}
+                              value={superAgentConfig.openaiApiKey}
+                              onChange={(e) => {
+                                setSuperAgentConfig({ ...superAgentConfig, openaiApiKey: e.target.value })
+                                setSuperAgentSaved(false)
+                              }}
+                              placeholder="sk-..."
+                              className="w-full px-4 py-2.5 pr-12 rounded-lg bg-black/30 border border-white/[0.06] text-white text-sm placeholder-gray-600 focus:outline-none focus:border-purple-500/50 font-mono"
+                            />
+                            <button
+                              onClick={() => setShowOpenAIKey(!showOpenAIKey)}
+                              className="absolute right-3 top-1/2 -translate-y-1/2 p-1.5 rounded text-gray-500 hover:text-gray-300"
+                            >
+                              {showOpenAIKey ? <EyeOff size={14} /> : <Eye size={14} />}
+                            </button>
+                          </div>
+                        </div>
+
+                        <div>
+                          <label className="block text-xs text-gray-500 mb-2">Model</label>
+                          <select
+                            value={superAgentConfig.openaiModel}
+                            onChange={(e) => {
+                              setSuperAgentConfig({ ...superAgentConfig, openaiModel: e.target.value })
+                              setSuperAgentSaved(false)
+                            }}
+                            className="w-full px-4 py-2.5 rounded-lg bg-black/30 border border-white/[0.06] text-white text-sm focus:outline-none focus:border-purple-500/50"
+                          >
+                            <option value="gpt-4o-mini">GPT-4o Mini (Recommended)</option>
+                            <option value="gpt-4o">GPT-4o</option>
+                            <option value="gpt-4-turbo">GPT-4 Turbo</option>
+                          </select>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Default Provider */}
+                    <div className="p-4 rounded-xl bg-white/[0.02] border border-white/[0.04]">
+                      <label className="block text-xs text-gray-500 mb-3">Default Provider</label>
+                      <div className="flex gap-2">
+                        {(['groq', 'openai'] as LLMProvider[]).map((provider) => (
+                          <button
+                            key={provider}
+                            onClick={() => {
+                              setSuperAgentConfig({ ...superAgentConfig, defaultProvider: provider })
+                              setSuperAgentSaved(false)
+                            }}
+                            className={`flex-1 py-2.5 px-4 rounded-lg font-medium transition-colors text-sm ${
+                              superAgentConfig.defaultProvider === provider
+                                ? 'bg-gradient-to-r from-purple-500 to-pink-500 text-white'
+                                : 'bg-black/30 text-gray-400 hover:bg-black/50 hover:text-white'
+                            }`}
+                          >
+                            {provider === 'groq' ? 'Groq (Fast)' : 'OpenAI'}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Advanced Settings */}
+                    <div className="p-4 rounded-xl bg-white/[0.02] border border-white/[0.04]">
+                      <h4 className="text-sm font-medium text-white mb-4">Advanced Settings</h4>
+                      <div className="space-y-4">
+                        <div>
+                          <label className="block text-xs text-gray-500 mb-2">Idle Detection Timeout</label>
+                          <select
+                            value={superAgentConfig.idleTimeout}
+                            onChange={(e) => {
+                              setSuperAgentConfig({ ...superAgentConfig, idleTimeout: parseInt(e.target.value) })
+                              setSuperAgentSaved(false)
+                            }}
+                            className="w-full px-4 py-2.5 rounded-lg bg-black/30 border border-white/[0.06] text-white text-sm focus:outline-none focus:border-purple-500/50"
+                          >
+                            <option value={3}>3 seconds</option>
+                            <option value={5}>5 seconds (Recommended)</option>
+                            <option value={8}>8 seconds</option>
+                            <option value={10}>10 seconds</option>
+                          </select>
+                          <p className="text-xs text-gray-600 mt-1">How long to wait before considering Claude idle</p>
+                        </div>
+
+                        <div>
+                          <label className="block text-xs text-gray-500 mb-2">Default Safety Level</label>
+                          <select
+                            value={superAgentConfig.defaultSafetyLevel}
+                            onChange={(e) => {
+                              setSuperAgentConfig({ ...superAgentConfig, defaultSafetyLevel: e.target.value as SafetyLevel })
+                              setSuperAgentSaved(false)
+                            }}
+                            className="w-full px-4 py-2.5 rounded-lg bg-black/30 border border-white/[0.06] text-white text-sm focus:outline-none focus:border-purple-500/50"
+                          >
+                            <option value="safe">Safe - Block dangerous commands</option>
+                            <option value="moderate">Moderate - Allow with caution</option>
+                            <option value="yolo">YOLO - No restrictions</option>
+                          </select>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Save Button */}
+                    <button
+                      onClick={async () => {
+                        setSavingSuperAgent(true)
+                        const result = await window.api?.saveSuperAgentConfig(superAgentConfig)
+                        setSavingSuperAgent(false)
+                        if (result?.success) {
+                          setSuperAgentSaved(true)
+                          setStatusMessage({ type: 'success', text: 'Super Agent settings saved!' })
+                          setTimeout(() => setSuperAgentSaved(false), 2000)
+                        } else {
+                          setStatusMessage({ type: 'error', text: 'Failed to save settings' })
+                        }
+                      }}
+                      disabled={savingSuperAgent}
+                      className="w-full flex items-center justify-center gap-2 py-3 px-4 bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white rounded-lg font-medium transition-colors disabled:opacity-50"
+                    >
+                      {superAgentSaved ? (
+                        <>
+                          <CheckCircle className="w-4 h-4" />
+                          Saved!
+                        </>
+                      ) : savingSuperAgent ? (
+                        <>
+                          <Loader2 className="w-4 h-4 animate-spin" />
+                          Saving...
+                        </>
+                      ) : (
+                        <>
+                          <Save className="w-4 h-4" />
+                          Save Settings
+                        </>
+                      )}
+                    </button>
+                  </>
+                )}
+
+                {!superAgentConfig && (
+                  <div className="text-center py-8 text-gray-500">
+                    <Loader2 className="w-6 h-6 animate-spin mx-auto mb-2" />
+                    Loading settings...
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Data Section */}
+            {activeSection === 'data' && (
+              <div className="space-y-6">
+                {/* Export/Import */}
+                <div>
+                  <h3 className="text-sm font-medium text-white mb-4">Settings Backup</h3>
+                  <div className="flex gap-3">
+                    <button
+                      onClick={handleExportSettings}
+                      className="flex-1 flex items-center justify-center gap-2 py-3 rounded-lg bg-white/5 text-gray-400 hover:bg-white/10 hover:text-white transition-colors"
+                    >
+                      <Download size={16} />
+                      <span>Export Settings</span>
+                    </button>
+                    <button
+                      onClick={handleImportSettings}
+                      className="flex-1 flex items-center justify-center gap-2 py-3 rounded-lg bg-white/5 text-gray-400 hover:bg-white/10 hover:text-white transition-colors"
+                    >
+                      <Upload size={16} />
+                      <span>Import Settings</span>
+                    </button>
+                  </div>
+                </div>
+
+                {/* Reset to Defaults */}
+                <div>
+                  <h3 className="text-sm font-medium text-white mb-4">Reset Settings</h3>
+                  {showResetConfirm ? (
+                    <div className="p-4 rounded-xl bg-yellow-500/10 border border-yellow-500/20">
+                      <div className="flex items-center gap-2 text-yellow-400 mb-3">
+                        <AlertTriangle size={16} />
+                        <span className="font-medium">Confirm Reset</span>
+                      </div>
+                      <p className="text-sm text-gray-400 mb-4">
+                        This will reset all settings to their default values. Your custom themes will be preserved.
+                      </p>
+                      <div className="flex gap-3">
+                        <button
+                          onClick={() => setShowResetConfirm(false)}
+                          className="flex-1 py-2 rounded-lg bg-white/5 text-gray-400 hover:bg-white/10 hover:text-white transition-colors"
+                        >
+                          Cancel
+                        </button>
+                        <button
+                          onClick={handleResetToDefaults}
+                          className="flex-1 py-2 rounded-lg bg-yellow-500/20 text-yellow-400 hover:bg-yellow-500/30 transition-colors"
+                        >
+                          Reset
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <button
+                      onClick={() => setShowResetConfirm(true)}
+                      className="w-full flex items-center justify-center gap-2 py-3 rounded-lg bg-white/5 text-gray-400 hover:bg-white/10 hover:text-white transition-colors"
+                    >
+                      <RefreshCw size={16} />
+                      <span>Reset to Defaults</span>
+                    </button>
+                  )}
+                </div>
+
+                {/* Clear All Data */}
+                <div>
+                  <h3 className="text-sm font-medium text-white mb-4">Clear Data</h3>
+                  {showClearConfirm ? (
+                    <div className="p-4 rounded-xl bg-red-500/10 border border-red-500/20">
+                      <div className="flex items-center gap-2 text-red-400 mb-3">
+                        <AlertTriangle size={16} />
+                        <span className="font-medium">Danger Zone</span>
+                      </div>
+                      <p className="text-sm text-gray-400 mb-4">
+                        This will delete all app data including settings, themes, and cached data.
+                        This action cannot be undone. You will need to restart the app.
+                      </p>
+                      <div className="flex gap-3">
+                        <button
+                          onClick={() => setShowClearConfirm(false)}
+                          className="flex-1 py-2 rounded-lg bg-white/5 text-gray-400 hover:bg-white/10 hover:text-white transition-colors"
+                        >
+                          Cancel
+                        </button>
+                        <button
+                          onClick={handleClearAllData}
+                          className="flex-1 py-2 rounded-lg bg-red-500/20 text-red-400 hover:bg-red-500/30 transition-colors"
+                        >
+                          Clear All Data
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <button
+                      onClick={() => setShowClearConfirm(true)}
+                      className="w-full flex items-center justify-center gap-2 py-3 rounded-lg bg-red-500/10 text-red-400 hover:bg-red-500/20 transition-colors"
+                    >
+                      <Trash2 size={16} />
+                      <span>Clear All Data</span>
+                    </button>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* Shortcuts Section */}
+            {activeSection === 'shortcuts' && (
+              <div className="space-y-4">
+                <h3 className="text-sm font-medium text-white mb-4">Keyboard Shortcuts</h3>
+                <div className="space-y-2">
+                  {[
+                    { keys: ['Cmd', 'P'], action: 'Command Palette' },
+                    { keys: ['Cmd', 'O'], action: 'Quick Open File' },
+                    { keys: ['Cmd', 'Enter'], action: 'Start Session' },
+                    { keys: ['Cmd', '\\'], action: 'Toggle Split View' },
+                    { keys: ['Cmd', 'Shift', 'T'], action: 'New Terminal Tab' },
+                    { keys: ['Cmd', 'Shift', 'C'], action: 'Git Commit' },
+                    { keys: ['Cmd', 'K'], action: 'Clear Terminal' },
+                    { keys: ['Cmd', 'R'], action: 'Refresh Files' },
+                    { keys: ['Cmd', ','], action: 'Open Settings' },
+                    { keys: ['Cmd', '1-9'], action: 'Switch Project' },
+                    { keys: ['Alt', 'Cmd', 'Right'], action: 'Expand All' },
+                    { keys: ['Alt', 'Cmd', 'Left'], action: 'Collapse All' }
+                  ].map((shortcut, i) => (
+                    <div
+                      key={i}
+                      className="flex items-center justify-between p-3 rounded-lg bg-white/[0.02] border border-white/[0.04]"
+                    >
+                      <span className="text-sm text-gray-400">{shortcut.action}</span>
+                      <div className="flex items-center gap-1">
+                        {shortcut.keys.map((key, j) => (
+                          <kbd
+                            key={j}
+                            className="px-2 py-1 rounded bg-white/10 text-xs text-white font-medium"
+                          >
+                            {key}
+                          </kbd>
+                        ))}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* About Section */}
+            {activeSection === 'about' && (
+              <div className="space-y-6">
+                <div className="text-center py-8">
+                  {/* Logo */}
+                  <div className="inline-flex items-center justify-center w-20 h-20 rounded-2xl bg-gradient-to-br from-[#2d2d2d] to-[#0a0a0a] mb-4 shadow-lg">
+                    <svg width="48" height="48" viewBox="0 0 512 512">
+                      <defs>
+                        <linearGradient id="aboutLogoAccent" x1="0%" y1="0%" x2="100%" y2="100%">
+                          <stop offset="0%" style={{ stopColor: '#cc785c' }} />
+                          <stop offset="100%" style={{ stopColor: '#a55d45' }} />
+                        </linearGradient>
+                      </defs>
+                      <path d="M152 172 L272 256 L152 340" fill="none" stroke="url(#aboutLogoAccent)" strokeWidth="40" strokeLinecap="round" strokeLinejoin="round" />
+                      <rect x="308" y="220" width="64" height="72" rx="10" fill="url(#aboutLogoAccent)" />
+                    </svg>
+                  </div>
+                  <h2 className="text-2xl font-bold text-white mb-1">ClaudeCodeUI</h2>
+                  <p className="text-gray-500 text-sm mb-4">Premium desktop GUI for Claude Code</p>
+                  <span className="inline-block px-3 py-1 rounded-full bg-white/5 text-xs text-gray-400">
+                    Version {appVersion}
+                  </span>
+                </div>
+
+                <div className="space-y-3">
+                  <div className="p-4 rounded-xl bg-white/[0.02] border border-white/[0.04]">
+                    <div className="text-xs text-gray-500 mb-1">Built with</div>
+                    <div className="text-sm text-white">Electron + React + TypeScript</div>
+                  </div>
+                  <div className="p-4 rounded-xl bg-white/[0.02] border border-white/[0.04]">
+                    <div className="text-xs text-gray-500 mb-1">License</div>
+                    <div className="text-sm text-white">MIT License</div>
+                  </div>
+                </div>
+
+                <div className="pt-4 border-t border-white/[0.06]">
+                  <button
+                    onClick={handleCheckForUpdates}
+                    disabled={isCheckingUpdate}
+                    className="w-full flex items-center justify-center gap-2 py-2.5 rounded-lg bg-white/5 text-sm text-gray-400 hover:bg-white/10 hover:text-white transition-colors disabled:opacity-50"
+                  >
+                    {isCheckingUpdate ? (
+                      <Loader2 size={16} className="animate-spin" />
+                    ) : (
+                      <RefreshCw size={16} />
+                    )}
+                    <span>{isCheckingUpdate ? 'Checking...' : 'Check for Updates'}</span>
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    </>
+  )
+}

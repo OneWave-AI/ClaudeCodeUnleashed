@@ -1,0 +1,1457 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ClaudeCodeUI V2 - Visual Architecture</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: #0a0a0f;
+      min-height: 100vh;
+      color: #fff;
+      overflow-x: hidden;
+    }
+
+    /* Animated background */
+    .bg-grid {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background-image:
+        linear-gradient(rgba(99, 102, 241, 0.03) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(99, 102, 241, 0.03) 1px, transparent 1px);
+      background-size: 50px 50px;
+      z-index: -1;
+    }
+
+    .floating-orb {
+      position: fixed;
+      border-radius: 50%;
+      filter: blur(80px);
+      opacity: 0.4;
+      z-index: -1;
+      animation: float 20s infinite ease-in-out;
+    }
+
+    .orb1 { width: 400px; height: 400px; background: #8b5cf6; top: -100px; left: -100px; }
+    .orb2 { width: 300px; height: 300px; background: #06b6d4; bottom: -50px; right: -50px; animation-delay: -5s; }
+    .orb3 { width: 250px; height: 250px; background: #f472b6; top: 50%; left: 50%; animation-delay: -10s; }
+
+    @keyframes float {
+      0%, 100% { transform: translate(0, 0) scale(1); }
+      25% { transform: translate(50px, -30px) scale(1.1); }
+      50% { transform: translate(-20px, 50px) scale(0.9); }
+      75% { transform: translate(-50px, -20px) scale(1.05); }
+    }
+
+    .container {
+      max-width: 1400px;
+      margin: 0 auto;
+      padding: 40px 20px;
+      position: relative;
+    }
+
+    /* Header */
+    .header {
+      text-align: center;
+      margin-bottom: 60px;
+    }
+
+    .logo {
+      width: 120px;
+      height: 120px;
+      margin: 0 auto 20px;
+      position: relative;
+    }
+
+    .logo-ring {
+      position: absolute;
+      border: 2px solid;
+      border-radius: 50%;
+      animation: spin 10s linear infinite;
+    }
+
+    .logo-ring:nth-child(1) { width: 100%; height: 100%; border-color: #8b5cf6; }
+    .logo-ring:nth-child(2) { width: 80%; height: 80%; top: 10%; left: 10%; border-color: #06b6d4; animation-direction: reverse; animation-duration: 8s; }
+    .logo-ring:nth-child(3) { width: 60%; height: 60%; top: 20%; left: 20%; border-color: #f472b6; animation-duration: 6s; }
+
+    .logo-center {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      font-size: 2rem;
+    }
+
+    @keyframes spin {
+      from { transform: rotate(0deg); }
+      to { transform: rotate(360deg); }
+    }
+
+    h1 {
+      font-size: 3rem;
+      font-weight: 700;
+      background: linear-gradient(135deg, #8b5cf6, #06b6d4, #f472b6);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      margin-bottom: 10px;
+    }
+
+    .subtitle { color: #64748b; font-size: 1.1rem; }
+
+    /* Main Visual Diagram */
+    .main-diagram {
+      position: relative;
+      height: 600px;
+      margin: 60px 0;
+    }
+
+    /* Computer Frame */
+    .computer {
+      position: absolute;
+      left: 50%;
+      top: 50%;
+      transform: translate(-50%, -50%);
+      width: 500px;
+    }
+
+    .monitor {
+      background: linear-gradient(145deg, #1e1e2e, #2a2a3e);
+      border-radius: 20px;
+      padding: 15px;
+      box-shadow: 0 30px 60px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.1);
+    }
+
+    .screen {
+      background: #0f0f1a;
+      border-radius: 10px;
+      height: 280px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .screen-content {
+      display: flex;
+      height: 100%;
+    }
+
+    /* Animated Sidebar */
+    .app-sidebar {
+      width: 50px;
+      background: rgba(139, 92, 246, 0.1);
+      border-right: 1px solid rgba(139, 92, 246, 0.2);
+      padding: 10px 5px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      align-items: center;
+    }
+
+    .sidebar-icon {
+      width: 30px;
+      height: 30px;
+      background: rgba(255,255,255,0.05);
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.8rem;
+      cursor: pointer;
+      transition: all 0.3s;
+    }
+
+    .sidebar-icon:hover, .sidebar-icon.active {
+      background: rgba(139, 92, 246, 0.3);
+      transform: scale(1.1);
+    }
+
+    /* Terminal Animation */
+    .app-terminal {
+      flex: 1;
+      padding: 15px;
+      font-family: 'Monaco', 'Menlo', monospace;
+      font-size: 0.7rem;
+    }
+
+    .terminal-line {
+      opacity: 0;
+      animation: typeLine 0.5s forwards;
+      margin: 4px 0;
+    }
+
+    .terminal-line:nth-child(1) { animation-delay: 0.5s; }
+    .terminal-line:nth-child(2) { animation-delay: 1.5s; }
+    .terminal-line:nth-child(3) { animation-delay: 2.5s; }
+    .terminal-line:nth-child(4) { animation-delay: 3.5s; }
+    .terminal-line:nth-child(5) { animation-delay: 4.5s; }
+    .terminal-line:nth-child(6) { animation-delay: 5.5s; }
+
+    @keyframes typeLine {
+      from { opacity: 0; transform: translateX(-10px); }
+      to { opacity: 1; transform: translateX(0); }
+    }
+
+    .prompt { color: #06b6d4; }
+    .command { color: #f472b6; }
+    .output { color: #64748b; }
+    .success { color: #34d399; }
+
+    .cursor {
+      display: inline-block;
+      width: 8px;
+      height: 14px;
+      background: #8b5cf6;
+      animation: blink 1s infinite;
+      vertical-align: middle;
+      margin-left: 2px;
+    }
+
+    @keyframes blink {
+      0%, 50% { opacity: 1; }
+      51%, 100% { opacity: 0; }
+    }
+
+    .monitor-stand {
+      width: 80px;
+      height: 50px;
+      background: linear-gradient(145deg, #1e1e2e, #2a2a3e);
+      margin: 0 auto;
+      border-radius: 0 0 10px 10px;
+    }
+
+    .monitor-base {
+      width: 150px;
+      height: 10px;
+      background: linear-gradient(145deg, #1e1e2e, #2a2a3e);
+      margin: 0 auto;
+      border-radius: 5px;
+    }
+
+    /* Floating Elements */
+    .floating-element {
+      position: absolute;
+      background: rgba(30, 30, 50, 0.9);
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 16px;
+      padding: 20px;
+      backdrop-filter: blur(10px);
+      animation: floatElement 6s infinite ease-in-out;
+    }
+
+    @keyframes floatElement {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-10px); }
+    }
+
+    .floating-element h3 {
+      font-size: 0.9rem;
+      margin-bottom: 10px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .floating-element ul {
+      list-style: none;
+      font-size: 0.75rem;
+      color: #94a3b8;
+    }
+
+    .floating-element li {
+      padding: 4px 0;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .floating-element li::before {
+      content: '→';
+      color: #8b5cf6;
+      font-size: 0.6rem;
+    }
+
+    /* Position floating elements */
+    .el-main {
+      left: 0;
+      top: 80px;
+      border-left: 3px solid #f472b6;
+      animation-delay: 0s;
+    }
+
+    .el-renderer {
+      right: 0;
+      top: 80px;
+      border-left: 3px solid #34d399;
+      animation-delay: -2s;
+    }
+
+    .el-preload {
+      left: 50px;
+      bottom: 20px;
+      border-left: 3px solid #fbbf24;
+      animation-delay: -4s;
+    }
+
+    .el-features {
+      right: 50px;
+      bottom: 20px;
+      border-left: 3px solid #06b6d4;
+      animation-delay: -3s;
+    }
+
+    /* Connection Lines SVG */
+    .connections {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+    }
+
+    .connection-line {
+      stroke-dasharray: 8 4;
+      animation: dashMove 2s linear infinite;
+    }
+
+    @keyframes dashMove {
+      from { stroke-dashoffset: 24; }
+      to { stroke-dashoffset: 0; }
+    }
+
+    /* Data Flow Animation */
+    .data-packet {
+      fill: #8b5cf6;
+      animation: movePacket 3s infinite ease-in-out;
+    }
+
+    @keyframes movePacket {
+      0% { opacity: 0; }
+      10% { opacity: 1; }
+      90% { opacity: 1; }
+      100% { opacity: 0; }
+    }
+
+    /* Flow Section */
+    .flow-section {
+      margin: 100px 0;
+    }
+
+    .section-title {
+      text-align: center;
+      font-size: 2rem;
+      margin-bottom: 50px;
+      background: linear-gradient(90deg, #8b5cf6, #06b6d4);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    /* Animated Pipeline */
+    .pipeline {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 0;
+      padding: 40px 0;
+      position: relative;
+    }
+
+    .pipe-stage {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      position: relative;
+      z-index: 1;
+    }
+
+    .pipe-icon {
+      width: 100px;
+      height: 100px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 2.5rem;
+      position: relative;
+      transition: all 0.3s;
+      cursor: pointer;
+    }
+
+    .pipe-icon:hover {
+      transform: scale(1.1);
+    }
+
+    .pipe-icon::before {
+      content: '';
+      position: absolute;
+      inset: -5px;
+      border-radius: 50%;
+      border: 2px dashed;
+      opacity: 0.3;
+      animation: spin 10s linear infinite;
+    }
+
+    .pipe-icon.user { background: linear-gradient(135deg, #3b82f6, #1d4ed8); }
+    .pipe-icon.user::before { border-color: #3b82f6; }
+
+    .pipe-icon.react { background: linear-gradient(135deg, #34d399, #059669); }
+    .pipe-icon.react::before { border-color: #34d399; }
+
+    .pipe-icon.bridge { background: linear-gradient(135deg, #fbbf24, #d97706); }
+    .pipe-icon.bridge::before { border-color: #fbbf24; }
+
+    .pipe-icon.node { background: linear-gradient(135deg, #f472b6, #db2777); }
+    .pipe-icon.node::before { border-color: #f472b6; }
+
+    .pipe-icon.os { background: linear-gradient(135deg, #a78bfa, #7c3aed); }
+    .pipe-icon.os::before { border-color: #a78bfa; }
+
+    .pipe-label {
+      margin-top: 15px;
+      font-weight: 600;
+      font-size: 0.9rem;
+    }
+
+    .pipe-desc {
+      color: #64748b;
+      font-size: 0.75rem;
+      text-align: center;
+      max-width: 100px;
+    }
+
+    /* Animated Arrow */
+    .pipe-arrow {
+      width: 80px;
+      height: 40px;
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .arrow-line {
+      width: 100%;
+      height: 3px;
+      background: linear-gradient(90deg, transparent, #8b5cf6, transparent);
+      position: relative;
+    }
+
+    .arrow-dot {
+      position: absolute;
+      width: 10px;
+      height: 10px;
+      background: #8b5cf6;
+      border-radius: 50%;
+      animation: moveDot 1.5s infinite ease-in-out;
+      box-shadow: 0 0 20px #8b5cf6;
+    }
+
+    @keyframes moveDot {
+      0% { left: 0; opacity: 0; }
+      20% { opacity: 1; }
+      80% { opacity: 1; }
+      100% { left: calc(100% - 10px); opacity: 0; }
+    }
+
+    .pipe-arrow:nth-child(2) .arrow-dot { animation-delay: 0.1s; }
+    .pipe-arrow:nth-child(4) .arrow-dot { animation-delay: 0.2s; }
+    .pipe-arrow:nth-child(6) .arrow-dot { animation-delay: 0.3s; }
+    .pipe-arrow:nth-child(8) .arrow-dot { animation-delay: 0.4s; }
+
+    /* Feature Cards */
+    .features {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 30px;
+      margin-top: 80px;
+    }
+
+    .feature-card {
+      background: linear-gradient(145deg, rgba(30,30,50,0.8), rgba(20,20,35,0.8));
+      border: 1px solid rgba(255,255,255,0.05);
+      border-radius: 24px;
+      padding: 30px;
+      position: relative;
+      overflow: hidden;
+      transition: all 0.4s;
+      cursor: pointer;
+    }
+
+    .feature-card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 3px;
+      background: linear-gradient(90deg, var(--accent), transparent);
+    }
+
+    .feature-card:hover {
+      transform: translateY(-10px);
+      border-color: rgba(255,255,255,0.1);
+      box-shadow: 0 30px 60px rgba(0,0,0,0.4);
+    }
+
+    .feature-card:hover .feature-icon {
+      transform: scale(1.2) rotate(10deg);
+    }
+
+    .feature-icon {
+      width: 70px;
+      height: 70px;
+      border-radius: 20px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 2rem;
+      margin-bottom: 20px;
+      transition: all 0.4s;
+    }
+
+    .feature-card h3 {
+      font-size: 1.3rem;
+      margin-bottom: 10px;
+    }
+
+    .feature-card p {
+      color: #94a3b8;
+      font-size: 0.9rem;
+      line-height: 1.6;
+    }
+
+    .feature-tags {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 15px;
+    }
+
+    .tag {
+      padding: 4px 12px;
+      background: rgba(255,255,255,0.05);
+      border-radius: 20px;
+      font-size: 0.7rem;
+      color: #94a3b8;
+    }
+
+    /* Tech Stack Visual */
+    .tech-section {
+      margin: 100px 0;
+      text-align: center;
+    }
+
+    .tech-orbit {
+      position: relative;
+      width: 400px;
+      height: 400px;
+      margin: 50px auto;
+    }
+
+    .orbit-center {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: 100px;
+      height: 100px;
+      background: linear-gradient(135deg, #8b5cf6, #06b6d4);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 2.5rem;
+      box-shadow: 0 0 60px rgba(139, 92, 246, 0.5);
+    }
+
+    .orbit-ring {
+      position: absolute;
+      border: 1px dashed rgba(255,255,255,0.1);
+      border-radius: 50%;
+      top: 50%;
+      left: 50%;
+    }
+
+    .ring1 { width: 200px; height: 200px; margin: -100px 0 0 -100px; }
+    .ring2 { width: 300px; height: 300px; margin: -150px 0 0 -150px; }
+    .ring3 { width: 400px; height: 400px; margin: -200px 0 0 -200px; }
+
+    .tech-item {
+      position: absolute;
+      width: 60px;
+      height: 60px;
+      background: rgba(30,30,50,0.9);
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 16px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.5rem;
+      transition: all 0.3s;
+      cursor: pointer;
+    }
+
+    .tech-item:hover {
+      transform: scale(1.2);
+      background: rgba(139, 92, 246, 0.3);
+      border-color: #8b5cf6;
+    }
+
+    .tech-item span {
+      position: absolute;
+      bottom: -25px;
+      font-size: 0.65rem;
+      white-space: nowrap;
+      color: #94a3b8;
+    }
+
+    /* Position tech items in orbit */
+    .tech-item:nth-child(1) { top: 50px; left: 50%; transform: translateX(-50%); }
+    .tech-item:nth-child(2) { top: 100px; right: 30px; }
+    .tech-item:nth-child(3) { bottom: 100px; right: 30px; }
+    .tech-item:nth-child(4) { bottom: 50px; left: 50%; transform: translateX(-50%); }
+    .tech-item:nth-child(5) { bottom: 100px; left: 30px; }
+    .tech-item:nth-child(6) { top: 100px; left: 30px; }
+
+    /* Stats */
+    .stats {
+      display: flex;
+      justify-content: center;
+      gap: 60px;
+      margin: 60px 0;
+    }
+
+    .stat {
+      text-align: center;
+    }
+
+    .stat-value {
+      font-size: 3rem;
+      font-weight: 700;
+      background: linear-gradient(135deg, #8b5cf6, #06b6d4);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .stat-label {
+      color: #64748b;
+      font-size: 0.9rem;
+      margin-top: 5px;
+    }
+
+    /* Interactive Demo */
+    .demo-section {
+      margin: 100px 0;
+      text-align: center;
+    }
+
+    .demo-container {
+      background: linear-gradient(145deg, rgba(30,30,50,0.8), rgba(20,20,35,0.8));
+      border: 1px solid rgba(255,255,255,0.05);
+      border-radius: 24px;
+      padding: 40px;
+      max-width: 800px;
+      margin: 40px auto;
+    }
+
+    .demo-buttons {
+      display: flex;
+      justify-content: center;
+      gap: 15px;
+      margin-bottom: 30px;
+    }
+
+    .demo-btn {
+      padding: 12px 24px;
+      border: none;
+      border-radius: 12px;
+      font-size: 0.9rem;
+      cursor: pointer;
+      transition: all 0.3s;
+      background: rgba(255,255,255,0.05);
+      color: #fff;
+      border: 1px solid rgba(255,255,255,0.1);
+    }
+
+    .demo-btn:hover, .demo-btn.active {
+      background: linear-gradient(135deg, #8b5cf6, #06b6d4);
+      border-color: transparent;
+      transform: scale(1.05);
+    }
+
+    .demo-display {
+      background: #0a0a0f;
+      border-radius: 16px;
+      padding: 30px;
+      min-height: 200px;
+      text-align: left;
+    }
+
+    .demo-flow {
+      display: flex;
+      flex-direction: column;
+      gap: 15px;
+    }
+
+    .demo-step {
+      display: flex;
+      align-items: center;
+      gap: 15px;
+      padding: 15px;
+      background: rgba(255,255,255,0.02);
+      border-radius: 12px;
+      opacity: 0;
+      transform: translateX(-20px);
+      animation: slideIn 0.5s forwards;
+    }
+
+    .demo-step:nth-child(1) { animation-delay: 0.1s; }
+    .demo-step:nth-child(2) { animation-delay: 0.3s; }
+    .demo-step:nth-child(3) { animation-delay: 0.5s; }
+    .demo-step:nth-child(4) { animation-delay: 0.7s; }
+
+    @keyframes slideIn {
+      to { opacity: 1; transform: translateX(0); }
+    }
+
+    .step-num {
+      width: 30px;
+      height: 30px;
+      background: linear-gradient(135deg, #8b5cf6, #06b6d4);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: bold;
+      font-size: 0.8rem;
+      flex-shrink: 0;
+    }
+
+    .step-content h4 {
+      font-size: 0.9rem;
+      margin-bottom: 4px;
+    }
+
+    .step-content p {
+      font-size: 0.8rem;
+      color: #64748b;
+    }
+
+    .step-icon {
+      font-size: 1.5rem;
+      margin-left: auto;
+    }
+
+    /* Super Agent Mode Special Styling */
+    .super-agent-card {
+      grid-column: span 1;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .super-agent-card::after {
+      content: '';
+      position: absolute;
+      top: -50%;
+      left: -50%;
+      width: 200%;
+      height: 200%;
+      background: conic-gradient(from 0deg, transparent, rgba(139, 92, 246, 0.1), transparent, rgba(6, 182, 212, 0.1), transparent);
+      animation: rotateGlow 8s linear infinite;
+      z-index: 0;
+    }
+
+    .super-agent-card > * {
+      position: relative;
+      z-index: 1;
+    }
+
+    @keyframes rotateGlow {
+      from { transform: rotate(0deg); }
+      to { transform: rotate(360deg); }
+    }
+
+    .super-agent-icon {
+      animation: pulse 2s ease-in-out infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { box-shadow: 0 0 20px rgba(139, 92, 246, 0.3); }
+      50% { box-shadow: 0 0 40px rgba(139, 92, 246, 0.6), 0 0 60px rgba(6, 182, 212, 0.3); }
+    }
+
+    /* Super Agent floating element */
+    .el-superagent {
+      left: 50%;
+      top: -20px;
+      transform: translateX(-50%);
+      border-left: 3px solid #8b5cf6;
+      background: linear-gradient(145deg, rgba(139, 92, 246, 0.15), rgba(30, 30, 50, 0.9));
+      animation-delay: -1s;
+      z-index: 10;
+    }
+
+    .el-superagent::before {
+      content: '';
+      position: absolute;
+      inset: -2px;
+      border-radius: 18px;
+      background: linear-gradient(135deg, rgba(139, 92, 246, 0.5), rgba(6, 182, 212, 0.5));
+      z-index: -1;
+      opacity: 0.3;
+      animation: borderPulse 3s ease-in-out infinite;
+    }
+
+    @keyframes borderPulse {
+      0%, 100% { opacity: 0.3; }
+      50% { opacity: 0.6; }
+    }
+
+    /* Super Agent pipeline stage */
+    .pipe-icon.superagent {
+      background: linear-gradient(135deg, #8b5cf6, #06b6d4);
+      box-shadow: 0 0 30px rgba(139, 92, 246, 0.5);
+    }
+
+    .pipe-icon.superagent::before {
+      border-color: #8b5cf6;
+      animation: spin 3s linear infinite;
+    }
+  </style>
+</head>
+<body>
+  <div class="bg-grid"></div>
+  <div class="floating-orb orb1"></div>
+  <div class="floating-orb orb2"></div>
+  <div class="floating-orb orb3"></div>
+
+  <div class="container">
+    <!-- Header -->
+    <header class="header">
+      <div class="logo">
+        <div class="logo-ring"></div>
+        <div class="logo-ring"></div>
+        <div class="logo-ring"></div>
+        <div class="logo-center">🚀</div>
+      </div>
+      <h1>ClaudeCodeUI V2</h1>
+      <p class="subtitle">A Visual Guide to the Architecture</p>
+    </header>
+
+    <!-- Main Diagram -->
+    <div class="main-diagram">
+      <!-- SVG Connections -->
+      <svg class="connections" viewBox="0 0 1400 600">
+        <!-- Super Agent to Computer -->
+        <path class="connection-line" d="M 700 80 Q 700 150 700 220" stroke="url(#superagentGradient)" stroke-width="3" fill="none"/>
+        <defs>
+          <linearGradient id="superagentGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+            <stop offset="0%" style="stop-color:#8b5cf6"/>
+            <stop offset="100%" style="stop-color:#06b6d4"/>
+          </linearGradient>
+        </defs>
+        <circle class="data-packet" r="6" fill="#8b5cf6" style="animation-delay: -0.3s;">
+          <animateMotion dur="1.5s" repeatCount="indefinite" path="M 700 80 Q 700 150 700 220"/>
+        </circle>
+
+        <!-- Main to Computer -->
+        <path class="connection-line" d="M 200 180 Q 350 180 400 300" stroke="#f472b6" stroke-width="2" fill="none"/>
+        <circle class="data-packet" r="5" style="animation-delay: 0s;">
+          <animateMotion dur="2s" repeatCount="indefinite" path="M 200 180 Q 350 180 400 300"/>
+        </circle>
+
+        <!-- Computer to Renderer -->
+        <path class="connection-line" d="M 1000 300 Q 1050 180 1200 180" stroke="#34d399" stroke-width="2" fill="none"/>
+        <circle class="data-packet" r="5" style="animation-delay: -1s;">
+          <animateMotion dur="2s" repeatCount="indefinite" path="M 1000 300 Q 1050 180 1200 180"/>
+        </circle>
+
+        <!-- Preload to Computer -->
+        <path class="connection-line" d="M 300 480 Q 400 400 450 380" stroke="#fbbf24" stroke-width="2" fill="none"/>
+        <circle class="data-packet" r="5" style="animation-delay: -0.5s;">
+          <animateMotion dur="2s" repeatCount="indefinite" path="M 300 480 Q 400 400 450 380"/>
+        </circle>
+
+        <!-- Features to Computer -->
+        <path class="connection-line" d="M 1100 480 Q 1000 400 950 380" stroke="#06b6d4" stroke-width="2" fill="none"/>
+        <circle class="data-packet" r="5" style="animation-delay: -1.5s;">
+          <animateMotion dur="2s" repeatCount="indefinite" path="M 1100 480 Q 1000 400 950 380"/>
+        </circle>
+      </svg>
+
+      <!-- Computer -->
+      <div class="computer">
+        <div class="monitor">
+          <div class="screen">
+            <div class="screen-content">
+              <div class="app-sidebar">
+                <div class="sidebar-icon active">🏠</div>
+                <div class="sidebar-icon">📁</div>
+                <div class="sidebar-icon">⚡</div>
+                <div class="sidebar-icon">💬</div>
+                <div class="sidebar-icon">⚙️</div>
+              </div>
+              <div class="app-terminal">
+                <div class="terminal-line"><span class="prompt">~/project $</span> <span class="command">claude</span></div>
+                <div class="terminal-line"><span class="output">Starting Claude Code...</span></div>
+                <div class="terminal-line"><span class="success">✓ Connected to Claude API</span></div>
+                <div class="terminal-line"><span class="output">Loading skills & agents...</span></div>
+                <div class="terminal-line"><span class="success">✓ Ready! How can I help?</span></div>
+                <div class="terminal-line"><span class="prompt">~/project $</span> <span class="cursor"></span></div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="monitor-stand"></div>
+        <div class="monitor-base"></div>
+      </div>
+
+      <!-- Floating Elements -->
+      <div class="floating-element el-superagent">
+        <h3><span style="color: #8b5cf6;">🤖</span> Super Agent Mode</h3>
+        <ul>
+          <li>Autonomous Execution</li>
+          <li>LLM Decision Making</li>
+          <li>Auto-Approve Prompts</li>
+          <li>Safety Controls</li>
+        </ul>
+      </div>
+
+      <div class="floating-element el-main">
+        <h3><span style="color: #f472b6;">⚙️</span> Main Process</h3>
+        <ul>
+          <li>Node.js Backend</li>
+          <li>File System Access</li>
+          <li>Terminal PTY</li>
+          <li>Git Operations</li>
+        </ul>
+      </div>
+
+      <div class="floating-element el-renderer">
+        <h3><span style="color: #34d399;">⚛️</span> Renderer</h3>
+        <ul>
+          <li>React 18 UI</li>
+          <li>33 Components</li>
+          <li>Zustand State</li>
+          <li>xterm.js</li>
+        </ul>
+      </div>
+
+      <div class="floating-element el-preload">
+        <h3><span style="color: #fbbf24;">🔐</span> Preload Bridge</h3>
+        <ul>
+          <li>Context Isolation</li>
+          <li>window.api</li>
+          <li>70+ IPC Handlers</li>
+        </ul>
+      </div>
+
+      <div class="floating-element el-features">
+        <h3><span style="color: #06b6d4;">✨</span> Features</h3>
+        <ul>
+          <li>Multi-tab Terminal</li>
+          <li>File Explorer</li>
+          <li>Skills Manager</li>
+          <li>History Browser</li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- Stats -->
+    <div class="stats">
+      <div class="stat">
+        <div class="stat-value">33</div>
+        <div class="stat-label">React Components</div>
+      </div>
+      <div class="stat">
+        <div class="stat-value">70+</div>
+        <div class="stat-label">IPC Handlers</div>
+      </div>
+      <div class="stat">
+        <div class="stat-value">8</div>
+        <div class="stat-label">Terminal Themes</div>
+      </div>
+      <div class="stat">
+        <div class="stat-value">25</div>
+        <div class="stat-label">Starter Skills</div>
+      </div>
+      <div class="stat">
+        <div class="stat-value">3</div>
+        <div class="stat-label">Safety Levels</div>
+      </div>
+    </div>
+
+    <!-- Super Agent Mode Section -->
+    <div class="flow-section superagent-section">
+      <h2 class="section-title" style="background: linear-gradient(90deg, #8b5cf6, #06b6d4); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">🤖 Super Agent Mode</h2>
+      <p style="text-align: center; color: #94a3b8; max-width: 700px; margin: -30px auto 40px;">
+        Autonomous AI-powered task execution. Set a goal, choose your safety level, and let the agent drive Claude to completion.
+      </p>
+      <div class="pipeline">
+        <div class="pipe-stage">
+          <div class="pipe-icon superagent">🎯</div>
+          <div class="pipe-label">Task</div>
+          <div class="pipe-desc">Define goal</div>
+        </div>
+
+        <div class="pipe-arrow">
+          <div class="arrow-line">
+            <div class="arrow-dot" style="background: #8b5cf6;"></div>
+          </div>
+        </div>
+
+        <div class="pipe-stage">
+          <div class="pipe-icon superagent">👁️</div>
+          <div class="pipe-label">Monitor</div>
+          <div class="pipe-desc">Watch terminal</div>
+        </div>
+
+        <div class="pipe-arrow">
+          <div class="arrow-line">
+            <div class="arrow-dot" style="background: #8b5cf6;"></div>
+          </div>
+        </div>
+
+        <div class="pipe-stage">
+          <div class="pipe-icon superagent">🧠</div>
+          <div class="pipe-label">LLM</div>
+          <div class="pipe-desc">Analyze & decide</div>
+        </div>
+
+        <div class="pipe-arrow">
+          <div class="arrow-line">
+            <div class="arrow-dot" style="background: #8b5cf6;"></div>
+          </div>
+        </div>
+
+        <div class="pipe-stage">
+          <div class="pipe-icon superagent">⌨️</div>
+          <div class="pipe-label">Input</div>
+          <div class="pipe-desc">Send to Claude</div>
+        </div>
+
+        <div class="pipe-arrow">
+          <div class="arrow-line">
+            <div class="arrow-dot" style="background: #8b5cf6;"></div>
+          </div>
+        </div>
+
+        <div class="pipe-stage">
+          <div class="pipe-icon superagent">✅</div>
+          <div class="pipe-label">Complete</div>
+          <div class="pipe-desc">Task done</div>
+        </div>
+      </div>
+
+      <!-- Safety Levels -->
+      <div style="display: flex; justify-content: center; gap: 30px; margin-top: 50px; flex-wrap: wrap;">
+        <div style="background: rgba(34, 197, 94, 0.1); border: 1px solid rgba(34, 197, 94, 0.3); border-radius: 16px; padding: 20px 30px; text-align: center;">
+          <div style="font-size: 2rem; margin-bottom: 10px;">🛡️</div>
+          <div style="font-weight: 600; color: #22c55e;">Safe</div>
+          <div style="font-size: 0.75rem; color: #94a3b8; margin-top: 5px;">Blocks dangerous commands</div>
+        </div>
+        <div style="background: rgba(251, 191, 36, 0.1); border: 1px solid rgba(251, 191, 36, 0.3); border-radius: 16px; padding: 20px 30px; text-align: center;">
+          <div style="font-size: 2rem; margin-bottom: 10px;">⚠️</div>
+          <div style="font-weight: 600; color: #fbbf24;">Moderate</div>
+          <div style="font-size: 0.75rem; color: #94a3b8; margin-top: 5px;">Cautious execution</div>
+        </div>
+        <div style="background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.3); border-radius: 16px; padding: 20px 30px; text-align: center;">
+          <div style="font-size: 2rem; margin-bottom: 10px;">🔥</div>
+          <div style="font-weight: 600; color: #ef4444;">YOLO</div>
+          <div style="font-size: 0.75rem; color: #94a3b8; margin-top: 5px;">No restrictions</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Data Flow Pipeline -->
+    <div class="flow-section">
+      <h2 class="section-title">How Data Flows</h2>
+      <div class="pipeline">
+        <div class="pipe-stage">
+          <div class="pipe-icon user">👆</div>
+          <div class="pipe-label">User</div>
+          <div class="pipe-desc">Clicks button</div>
+        </div>
+
+        <div class="pipe-arrow">
+          <div class="arrow-line">
+            <div class="arrow-dot"></div>
+          </div>
+        </div>
+
+        <div class="pipe-stage">
+          <div class="pipe-icon react">⚛️</div>
+          <div class="pipe-label">React</div>
+          <div class="pipe-desc">Calls API</div>
+        </div>
+
+        <div class="pipe-arrow">
+          <div class="arrow-line">
+            <div class="arrow-dot"></div>
+          </div>
+        </div>
+
+        <div class="pipe-stage">
+          <div class="pipe-icon bridge">🔐</div>
+          <div class="pipe-label">Bridge</div>
+          <div class="pipe-desc">IPC invoke</div>
+        </div>
+
+        <div class="pipe-arrow">
+          <div class="arrow-line">
+            <div class="arrow-dot"></div>
+          </div>
+        </div>
+
+        <div class="pipe-stage">
+          <div class="pipe-icon node">🟢</div>
+          <div class="pipe-label">Node.js</div>
+          <div class="pipe-desc">Handles request</div>
+        </div>
+
+        <div class="pipe-arrow">
+          <div class="arrow-line">
+            <div class="arrow-dot"></div>
+          </div>
+        </div>
+
+        <div class="pipe-stage">
+          <div class="pipe-icon os">💻</div>
+          <div class="pipe-label">OS</div>
+          <div class="pipe-desc">Executes</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Features Grid -->
+    <div class="features">
+      <div class="feature-card super-agent-card" style="--accent: #8b5cf6;">
+        <div class="feature-icon super-agent-icon" style="background: linear-gradient(135deg, rgba(139, 92, 246, 0.3), rgba(6, 182, 212, 0.3));">🤖</div>
+        <h3>Super Agent Mode</h3>
+        <p>Autonomous AI-powered task execution using LLMs to drive Claude CLI to completion without intervention</p>
+        <div class="feature-tags">
+          <span class="tag">Groq</span>
+          <span class="tag">OpenAI</span>
+          <span class="tag">Auto-approve</span>
+          <span class="tag">3 Safety Levels</span>
+        </div>
+      </div>
+
+      <div class="feature-card" style="--accent: #f472b6;">
+        <div class="feature-icon" style="background: rgba(244, 114, 182, 0.2);">🖥️</div>
+        <h3>Multi-Tab Terminal</h3>
+        <p>Full terminal emulation powered by node-pty and xterm.js with multiple concurrent sessions</p>
+        <div class="feature-tags">
+          <span class="tag">node-pty</span>
+          <span class="tag">xterm.js</span>
+          <span class="tag">8 themes</span>
+        </div>
+      </div>
+
+      <div class="feature-card" style="--accent: #34d399;">
+        <div class="feature-icon" style="background: rgba(52, 211, 153, 0.2);">📁</div>
+        <h3>File Explorer</h3>
+        <p>Browse project files with Git status indicators, search, and document preview</p>
+        <div class="feature-tags">
+          <span class="tag">Tree view</span>
+          <span class="tag">Git status</span>
+          <span class="tag">Preview</span>
+        </div>
+      </div>
+
+      <div class="feature-card" style="--accent: #06b6d4;">
+        <div class="feature-icon" style="background: rgba(6, 182, 212, 0.2);">⚡</div>
+        <h3>Skills & Agents</h3>
+        <p>Create, edit, and manage Claude Code skills and agents with 25+ starter templates</p>
+        <div class="feature-tags">
+          <span class="tag">25 skills</span>
+          <span class="tag">5 agents</span>
+          <span class="tag">Editor</span>
+        </div>
+      </div>
+
+      <div class="feature-card" style="--accent: #fbbf24;">
+        <div class="feature-icon" style="background: rgba(251, 191, 36, 0.2);">💬</div>
+        <h3>Conversation History</h3>
+        <p>Browse and search past Claude Code sessions grouped by project</p>
+        <div class="feature-tags">
+          <span class="tag">Search</span>
+          <span class="tag">Export</span>
+          <span class="tag">Resume</span>
+        </div>
+      </div>
+
+      <div class="feature-card" style="--accent: #a78bfa;">
+        <div class="feature-icon" style="background: rgba(167, 139, 250, 0.2);">🔌</div>
+        <h3>MCP Servers</h3>
+        <p>Manage Model Context Protocol server integrations with one-click install</p>
+        <div class="feature-tags">
+          <span class="tag">GitHub</span>
+          <span class="tag">Slack</span>
+          <span class="tag">Custom</span>
+        </div>
+      </div>
+
+      <div class="feature-card" style="--accent: #ef4444;">
+        <div class="feature-icon" style="background: rgba(239, 68, 68, 0.2);">🔀</div>
+        <h3>Git Integration</h3>
+        <p>Built-in Git operations including commit, push, pull, and PR creation</p>
+        <div class="feature-tags">
+          <span class="tag">Commit</span>
+          <span class="tag">Push/Pull</span>
+          <span class="tag">PRs</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tech Stack Orbit -->
+    <div class="tech-section">
+      <h2 class="section-title">Technology Stack</h2>
+      <div class="tech-orbit">
+        <div class="orbit-ring ring1"></div>
+        <div class="orbit-ring ring2"></div>
+        <div class="orbit-ring ring3"></div>
+        <div class="orbit-center">🚀</div>
+
+        <div class="tech-item" style="top: 0; left: 50%; transform: translateX(-50%);">
+          ⚛️<span>React 18</span>
+        </div>
+        <div class="tech-item" style="top: 70px; right: 20px;">
+          📘<span>TypeScript</span>
+        </div>
+        <div class="tech-item" style="bottom: 70px; right: 20px;">
+          ⚡<span>Vite</span>
+        </div>
+        <div class="tech-item" style="bottom: 0; left: 50%; transform: translateX(-50%);">
+          🎨<span>Tailwind</span>
+        </div>
+        <div class="tech-item" style="bottom: 70px; left: 20px;">
+          🐻<span>Zustand</span>
+        </div>
+        <div class="tech-item" style="top: 70px; left: 20px;">
+          ⚙️<span>Electron</span>
+        </div>
+        <div class="tech-item" style="top: 50%; left: -30px; transform: translateY(-50%); background: linear-gradient(135deg, rgba(139, 92, 246, 0.3), rgba(30, 30, 50, 0.9));">
+          🧠<span>Groq</span>
+        </div>
+        <div class="tech-item" style="top: 50%; right: -30px; transform: translateY(-50%); background: linear-gradient(135deg, rgba(16, 163, 127, 0.3), rgba(30, 30, 50, 0.9));">
+          🤖<span>OpenAI</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Interactive Demo -->
+    <div class="demo-section">
+      <h2 class="section-title">See It In Action</h2>
+      <div class="demo-container">
+        <div class="demo-buttons">
+          <button class="demo-btn" onclick="showDemo('terminal')">Open Terminal</button>
+          <button class="demo-btn" onclick="showDemo('file')">Read File</button>
+          <button class="demo-btn" onclick="showDemo('skill')">Run Skill</button>
+          <button class="demo-btn active" onclick="showDemo('superagent')" style="background: linear-gradient(135deg, #8b5cf6, #06b6d4); border-color: transparent;">🤖 Super Agent</button>
+        </div>
+        <div class="demo-display" id="demoDisplay">
+          <div class="demo-flow" id="superagentDemo">
+            <div class="demo-step">
+              <div class="step-num">1</div>
+              <div class="step-content">
+                <h4>User starts Super Agent with task</h4>
+                <p>Modal captures task description & settings</p>
+              </div>
+              <div class="step-icon">🎯</div>
+            </div>
+            <div class="demo-step">
+              <div class="step-num">2</div>
+              <div class="step-content">
+                <h4>Agent monitors terminal output</h4>
+                <p>Idle detection triggers after 5 seconds</p>
+              </div>
+              <div class="step-icon">👁️</div>
+            </div>
+            <div class="demo-step">
+              <div class="step-num">3</div>
+              <div class="step-content">
+                <h4>LLM analyzes & decides next action</h4>
+                <p>Groq/OpenAI returns: input, WAIT, or DONE</p>
+              </div>
+              <div class="step-icon">🧠</div>
+            </div>
+            <div class="demo-step">
+              <div class="step-num">4</div>
+              <div class="step-content">
+                <h4>Auto-approves prompts, completes task</h4>
+                <p>Loop continues until DONE or time limit</p>
+              </div>
+              <div class="step-icon">✅</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    function showDemo(type) {
+      // Update buttons
+      document.querySelectorAll('.demo-btn').forEach(btn => btn.classList.remove('active'));
+      event.target.classList.add('active');
+
+      const display = document.getElementById('demoDisplay');
+
+      const demos = {
+        terminal: `
+          <div class="demo-flow">
+            <div class="demo-step">
+              <div class="step-num">1</div>
+              <div class="step-content">
+                <h4>User clicks "New Terminal"</h4>
+                <p>React component triggers onClick handler</p>
+              </div>
+              <div class="step-icon">👆</div>
+            </div>
+            <div class="demo-step">
+              <div class="step-num">2</div>
+              <div class="step-content">
+                <h4>window.api.terminal.create()</h4>
+                <p>Preload bridge sends IPC message to main</p>
+              </div>
+              <div class="step-icon">🔐</div>
+            </div>
+            <div class="demo-step">
+              <div class="step-num">3</div>
+              <div class="step-content">
+                <h4>node-pty spawns shell</h4>
+                <p>Main process creates pseudo-terminal</p>
+              </div>
+              <div class="step-icon">⚙️</div>
+            </div>
+            <div class="demo-step">
+              <div class="step-num">4</div>
+              <div class="step-content">
+                <h4>xterm.js renders output</h4>
+                <p>Terminal UI displays in React component</p>
+              </div>
+              <div class="step-icon">🖥️</div>
+            </div>
+          </div>
+        `,
+        file: `
+          <div class="demo-flow">
+            <div class="demo-step">
+              <div class="step-num">1</div>
+              <div class="step-content">
+                <h4>User clicks file in tree</h4>
+                <p>FileTree component detects selection</p>
+              </div>
+              <div class="step-icon">📁</div>
+            </div>
+            <div class="demo-step">
+              <div class="step-num">2</div>
+              <div class="step-content">
+                <h4>window.api.files.read(path)</h4>
+                <p>IPC invoke with file path parameter</p>
+              </div>
+              <div class="step-icon">🔐</div>
+            </div>
+            <div class="demo-step">
+              <div class="step-num">3</div>
+              <div class="step-content">
+                <h4>fs.readFile() in Node.js</h4>
+                <p>Main process reads file from disk</p>
+              </div>
+              <div class="step-icon">💾</div>
+            </div>
+            <div class="demo-step">
+              <div class="step-num">4</div>
+              <div class="step-content">
+                <h4>DocumentViewer renders content</h4>
+                <p>PDF, code, image, or text displayed</p>
+              </div>
+              <div class="step-icon">👁️</div>
+            </div>
+          </div>
+        `,
+        skill: `
+          <div class="demo-flow">
+            <div class="demo-step">
+              <div class="step-num">1</div>
+              <div class="step-content">
+                <h4>User types /commit</h4>
+                <p>Terminal input detects skill command</p>
+              </div>
+              <div class="step-icon">⌨️</div>
+            </div>
+            <div class="demo-step">
+              <div class="step-num">2</div>
+              <div class="step-content">
+                <h4>window.api.skills.run("commit")</h4>
+                <p>Skill loader finds matching .md file</p>
+              </div>
+              <div class="step-icon">⚡</div>
+            </div>
+            <div class="demo-step">
+              <div class="step-num">3</div>
+              <div class="step-content">
+                <h4>Skill prompt injected</h4>
+                <p>Claude receives skill instructions</p>
+              </div>
+              <div class="step-icon">🤖</div>
+            </div>
+            <div class="demo-step">
+              <div class="step-num">4</div>
+              <div class="step-content">
+                <h4>Claude executes commands</h4>
+                <p>Git add, commit, push automated</p>
+              </div>
+              <div class="step-icon">✅</div>
+            </div>
+          </div>
+        `,
+        superagent: `
+          <div class="demo-flow">
+            <div class="demo-step">
+              <div class="step-num">1</div>
+              <div class="step-content">
+                <h4>User starts Super Agent with task</h4>
+                <p>Modal captures task description & settings</p>
+              </div>
+              <div class="step-icon">🎯</div>
+            </div>
+            <div class="demo-step">
+              <div class="step-num">2</div>
+              <div class="step-content">
+                <h4>Agent monitors terminal output</h4>
+                <p>Idle detection triggers after 5 seconds</p>
+              </div>
+              <div class="step-icon">👁️</div>
+            </div>
+            <div class="demo-step">
+              <div class="step-num">3</div>
+              <div class="step-content">
+                <h4>LLM analyzes & decides next action</h4>
+                <p>Groq/OpenAI returns: input, WAIT, or DONE</p>
+              </div>
+              <div class="step-icon">🧠</div>
+            </div>
+            <div class="demo-step">
+              <div class="step-num">4</div>
+              <div class="step-content">
+                <h4>Auto-approves prompts, completes task</h4>
+                <p>Loop continues until DONE or time limit</p>
+              </div>
+              <div class="step-icon">✅</div>
+            </div>
+          </div>
+        `
+      };
+
+      display.innerHTML = demos[type];
+    }
+  </script>
+</body>
+</html>
