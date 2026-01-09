@@ -1,5 +1,5 @@
 import { contextBridge, ipcRenderer } from 'electron'
-import type { IpcApi, ConversationExportOptions, LLMApiRequest, SuperAgentConfig } from '../shared/types'
+import type { IpcApi, ConversationExportOptions, LLMApiRequest, SuperAgentConfig, SuperAgentSession } from '../shared/types'
 
 const api: IpcApi = {
   // Terminal
@@ -130,6 +130,11 @@ const api: IpcApi = {
   loadSuperAgentConfig: () => ipcRenderer.invoke('load-superagent-config'),
   saveSuperAgentConfig: (config: Partial<SuperAgentConfig>) =>
     ipcRenderer.invoke('save-superagent-config', config),
+  saveSuperAgentSession: (session: SuperAgentSession) =>
+    ipcRenderer.invoke('save-superagent-session', session),
+  listSuperAgentSessions: () => ipcRenderer.invoke('list-superagent-sessions'),
+  deleteSuperAgentSession: (sessionId: string) =>
+    ipcRenderer.invoke('delete-superagent-session', sessionId),
 
   // Window Controls
   windowClose: () => ipcRenderer.invoke('window-close'),

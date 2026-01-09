@@ -2,9 +2,10 @@ import { ipcMain } from 'electron'
 import { homedir } from 'os'
 import { join } from 'path'
 import * as fs from 'fs/promises'
-import type { LLMApiRequest, LLMApiResponse, SuperAgentConfig } from '../../shared/types'
+import type { LLMApiRequest, LLMApiResponse, SuperAgentConfig, SuperAgentSession } from '../../shared/types'
 
 const SUPER_AGENT_CONFIG_PATH = join(homedir(), '.claudecodeui', 'superagent-config.json')
+const SUPER_AGENT_HISTORY_PATH = join(homedir(), '.claudecodeui', 'superagent-history.json')
 
 const DEFAULT_CONFIG: SuperAgentConfig = {
   groqApiKey: '',
@@ -40,6 +41,23 @@ async function saveConfig(config: Partial<SuperAgentConfig>): Promise<void> {
   const existing = await loadConfig()
   const merged = { ...existing, ...config }
   await fs.writeFile(SUPER_AGENT_CONFIG_PATH, JSON.stringify(merged, null, 2))
+}
+
+// Session history functions
+async function loadSessionHistory(): Promise<SuperAgentSession[]> {
+  try {
+    const data = await fs.readFile(SUPER_AGENT_HISTORY_PATH, 'utf-8')
+    return JSON.parse(data)
+  } catch {
+    return []
+  }
+}
+
+async function saveSessionHistory(sessions: SuperAgentSession[]): Promise<void> {
+  await ensureConfigDir()
+  // Keep only last 100 sessions
+  const trimmed = sessions.slice(-100)
+  await fs.writeFile(SUPER_AGENT_HISTORY_PATH, JSON.stringify(trimmed, null, 2))
 }
 
 export function registerSuperAgentHandlers(): void {
@@ -118,6 +136,43 @@ export function registerSuperAgentHandlers(): void {
         return { success: true }
       } catch (error) {
         console.error('Failed to save super agent config:', error)
+        return { success: false }
+      }
+    }
+  )
+
+  // Save Super Agent session to history
+  ipcMain.handle(
+    'save-superagent-session',
+    async (_, session: SuperAgentSession): Promise<{ success: boolean }> => {
+      try {
+        const sessions = await loadSessionHistory()
+        sessions.push(session)
+        await saveSessionHistory(sessions)
+        return { success: true }
+      } catch (error) {
+        console.error('Failed to save super agent session:', error)
+        return { success: false }
+      }
+    }
+  )
+
+  // List all Super Agent sessions
+  ipcMain.handle('list-superagent-sessions', async (): Promise<SuperAgentSession[]> => {
+    return loadSessionHistory()
+  })
+
+  // Delete a Super Agent session
+  ipcMain.handle(
+    'delete-superagent-session',
+    async (_, sessionId: string): Promise<{ success: boolean }> => {
+      try {
+        const sessions = await loadSessionHistory()
+        const filtered = sessions.filter(s => s.id !== sessionId)
+        await saveSessionHistory(filtered)
+        return { success: true }
+      } catch (error) {
+        console.error('Failed to delete super agent session:', error)
         return { success: false }
       }
     }

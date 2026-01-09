@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import { X, Zap, Shield, ShieldAlert, ShieldOff, Loader2, Rocket, Sparkles, ChevronDown, ChevronUp } from 'lucide-react'
 import { useSuperAgent } from '../../hooks/useSuperAgent'
+import { useAppStore } from '../../store'
 import type { SafetyLevel, LLMProvider } from '../../../shared/types'
 
 interface SuperAgentModalProps {
@@ -20,6 +21,7 @@ const QUICK_TASKS = [
 export function SuperAgentModal({ isOpen, onClose, terminalId, onStart }: SuperAgentModalProps) {
   const { startSuperAgent, config, provider, setProvider, timeLimit, setTimeLimit, safetyLevel, setSafetyLevel, loadConfig } =
     useSuperAgent()
+  const { cwd } = useAppStore()
 
   const [task, setTask] = useState('')
   const [isStarting, setIsStarting] = useState(false)
@@ -63,7 +65,7 @@ export function SuperAgentModal({ isOpen, onClose, terminalId, onStart }: SuperA
     setIsStarting(true)
     setError(null)
 
-    const success = await startSuperAgent(task, terminalId, { timeLimit, safetyLevel })
+    const success = await startSuperAgent(task, terminalId, { timeLimit, safetyLevel, projectFolder: cwd })
 
     if (success) {
       onStart()

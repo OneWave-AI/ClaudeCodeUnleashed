@@ -463,7 +463,7 @@ export function useSuperAgent() {
   const startSuperAgent = useCallback(async (
     taskDescription: string,
     terminalId: string,
-    options?: { timeLimit?: number; safetyLevel?: SafetyLevel }
+    options?: { timeLimit?: number; safetyLevel?: SafetyLevel; projectFolder?: string }
   ) => {
     console.log('[SuperAgent] Starting with terminalId:', terminalId)
     const store = getStore()
@@ -490,8 +490,9 @@ export function useSuperAgent() {
     if (options?.timeLimit !== undefined) store.setTimeLimit(options.timeLimit)
     if (options?.safetyLevel) store.setSafetyLevel(options.safetyLevel)
 
-    // Start session
-    store.startSession(taskDescription, terminalId)
+    // Start session with project folder
+    const projectFolder = options?.projectFolder || ''
+    store.startSession(taskDescription, terminalId, projectFolder)
 
     // Set duration timer if time limit is set
     const limit = options?.timeLimit ?? store.timeLimit

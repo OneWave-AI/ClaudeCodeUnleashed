@@ -8,6 +8,7 @@ interface SuperAgentState {
   startTime: number | null
   timeLimit: number // minutes (0 = unlimited)
   safetyLevel: SafetyLevel
+  projectFolder: string
 
   // Output tracking
   outputBuffer: string
@@ -32,6 +33,7 @@ interface SuperAgentState {
   setProvider: (provider: LLMProvider) => void
   setConfig: (config: SuperAgentConfig) => void
   setActiveTerminalId: (id: string | null) => void
+  setProjectFolder: (folder: string) => void
 
   // Output handling
   appendOutput: (data: string) => void
@@ -43,8 +45,8 @@ interface SuperAgentState {
   clearLogs: () => void
 
   // Session management
-  startSession: (task: string, terminalId: string) => void
-  stopSession: () => void
+  startSession: (task: string, terminalId: string, projectFolder: string) => void
+  stopSession: (status?: 'completed' | 'stopped' | 'error') => void
   reset: () => void
 }
 
@@ -66,6 +68,7 @@ export const useSuperAgentStore = create<SuperAgentState>((set, get) => ({
   startTime: null,
   timeLimit: 30,
   safetyLevel: 'safe',
+  projectFolder: '',
   outputBuffer: '',
   lastOutputTime: 0,
   isIdle: false,
@@ -82,6 +85,7 @@ export const useSuperAgentStore = create<SuperAgentState>((set, get) => ({
   setProvider: (provider) => set({ provider }),
   setConfig: (config) => set({ config, provider: config.defaultProvider }),
   setActiveTerminalId: (id) => set({ activeTerminalId: id }),
+  setProjectFolder: (folder) => set({ projectFolder: folder }),
 
   // Output handling
   appendOutput: (data) =>
@@ -107,12 +111,13 @@ export const useSuperAgentStore = create<SuperAgentState>((set, get) => ({
   clearLogs: () => set({ activityLog: [] }),
 
   // Session management
-  startSession: (task, terminalId) =>
+  startSession: (task, terminalId, projectFolder) =>
     set({
       isRunning: true,
       task,
       startTime: Date.now(),
       activeTerminalId: terminalId,
+      projectFolder,
       outputBuffer: '',
       lastOutputTime: Date.now(),
       isIdle: false,
@@ -121,17 +126,42 @@ export const useSuperAgentStore = create<SuperAgentState>((set, get) => ({
       ]
     }),
 
-  stopSession: () => {
+  stopSession: (status = 'stopped') => {
     const state = get()
+    const endTime = Date.now()
+    const duration = state.startTime ? Math.floor((endTime - state.startTime) / 1000) : 0
+
+    // Add stop log entry
+    const finalLog = [
+      ...state.activityLog,
+      { timestamp: endTime, type: 'stop' as const, message: `Super Agent ${status}` }
+    ]
+
+    // Save session to history
+    if (state.startTime && state.task) {
+      const session = {
+        id: `sa_${state.startTime}_${Math.random().toString(36).substr(2, 9)}`,
+        task: state.task,
+        startTime: state.startTime,
+        endTime,
+        duration,
+        status,
+        activityLog: finalLog,
+        provider: state.provider,
+        projectFolder: state.projectFolder
+      }
+      // Save async - don't block
+      window.api.saveSuperAgentSession(session).catch(err =>
+        console.error('Failed to save Super Agent session:', err)
+      )
+    }
+
     set({
       isRunning: false,
       startTime: null,
       activeTerminalId: null,
       isIdle: false,
-      activityLog: [
-        ...state.activityLog,
-        { timestamp: Date.now(), type: 'stop', message: 'Super Agent stopped' }
-      ]
+      activityLog: finalLog
     })
   },
 
@@ -142,6 +172,7 @@ export const useSuperAgentStore = create<SuperAgentState>((set, get) => ({
       startTime: null,
       timeLimit: 30,
       safetyLevel: 'safe',
+      projectFolder: '',
       outputBuffer: '',
       lastOutputTime: 0,
       isIdle: false,

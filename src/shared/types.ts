@@ -306,6 +306,9 @@ export interface IpcApi {
   callLLMApi: (request: LLMApiRequest) => Promise<LLMApiResponse>
   loadSuperAgentConfig: () => Promise<SuperAgentConfig>
   saveSuperAgentConfig: (config: Partial<SuperAgentConfig>) => Promise<{ success: boolean }>
+  saveSuperAgentSession: (session: SuperAgentSession) => Promise<{ success: boolean }>
+  listSuperAgentSessions: () => Promise<SuperAgentSession[]>
+  deleteSuperAgentSession: (sessionId: string) => Promise<{ success: boolean }>
 }
 
 // Super Agent types
@@ -347,6 +350,18 @@ export interface ActivityLogEntry {
   timestamp: number
   type: 'start' | 'input' | 'output' | 'decision' | 'permission' | 'complete' | 'error' | 'stop' | 'working' | 'waiting'
   message: string
+}
+
+export interface SuperAgentSession {
+  id: string
+  task: string
+  startTime: number
+  endTime: number
+  duration: number // in seconds
+  status: 'completed' | 'stopped' | 'error'
+  activityLog: ActivityLogEntry[]
+  provider: LLMProvider
+  projectFolder: string
 }
 
 declare global {

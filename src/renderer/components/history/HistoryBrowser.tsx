@@ -18,13 +18,14 @@ import {
   PanelRightClose,
   PanelRight
 } from 'lucide-react'
-import type { Conversation, ConversationMessage, ConversationStats } from '../../../shared/types'
+import type { Conversation, ConversationMessage, ConversationStats, SuperAgentSession } from '../../../shared/types'
 import { useToast, LoadingError, NoConversationsEmptyState } from '../common'
 import { logger } from '../../utils'
 
 type DateFilter = 'all' | 'today' | 'week' | 'month'
 type SortBy = 'newest' | 'oldest' | 'project-asc' | 'project-desc'
 type GroupBy = 'none' | 'project' | 'date'
+type HistoryTab = 'conversations' | 'superagent'
 
 interface HistoryBrowserProps {
   onBack: () => void
@@ -82,6 +83,9 @@ function renderMessageContent(content: string): React.ReactNode {
 }
 
 export default function HistoryBrowser({ onBack, onResumeSession }: HistoryBrowserProps) {
+  // Tab state
+  const [activeTab, setActiveTab] = useState<HistoryTab>('conversations')
+
   const [conversations, setConversations] = useState<Conversation[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -92,8 +96,14 @@ export default function HistoryBrowser({ onBack, onResumeSession }: HistoryBrows
   const [displayCount, setDisplayCount] = useState(ITEMS_PER_PAGE)
   const [searching, setSearching] = useState(false)
 
+  // Super Agent sessions
+  const [superAgentSessions, setSuperAgentSessions] = useState<SuperAgentSession[]>([])
+  const [loadingSuperAgent, setLoadingSuperAgent] = useState(false)
+  const [selectedSession, setSelectedSession] = useState<SuperAgentSession | null>(null)
+
   // Delete confirmation modal
   const [deleteTarget, setDeleteTarget] = useState<Conversation | null>(null)
+  const [deleteSuperAgentTarget, setDeleteSuperAgentTarget] = useState<SuperAgentSession | null>(null)
   const [deleting, setDeleting] = useState(false)
 
   // Selected conversation for preview panel
@@ -130,6 +140,47 @@ export default function HistoryBrowser({ onBack, onResumeSession }: HistoryBrows
   useEffect(() => {
     loadConversations()
   }, [loadConversations])
+
+  // Load Super Agent sessions
+  const loadSuperAgentSessions = useCallback(async () => {
+    setLoadingSuperAgent(true)
+    try {
+      const sessions = await window.api.listSuperAgentSessions()
+      // Sort by newest first
+      setSuperAgentSessions(sessions.sort((a, b) => b.startTime - a.startTime))
+    } catch (err) {
+      console.error('Failed to load Super Agent sessions:', err)
+    } finally {
+      setLoadingSuperAgent(false)
+    }
+  }, [])
+
+  useEffect(() => {
+    if (activeTab === 'superagent') {
+      loadSuperAgentSessions()
+    }
+  }, [activeTab, loadSuperAgentSessions])
+
+  // Delete Super Agent session
+  const handleDeleteSuperAgentSession = async () => {
+    if (!deleteSuperAgentTarget) return
+    setDeleting(true)
+    try {
+      const result = await window.api.deleteSuperAgentSession(deleteSuperAgentTarget.id)
+      if (result.success) {
+        setSuperAgentSessions(prev => prev.filter(s => s.id !== deleteSuperAgentTarget.id))
+        if (selectedSession?.id === deleteSuperAgentTarget.id) {
+          setSelectedSession(null)
+        }
+        setDeleteSuperAgentTarget(null)
+        showToast('success', 'Session deleted', 'Super Agent session removed')
+      }
+    } catch (err) {
+      showToast('error', 'Delete failed', 'Could not delete session')
+    } finally {
+      setDeleting(false)
+    }
+  }
 
   // Load messages when a conversation is selected
   useEffect(() => {
@@ -458,10 +509,32 @@ export default function HistoryBrowser({ onBack, onResumeSession }: HistoryBrows
               <ArrowLeft size={18} />
             </button>
             <h1 className="text-lg font-semibold text-white">History</h1>
-            <span className="px-2 py-0.5 rounded text-xs bg-white/10 text-gray-400">
-              {filteredAndSortedConversations.length}
-            </span>
-            {pinnedCount > 0 && (
+            {/* Tabs */}
+            <div className="flex rounded-lg bg-white/[0.04] p-0.5">
+              <button
+                onClick={() => setActiveTab('conversations')}
+                className={`flex items-center gap-1.5 px-3 py-1 rounded-md text-xs transition-all ${
+                  activeTab === 'conversations'
+                    ? 'bg-[#cc785c] text-white shadow-sm'
+                    : 'text-gray-400 hover:text-white'
+                }`}
+              >
+                <MessageSquare size={12} />
+                Claude ({filteredAndSortedConversations.length})
+              </button>
+              <button
+                onClick={() => setActiveTab('superagent')}
+                className={`flex items-center gap-1.5 px-3 py-1 rounded-md text-xs transition-all ${
+                  activeTab === 'superagent'
+                    ? 'bg-purple-600 text-white shadow-sm'
+                    : 'text-gray-400 hover:text-white'
+                }`}
+              >
+                <Zap size={12} />
+                Super Agent ({superAgentSessions.length})
+              </button>
+            </div>
+            {activeTab === 'conversations' && pinnedCount > 0 && (
               <span className="flex items-center gap-1 px-2 py-0.5 rounded text-xs bg-[#cc785c]/20 text-[#cc785c]">
                 <Pin size={10} />
                 {pinnedCount}
@@ -505,7 +578,8 @@ export default function HistoryBrowser({ onBack, onResumeSession }: HistoryBrows
           </div>
         </div>
 
-        {/* Sort & Filter Bar - Always visible */}
+        {/* Sort & Filter Bar - Only for conversations tab */}
+        {activeTab === 'conversations' && (
         <div className="flex items-center gap-4 px-4 py-2 bg-white/[0.02]">
           {/* Sort Options */}
           <div className="flex items-center gap-2">
@@ -617,18 +691,103 @@ export default function HistoryBrowser({ onBack, onResumeSession }: HistoryBrows
             </div>
           </div>
         </div>
+        )}
       </div>
 
       {/* Split View Content */}
       <div className="flex-1 flex overflow-hidden">
-        {/* Left Panel - Conversation List */}
+        {/* Left Panel - List */}
         <div
           ref={scrollContainerRef}
           className={`overflow-y-auto p-4 border-r border-white/[0.06] transition-all duration-300 ${
             showPreviewPanel ? 'w-[380px] min-w-[380px]' : 'flex-1'
           }`}
         >
-          {error ? (
+          {/* Super Agent Sessions Tab */}
+          {activeTab === 'superagent' ? (
+            loadingSuperAgent ? (
+              <div className="flex items-center justify-center h-full text-gray-500">
+                <div className="flex flex-col items-center gap-3">
+                  <div className="w-8 h-8 border-2 border-purple-600/30 border-t-purple-600 rounded-full animate-spin" />
+                  <span className="text-sm">Loading Super Agent sessions...</span>
+                </div>
+              </div>
+            ) : superAgentSessions.length === 0 ? (
+              <div className="flex flex-col items-center justify-center py-12 text-center">
+                <div className="p-4 rounded-2xl bg-gradient-to-br from-purple-600/20 to-purple-600/10 mb-4">
+                  <Zap size={32} className="text-purple-400" />
+                </div>
+                <h3 className="text-base font-medium text-white mb-1">No Super Agent sessions yet</h3>
+                <p className="text-xs text-gray-500 max-w-xs">
+                  Run Super Agent to let Claude work autonomously on tasks. Sessions will appear here.
+                </p>
+              </div>
+            ) : (
+              <div className="space-y-2">
+                {superAgentSessions.map((session) => (
+                  <div
+                    key={session.id}
+                    onClick={() => setSelectedSession(session)}
+                    className={`p-3 rounded-lg border cursor-pointer transition-all hover:bg-white/[0.02] ${
+                      selectedSession?.id === session.id
+                        ? 'bg-purple-600/10 border-purple-600/30'
+                        : 'bg-white/[0.02] border-white/[0.06]'
+                    }`}
+                  >
+                    <div className="flex items-start justify-between gap-2 mb-2">
+                      <div className="flex items-center gap-2">
+                        <div className={`p-1.5 rounded-lg ${
+                          session.status === 'completed' ? 'bg-green-500/20' :
+                          session.status === 'error' ? 'bg-red-500/20' : 'bg-purple-500/20'
+                        }`}>
+                          <Zap size={12} className={
+                            session.status === 'completed' ? 'text-green-400' :
+                            session.status === 'error' ? 'text-red-400' : 'text-purple-400'
+                          } />
+                        </div>
+                        <span className={`text-[10px] uppercase tracking-wider ${
+                          session.status === 'completed' ? 'text-green-400' :
+                          session.status === 'error' ? 'text-red-400' : 'text-purple-400'
+                        }`}>
+                          {session.status}
+                        </span>
+                      </div>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          setDeleteSuperAgentTarget(session)
+                        }}
+                        className="p-1 rounded hover:bg-red-500/20 text-gray-500 hover:text-red-400 transition-colors"
+                      >
+                        <Trash2 size={12} />
+                      </button>
+                    </div>
+                    <p className="text-sm text-white mb-2 line-clamp-2">{session.task}</p>
+                    <div className="flex items-center gap-3 text-xs text-gray-500">
+                      <span className="flex items-center gap-1">
+                        <Clock size={10} />
+                        {formatDate(session.startTime)}
+                      </span>
+                      <span className="flex items-center gap-1">
+                        <Zap size={10} />
+                        {Math.floor(session.duration / 60)}m {session.duration % 60}s
+                      </span>
+                      <span className="flex items-center gap-1">
+                        <MessageSquare size={10} />
+                        {session.activityLog.length} events
+                      </span>
+                    </div>
+                    {session.projectFolder && (
+                      <div className="flex items-center gap-1 mt-2 text-xs text-gray-600">
+                        <Folder size={10} />
+                        <span className="truncate">{session.projectFolder.split('/').pop()}</span>
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )
+          ) : error ? (
             <LoadingError
               resource="conversations"
               onRetry={loadConversations}
