@@ -219,19 +219,31 @@ export default function HomeScreen({
       <div className={`relative z-10 max-w-3xl mx-auto px-6 py-12 transition-all duration-700 ${mounted ? 'opacity-100' : 'opacity-0 translate-y-4'}`}>
         {/* Compact Hero */}
         <div className="text-center mb-10">
-          <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-br from-white/[0.08] to-white/[0.02] border border-white/[0.1] mb-5 floating-card">
-            <svg width="32" height="32" viewBox="0 0 24 24" fill="none">
-              <defs><linearGradient id="tg" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stopColor="#cc785c" /><stop offset="100%" stopColor="#e8956e" /></linearGradient></defs>
-              <path d="M4 17L10 11L4 5" stroke="url(#tg)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
-              <path d="M12 19H20" stroke="url(#tg)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
+          <div className="inline-flex items-center justify-center w-20 h-20 rounded-2xl bg-gradient-to-br from-purple-900/40 to-[#1a0a2e] border border-purple-500/20 mb-5 floating-card shadow-lg shadow-purple-500/10">
+            <svg width="48" height="48" viewBox="0 0 48 48" fill="none">
+              <defs>
+                <linearGradient id="arenaGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                  <stop offset="0%" stopColor="#cc785c"/>
+                  <stop offset="100%" stopColor="#e8956e"/>
+                </linearGradient>
+              </defs>
+              {/* Hexagon arena */}
+              <polygon points="24,6 42,15 42,33 24,42 6,33 6,15" fill="none" stroke="url(#arenaGrad)" strokeWidth="2" opacity="0.6"/>
+              {/* Inner hexagon */}
+              <polygon points="24,12 36,18 36,30 24,36 12,30 12,18" fill="none" stroke="url(#arenaGrad)" strokeWidth="1.5" opacity="0.4"/>
+              {/* Code brackets */}
+              <path d="M18,18 Q14,24 18,30" fill="none" stroke="url(#arenaGrad)" strokeWidth="3" strokeLinecap="round"/>
+              <path d="M30,18 Q34,24 30,30" fill="none" stroke="url(#arenaGrad)" strokeWidth="3" strokeLinecap="round"/>
+              {/* Center cursor */}
+              <rect x="22" y="20" width="4" height="8" rx="1" fill="url(#arenaGrad)"/>
             </svg>
           </div>
           <h1 className="text-4xl font-bold mb-3 tracking-tight">
             <span className="text-white">Claude</span>
             <span className="bg-gradient-to-r from-[#cc785c] to-[#e8956e] bg-clip-text text-transparent">Code</span>
-            <span className="text-white">UI</span>
+            <span className="bg-gradient-to-r from-purple-400 to-purple-300 bg-clip-text text-transparent ml-2">Arena</span>
           </h1>
-          <p className="text-gray-500 text-sm">Your AI-powered development companion</p>
+          <p className="text-gray-500 text-sm">AI-powered autonomous development</p>
 
           {/* Stats inline */}
           {loadingState === 'loaded' && (
@@ -448,7 +460,7 @@ export default function HomeScreen({
 
         {/* Footer */}
         <div className="text-center">
-          <span className="text-[10px] text-gray-700">ClaudeCodeUI V2 • Built with <Rocket className="w-2.5 h-2.5 inline text-[#cc785c]" /></span>
+          <span className="text-[10px] text-gray-700">ClaudeCode Arena • Built with <Rocket className="w-2.5 h-2.5 inline text-purple-400" /></span>
         </div>
       </div>
 

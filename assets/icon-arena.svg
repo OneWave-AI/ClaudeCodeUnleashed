@@ -1,85 +1,107 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024">
   <defs>
-    <!-- Background gradient - deep purple -->
+    <!-- Background gradient -->
     <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
       <stop offset="0%" style="stop-color:#1a0a2e"/>
-      <stop offset="50%" style="stop-color:#16082a"/>
       <stop offset="100%" style="stop-color:#0d0515"/>
     </linearGradient>
 
-    <!-- Arena glow gradient -->
-    <linearGradient id="arenaGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+    <!-- Arena accent gradient -->
+    <linearGradient id="accentGrad" x1="0%" y1="0%" x2="100%" y2="100%">
       <stop offset="0%" style="stop-color:#cc785c"/>
       <stop offset="100%" style="stop-color:#e8956e"/>
     </linearGradient>
 
-    <!-- Inner glow -->
-    <radialGradient id="innerGlow" cx="50%" cy="50%" r="50%">
-      <stop offset="0%" style="stop-color:#cc785c;stop-opacity:0.3"/>
-      <stop offset="100%" style="stop-color:#cc785c;stop-opacity:0"/>
+    <!-- Purple glow -->
+    <radialGradient id="purpleGlow" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" style="stop-color:#8b5cf6;stop-opacity:0.15"/>
+      <stop offset="100%" style="stop-color:#8b5cf6;stop-opacity:0"/>
     </radialGradient>
 
-    <!-- Drop shadow filter -->
+    <!-- Glow filter -->
     <filter id="glow" x="-50%" y="-50%" width="200%" height="200%">
-      <feGaussianBlur stdDeviation="20" result="coloredBlur"/>
+      <feGaussianBlur stdDeviation="12" result="blur"/>
       <feMerge>
-        <feMergeNode in="coloredBlur"/>
+        <feMergeNode in="blur"/>
         <feMergeNode in="SourceGraphic"/>
       </feMerge>
     </filter>
   </defs>
 
-  <!-- Background with rounded corners -->
+  <!-- Background -->
   <rect width="1024" height="1024" rx="220" fill="url(#bgGrad)"/>
 
-  <!-- Subtle grid pattern -->
-  <g opacity="0.05">
-    <line x1="256" y1="0" x2="256" y2="1024" stroke="white" stroke-width="1"/>
-    <line x1="512" y1="0" x2="512" y2="1024" stroke="white" stroke-width="1"/>
-    <line x1="768" y1="0" x2="768" y2="1024" stroke="white" stroke-width="1"/>
-    <line x1="0" y1="256" x2="1024" y2="256" stroke="white" stroke-width="1"/>
-    <line x1="0" y1="512" x2="1024" y2="512" stroke="white" stroke-width="1"/>
-    <line x1="0" y1="768" x2="1024" y2="768" stroke="white" stroke-width="1"/>
-  </g>
+  <!-- Purple ambient glow -->
+  <circle cx="512" cy="512" r="400" fill="url(#purpleGlow)"/>
 
-  <!-- Inner glow circle -->
-  <circle cx="512" cy="512" r="350" fill="url(#innerGlow)"/>
+  <!-- Outer hexagon arena ring -->
+  <polygon
+    points="512,140 820,280 820,744 512,884 204,744 204,280"
+    fill="none"
+    stroke="url(#accentGrad)"
+    stroke-width="8"
+    opacity="0.5"
+    filter="url(#glow)"
+  />
 
-  <!-- Arena outer ring -->
-  <circle cx="512" cy="512" r="320" fill="none" stroke="url(#arenaGrad)" stroke-width="8" opacity="0.6" filter="url(#glow)"/>
+  <!-- Middle hexagon -->
+  <polygon
+    points="512,220 740,330 740,694 512,804 284,694 284,330"
+    fill="none"
+    stroke="url(#accentGrad)"
+    stroke-width="5"
+    opacity="0.35"
+  />
 
-  <!-- Arena middle ring -->
-  <circle cx="512" cy="512" r="260" fill="none" stroke="url(#arenaGrad)" stroke-width="4" opacity="0.4"/>
+  <!-- Inner hexagon -->
+  <polygon
+    points="512,300 660,380 660,644 512,724 364,644 364,380"
+    fill="none"
+    stroke="url(#accentGrad)"
+    stroke-width="3"
+    opacity="0.25"
+  />
 
-  <!-- Arena inner ring -->
-  <circle cx="512" cy="512" r="200" fill="none" stroke="url(#arenaGrad)" stroke-width="2" opacity="0.3"/>
-
-  <!-- Hexagonal arena floor -->
-  <polygon points="512,280 712,396 712,628 512,744 312,628 312,396"
-           fill="none" stroke="url(#arenaGrad)" stroke-width="6" opacity="0.8" filter="url(#glow)"/>
-
-  <!-- Code brackets - left { -->
+  <!-- Left code bracket { -->
   <g filter="url(#glow)">
-    <path d="M380,400 Q340,512 380,624" fill="none" stroke="url(#arenaGrad)" stroke-width="28" stroke-linecap="round"/>
-    <path d="M380,400 L420,380" fill="none" stroke="url(#arenaGrad)" stroke-width="28" stroke-linecap="round"/>
-    <path d="M380,624 L420,644" fill="none" stroke="url(#arenaGrad)" stroke-width="28" stroke-linecap="round"/>
+    <path
+      d="M400,380 L360,400 Q320,512 360,624 L400,644"
+      fill="none"
+      stroke="url(#accentGrad)"
+      stroke-width="32"
+      stroke-linecap="round"
+      stroke-linejoin="round"
+    />
   </g>
 
-  <!-- Code brackets - right } -->
+  <!-- Right code bracket } -->
   <g filter="url(#glow)">
-    <path d="M644,400 Q684,512 644,624" fill="none" stroke="url(#arenaGrad)" stroke-width="28" stroke-linecap="round"/>
-    <path d="M644,400 L604,380" fill="none" stroke="url(#arenaGrad)" stroke-width="28" stroke-linecap="round"/>
-    <path d="M644,624 L604,644" fill="none" stroke="url(#arenaGrad)" stroke-width="28" stroke-linecap="round"/>
+    <path
+      d="M624,380 L664,400 Q704,512 664,624 L624,644"
+      fill="none"
+      stroke="url(#accentGrad)"
+      stroke-width="32"
+      stroke-linecap="round"
+      stroke-linejoin="round"
+    />
   </g>
 
-  <!-- Terminal cursor in center -->
-  <rect x="480" y="470" width="64" height="84" rx="4" fill="url(#arenaGrad)" filter="url(#glow)">
-    <animate attributeName="opacity" values="1;0.4;1" dur="1.2s" repeatCount="indefinite"/>
-  </rect>
+  <!-- Terminal cursor -->
+  <rect
+    x="476"
+    y="440"
+    width="72"
+    height="144"
+    rx="8"
+    fill="url(#accentGrad)"
+    filter="url(#glow)"
+  />
 
-  <!-- Corner accents -->
-  <path d="M180,180 L180,260 M180,180 L260,180" stroke="url(#arenaGrad)" stroke-width="6" stroke-linecap="round" opacity="0.5"/>
-  <path d="M844,180 L844,260 M844,180 L764,180" stroke="url(#arenaGrad)" stroke-width="6" stroke-linecap="round" opacity="0.5"/>
-  <path d="M180,844 L180,764 M180,844 L260,844" stroke="url(#arenaGrad)" stroke-width="6" stroke-linecap="round" opacity="0.5"/>
-  <path d="M844,844 L844,764 M844,844 L764,844" stroke="url(#arenaGrad)" stroke-width="6" stroke-linecap="round" opacity="0.5"/>
+  <!-- Subtle corner accents -->
+  <g stroke="url(#accentGrad)" stroke-width="4" stroke-linecap="round" opacity="0.3">
+    <path d="M180,180 L180,240 M180,180 L240,180"/>
+    <path d="M844,180 L844,240 M844,180 L784,180"/>
+    <path d="M180,844 L180,784 M180,844 L240,844"/>
+    <path d="M844,844 L844,784 M844,844 L784,844"/>
+  </g>
 </svg>
