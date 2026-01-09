@@ -348,7 +348,7 @@ export interface SuperAgentConfig {
 
 export interface ActivityLogEntry {
   timestamp: number
-  type: 'start' | 'input' | 'output' | 'decision' | 'permission' | 'complete' | 'error' | 'stop' | 'working' | 'waiting'
+  type: 'start' | 'input' | 'output' | 'decision' | 'permission' | 'complete' | 'error' | 'stop' | 'working' | 'waiting' | 'ready'
   message: string
 }
 

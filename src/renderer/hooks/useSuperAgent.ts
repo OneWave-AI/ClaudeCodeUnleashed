@@ -170,6 +170,7 @@ export function useSuperAgent() {
   const lastStatusRef = useRef<ClaudeStatus>('unknown') // Track last status to avoid duplicate logs
   const lastStatusTimeRef = useRef<number>(0) // Debounce status changes
   const statusDebounceRef = useRef<NodeJS.Timeout | null>(null) // Debounce timer
+  const waitingForReadyRef = useRef(true) // Wait for user to get Claude ready before taking over
 
   // Load config function - stable, no dependencies
   const loadConfig = useCallback(async () => {
@@ -400,7 +401,7 @@ export function useSuperAgent() {
   // Process incoming terminal output
   const processOutput = useCallback((data: string, terminalId: string) => {
     const store = getStore()
-    const { isRunning: running, activeTerminalId, config: cfg, outputBuffer } = store
+    const { isRunning: running, activeTerminalId, config: cfg, outputBuffer, task: currentTask } = store
 
     // Debug: log why we might skip processing
     if (!running) {
@@ -412,10 +413,37 @@ export function useSuperAgent() {
     }
 
     store.appendOutput(data)
+    const fullOutput = outputBuffer + data
+
+    // If waiting for user to get Claude ready, watch for the ready prompt
+    if (waitingForReadyRef.current) {
+      const cleanOutput = fullOutput.replace(/\x1b\[[0-9;]*[a-zA-Z]/g, '')
+      const lastLines = cleanOutput.split('\n').slice(-5).join('\n')
+
+      // Check if Claude is ready (showing the ❯ prompt and not showing trust/setup prompts)
+      const hasReadyPrompt = /❯\s*$/.test(lastLines)
+      const hasTrustPrompt = /trust this project|trust settings|\(y\)|\(n\)|y\/n/i.test(lastLines)
+
+      if (hasReadyPrompt && !hasTrustPrompt) {
+        console.log('[SuperAgent] Claude is ready! Sending task...')
+        waitingForReadyRef.current = false
+        taskSentRef.current = true
+        store.addLog('ready', 'Claude is ready! Taking over now...')
+        store.addLog('input', `Sending task: ${currentTask}`)
+        window.api.terminalSendText(currentTask, activeTerminalId)
+        store.clearOutput()
+        return
+      } else {
+        // Still waiting - don't start autonomous loop yet
+        console.log('[SuperAgent] Waiting for user to get Claude ready...')
+        return
+      }
+    }
+
     console.log('[SuperAgent] Received data, setting idle timer')
 
     // Detect Claude's current status with debouncing to avoid flip-flopping
-    const currentStatus = detectClaudeStatus(outputBuffer + data)
+    const currentStatus = detectClaudeStatus(fullOutput)
     const now = Date.now()
 
     // Clear any pending status update
@@ -485,6 +513,7 @@ export function useSuperAgent() {
     lastResponseRef.current = ''
     waitingStartRef.current = null
     consecutiveWaitsRef.current = 0
+    waitingForReadyRef.current = true // Wait for user to get Claude ready
 
     // Set options
     if (options?.timeLimit !== undefined) store.setTimeLimit(options.timeLimit)
@@ -503,10 +532,9 @@ export function useSuperAgent() {
       }, limit * 60 * 1000)
     }
 
-    // Send task immediately - user must ensure Claude is ready first
-    store.addLog('input', `Sending task: ${taskDescription}`)
-    taskSentRef.current = true
-    await window.api.terminalSendText(taskDescription, terminalId)
+    // Don't send task immediately - wait for user to get Claude ready
+    // The task will be sent automatically when Claude shows the ❯ prompt
+    store.addLog('start', `Waiting for Claude to be ready... Get through any prompts, then Super Agent will take over.`)
 
     return true
   }, [])

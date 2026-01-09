@@ -986,7 +986,8 @@ export default function HistoryBrowser({ onBack, onResumeSession }: HistoryBrows
                         <div
                           key={idx}
                           className={`p-2.5 rounded-lg border text-xs ${
-                            entry.type === 'start' ? 'bg-green-500/10 border-green-500/20 text-green-300' :
+                            entry.type === 'start' ? 'bg-yellow-500/10 border-yellow-500/20 text-yellow-300' :
+                            entry.type === 'ready' ? 'bg-green-500/10 border-green-500/20 text-green-300' :
                             entry.type === 'stop' || entry.type === 'complete' ? 'bg-purple-500/10 border-purple-500/20 text-purple-300' :
                             entry.type === 'error' ? 'bg-red-500/10 border-red-500/20 text-red-300' :
                             entry.type === 'input' ? 'bg-blue-500/10 border-blue-500/20 text-blue-300' :
