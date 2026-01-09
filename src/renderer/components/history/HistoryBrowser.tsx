@@ -1013,6 +1013,70 @@ export default function HistoryBrowser({ onBack, onResumeSession }: HistoryBrows
           </div>
         </div>
       )}
+
+      {/* Super Agent Delete Confirmation Modal */}
+      {deleteSuperAgentTarget && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
+          <div className="w-full max-w-md mx-4 rounded-xl border border-white/10 bg-[#1a1a1a] shadow-2xl overflow-hidden">
+            <div className="p-6">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="p-2 rounded-lg bg-red-500/10">
+                  <AlertTriangle size={20} className="text-red-400" />
+                </div>
+                <h3 className="text-lg font-semibold text-white">Delete Super Agent Session</h3>
+              </div>
+
+              <p className="text-sm text-gray-400 mb-2">
+                Are you sure you want to delete this Super Agent session? This action cannot be undone.
+              </p>
+
+              <div className="p-3 rounded-lg bg-white/5 mb-4">
+                <div className="flex items-center gap-2 text-xs text-gray-500 mb-1">
+                  <Zap size={12} />
+                  <span className={
+                    deleteSuperAgentTarget.status === 'completed' ? 'text-green-400' :
+                    deleteSuperAgentTarget.status === 'error' ? 'text-red-400' : 'text-purple-400'
+                  }>
+                    {deleteSuperAgentTarget.status}
+                  </span>
+                  <span>•</span>
+                  <span>{Math.floor(deleteSuperAgentTarget.duration / 60)}m {deleteSuperAgentTarget.duration % 60}s</span>
+                </div>
+                <p className="text-sm text-white line-clamp-2">
+                  {deleteSuperAgentTarget.task}
+                </p>
+              </div>
+            </div>
+
+            <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-white/[0.06] bg-white/[0.02]">
+              <button
+                onClick={() => setDeleteSuperAgentTarget(null)}
+                disabled={deleting}
+                className="px-4 py-2 rounded-lg text-sm text-gray-400 hover:text-white hover:bg-white/5 transition-colors disabled:opacity-50"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleDeleteSuperAgentSession}
+                disabled={deleting}
+                className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm bg-red-500/20 text-red-400 hover:bg-red-500/30 transition-colors disabled:opacity-50"
+              >
+                {deleting ? (
+                  <>
+                    <div className="w-4 h-4 border-2 border-red-400/30 border-t-red-400 rounded-full animate-spin" />
+                    Deleting...
+                  </>
+                ) : (
+                  <>
+                    <Trash2 size={14} />
+                    Delete
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

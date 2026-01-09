@@ -498,8 +498,8 @@ export function useSuperAgent() {
     const limit = options?.timeLimit ?? store.timeLimit
     if (limit > 0) {
       durationTimerRef.current = setTimeout(() => {
-        getStore().addLog('stop', `Time limit reached (${limit} minutes)`)
-        getStore().stopSession()
+        getStore().addLog('complete', `Time limit reached (${limit} minutes) - task completed full duration`)
+        getStore().stopSession('completed')
       }, limit * 60 * 1000)
     }
 

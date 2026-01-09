@@ -2,21 +2,12 @@ import { ipcMain } from 'electron'
 import * as fs from 'fs/promises'
 import { join } from 'path'
 import { homedir } from 'os'
+import { exec } from 'child_process'
+import { promisify } from 'util'
+
+const execAsync = promisify(exec)
 
 const CLAUDE_DIR = join(homedir(), '.claude')
-// MCP config can be in two locations - check Claude Desktop first, then .claude
-const CLAUDE_DESKTOP_CONFIG = join(homedir(), 'Library', 'Application Support', 'Claude', 'claude_desktop_config.json')
-const CLAUDE_CLI_CONFIG = join(CLAUDE_DIR, 'claude_desktop_config.json')
-
-// Helper to find the correct MCP config path
-async function getMCPConfigPath(): Promise<string> {
-  try {
-    await fs.access(CLAUDE_DESKTOP_CONFIG)
-    return CLAUDE_DESKTOP_CONFIG
-  } catch {
-    return CLAUDE_CLI_CONFIG
-  }
-}
 
 export interface MCPServerConfig {
   command: string
@@ -24,97 +15,118 @@ export interface MCPServerConfig {
   env?: Record<string, string>
 }
 
-export interface MCPConfig {
-  mcpServers?: Record<string, MCPServerConfig>
-}
-
-// Internal tracking for disabled servers
-const MCP_DISABLED_FILE = join(CLAUDE_DIR, 'mcp-disabled.json')
-
-async function ensureClaudeDir(): Promise<void> {
-  await fs.mkdir(CLAUDE_DIR, { recursive: true })
-}
-
-async function loadMCPConfig(): Promise<MCPConfig> {
+// Parse claude mcp list output to get server info
+async function parseClaudeMCPList(): Promise<Array<{
+  name: string
+  command: string
+  args: string[]
+  env: Record<string, string>
+  enabled: boolean
+  status: string
+}>> {
   try {
-    const configPath = await getMCPConfigPath()
-    const data = await fs.readFile(configPath, 'utf-8')
-    return JSON.parse(data)
-  } catch {
-    return { mcpServers: {} }
-  }
-}
+    const { stdout } = await execAsync('claude mcp list', {
+      env: { ...process.env, PATH: `${process.env.PATH}:/usr/local/bin:/opt/homebrew/bin:${homedir()}/.npm-global/bin` }
+    })
 
-async function saveMCPConfig(config: MCPConfig): Promise<void> {
-  const configPath = await getMCPConfigPath()
-  // Ensure parent directory exists
-  const dir = configPath.substring(0, configPath.lastIndexOf('/'))
-  await fs.mkdir(dir, { recursive: true })
-  await fs.writeFile(configPath, JSON.stringify(config, null, 2))
-}
-
-async function loadDisabledServers(): Promise<string[]> {
-  try {
-    const data = await fs.readFile(MCP_DISABLED_FILE, 'utf-8')
-    return JSON.parse(data)
-  } catch {
-    return []
-  }
-}
-
-async function saveDisabledServers(disabled: string[]): Promise<void> {
-  await ensureClaudeDir()
-  await fs.writeFile(MCP_DISABLED_FILE, JSON.stringify(disabled, null, 2))
-}
-
-export function registerMCPHandlers(): void {
-  // List all MCP servers
-  ipcMain.handle('mcp-list', async () => {
-    const config = await loadMCPConfig()
-    const disabled = await loadDisabledServers()
     const servers: Array<{
       name: string
       command: string
       args: string[]
       env: Record<string, string>
       enabled: boolean
+      status: string
     }> = []
 
-    if (config.mcpServers) {
-      for (const [name, serverConfig] of Object.entries(config.mcpServers)) {
+    // Parse the output - format is:
+    // name: command args - status
+    const lines = stdout.split('\n')
+    for (const line of lines) {
+      // Match lines like: filesystem: npx -y @modelcontextprotocol/server-filesystem /Users/gabe - ✓ Connected
+      const match = line.match(/^(\S+):\s+(.+?)\s+-\s+(.+)$/)
+      if (match) {
+        const [, name, commandWithArgs, statusPart] = match
+        const parts = commandWithArgs.trim().split(/\s+/)
+        const command = parts[0] || ''
+        const args = parts.slice(1)
+        const isConnected = statusPart.includes('✓') || statusPart.includes('Connected')
+
         servers.push({
           name,
-          command: serverConfig.command,
-          args: serverConfig.args || [],
-          env: serverConfig.env || {},
-          enabled: !disabled.includes(name)
+          command,
+          args,
+          env: {},
+          enabled: true, // All listed servers are enabled
+          status: isConnected ? 'connected' : 'failed'
         })
       }
     }
 
     return servers
-  })
+  } catch (error) {
+    console.error('Failed to list MCP servers:', error)
+    return []
+  }
+}
 
-  // Get a specific MCP server
-  ipcMain.handle('mcp-get', async (_, name: string) => {
-    const config = await loadMCPConfig()
-    const disabled = await loadDisabledServers()
+// Get details for a specific server
+async function getMCPServerDetails(name: string): Promise<{
+  command: string
+  args: string[]
+  env: Record<string, string>
+} | null> {
+  try {
+    const { stdout } = await execAsync(`claude mcp get "${name}"`, {
+      env: { ...process.env, PATH: `${process.env.PATH}:/usr/local/bin:/opt/homebrew/bin:${homedir()}/.npm-global/bin` }
+    })
 
-    if (!config.mcpServers || !config.mcpServers[name]) {
-      return null
+    // Parse output - format is:
+    // name:
+    //   Scope: User config
+    //   Status: ✓ Connected
+    //   Type: stdio
+    //   Command: npx
+    //   Args: -y @modelcontextprotocol/server-filesystem /Users/gabe
+    //   Environment:
+
+    const commandMatch = stdout.match(/Command:\s*(.+)/i)
+    const argsMatch = stdout.match(/Args:\s*(.+)/i)
+
+    if (commandMatch) {
+      return {
+        command: commandMatch[1].trim(),
+        args: argsMatch ? argsMatch[1].trim().split(/\s+/) : [],
+        env: {}
+      }
     }
 
-    const serverConfig = config.mcpServers[name]
+    return null
+  } catch {
+    return null
+  }
+}
+
+export function registerMCPHandlers(): void {
+  // List all MCP servers using claude mcp list command
+  ipcMain.handle('mcp-list', async () => {
+    return parseClaudeMCPList()
+  })
+
+  // Get a specific MCP server using claude mcp get
+  ipcMain.handle('mcp-get', async (_, name: string) => {
+    const details = await getMCPServerDetails(name)
+    if (!details) return null
+
     return {
       name,
-      command: serverConfig.command,
-      args: serverConfig.args || [],
-      env: serverConfig.env || {},
-      enabled: !disabled.includes(name)
+      command: details.command,
+      args: details.args,
+      env: details.env,
+      enabled: true
     }
   })
 
-  // Add a new MCP server
+  // Add a new MCP server using claude mcp add
   ipcMain.handle(
     'mcp-add',
     async (
@@ -124,29 +136,28 @@ export function registerMCPHandlers(): void {
       args: string[],
       env: Record<string, string>
     ) => {
-      const config = await loadMCPConfig()
+      try {
+        // Build the command: claude mcp add "name" "command" [args...] [-e KEY=VALUE...]
+        let cmd = `claude mcp add "${name}" "${command}"`
+        if (args.length > 0) {
+          cmd += ' ' + args.map(a => `"${a}"`).join(' ')
+        }
+        for (const [key, value] of Object.entries(env)) {
+          cmd += ` -e "${key}=${value}"`
+        }
 
-      if (!config.mcpServers) {
-        config.mcpServers = {}
+        await execAsync(cmd, {
+          env: { ...process.env, PATH: `${process.env.PATH}:/usr/local/bin:/opt/homebrew/bin:${homedir()}/.npm-global/bin` }
+        })
+        return { success: true }
+      } catch (error) {
+        const message = error instanceof Error ? error.message : 'Failed to add server'
+        return { success: false, error: message }
       }
-
-      // Check if server already exists
-      if (config.mcpServers[name]) {
-        return { success: false, error: `Server "${name}" already exists` }
-      }
-
-      config.mcpServers[name] = {
-        command,
-        args: args.length > 0 ? args : undefined,
-        env: Object.keys(env).length > 0 ? env : undefined
-      }
-
-      await saveMCPConfig(config)
-      return { success: true }
     }
   )
 
-  // Update an existing MCP server
+  // Update an existing MCP server - remove and re-add
   ipcMain.handle(
     'mcp-update',
     async (
@@ -156,90 +167,65 @@ export function registerMCPHandlers(): void {
       args: string[],
       env: Record<string, string>
     ) => {
-      const config = await loadMCPConfig()
+      try {
+        // First remove the existing server
+        await execAsync(`claude mcp remove "${name}" -s user`, {
+          env: { ...process.env, PATH: `${process.env.PATH}:/usr/local/bin:/opt/homebrew/bin:${homedir()}/.npm-global/bin` }
+        })
 
-      if (!config.mcpServers || !config.mcpServers[name]) {
-        return { success: false, error: `Server "${name}" not found` }
+        // Then add with new config
+        let cmd = `claude mcp add "${name}" "${command}"`
+        if (args.length > 0) {
+          cmd += ' ' + args.map(a => `"${a}"`).join(' ')
+        }
+        for (const [key, value] of Object.entries(env)) {
+          cmd += ` -e "${key}=${value}"`
+        }
+
+        await execAsync(cmd, {
+          env: { ...process.env, PATH: `${process.env.PATH}:/usr/local/bin:/opt/homebrew/bin:${homedir()}/.npm-global/bin` }
+        })
+        return { success: true }
+      } catch (error) {
+        const message = error instanceof Error ? error.message : 'Failed to update server'
+        return { success: false, error: message }
       }
-
-      config.mcpServers[name] = {
-        command,
-        args: args.length > 0 ? args : undefined,
-        env: Object.keys(env).length > 0 ? env : undefined
-      }
-
-      await saveMCPConfig(config)
-      return { success: true }
     }
   )
 
-  // Remove an MCP server
+  // Remove an MCP server using claude mcp remove
   ipcMain.handle('mcp-remove', async (_, name: string) => {
-    const config = await loadMCPConfig()
-
-    if (!config.mcpServers || !config.mcpServers[name]) {
-      return { success: false, error: `Server "${name}" not found` }
+    try {
+      await execAsync(`claude mcp remove "${name}" -s user`, {
+        env: { ...process.env, PATH: `${process.env.PATH}:/usr/local/bin:/opt/homebrew/bin:${homedir()}/.npm-global/bin` }
+      })
+      return { success: true }
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Failed to remove server'
+      return { success: false, error: message }
     }
-
-    delete config.mcpServers[name]
-    await saveMCPConfig(config)
-
-    // Also remove from disabled list if present
-    const disabled = await loadDisabledServers()
-    const filteredDisabled = disabled.filter((d) => d !== name)
-    if (filteredDisabled.length !== disabled.length) {
-      await saveDisabledServers(filteredDisabled)
-    }
-
-    return { success: true }
   })
 
-  // Toggle enable/disable an MCP server
-  // Note: Claude Desktop doesn't support disabling servers natively,
-  // so we track this separately and can remove/re-add on toggle
-  ipcMain.handle('mcp-toggle', async (_, name: string, enabled: boolean) => {
-    const config = await loadMCPConfig()
-
-    if (!config.mcpServers || !config.mcpServers[name]) {
-      return { success: false, error: `Server "${name}" not found` }
-    }
-
-    const disabled = await loadDisabledServers()
-
-    if (enabled) {
-      // Remove from disabled list
-      const filteredDisabled = disabled.filter((d) => d !== name)
-      await saveDisabledServers(filteredDisabled)
-    } else {
-      // Add to disabled list
-      if (!disabled.includes(name)) {
-        disabled.push(name)
-        await saveDisabledServers(disabled)
-      }
-    }
-
-    return { success: true }
+  // Toggle enable/disable - Claude CLI doesn't support this, so just return success
+  ipcMain.handle('mcp-toggle', async (_, _name: string, _enabled: boolean) => {
+    // Claude CLI doesn't have a disable feature - servers are either added or removed
+    return { success: true, note: 'Claude CLI does not support disabling servers' }
   })
 
-  // Check if MCP config file exists
+  // Check if claude mcp is available
   ipcMain.handle('mcp-check-config', async () => {
-    const configPath = await getMCPConfigPath()
     try {
-      await fs.access(configPath)
-      return { exists: true, path: configPath }
+      await execAsync('claude mcp list', {
+        env: { ...process.env, PATH: `${process.env.PATH}:/usr/local/bin:/opt/homebrew/bin:${homedir()}/.npm-global/bin` }
+      })
+      return { exists: true, path: 'claude mcp' }
     } catch {
-      return { exists: false, path: configPath }
+      return { exists: false, path: 'claude mcp' }
     }
   })
 
-  // Initialize MCP config file if it doesn't exist
+  // Initialize - no-op for Claude CLI
   ipcMain.handle('mcp-init-config', async () => {
-    try {
-      await fs.access(MCP_CONFIG_PATH)
-      return { success: true, created: false }
-    } catch {
-      await saveMCPConfig({ mcpServers: {} })
-      return { success: true, created: true }
-    }
+    return { success: true, created: false }
   })
 }
