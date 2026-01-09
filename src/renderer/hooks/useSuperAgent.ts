@@ -302,21 +302,30 @@ export function useSuperAgent() {
       }
 
       const trimmedDecision = decision.trim()
+      const upperDecision = trimmedDecision.toUpperCase()
 
-      // Avoid repeating the exact same response
-      if (trimmedDecision === lastResponseRef.current) {
+      // Avoid repeating the exact same response (except WAIT - always re-check)
+      if (trimmedDecision === lastResponseRef.current && upperDecision !== 'WAIT') {
         store.addLog('decision', `Skipping repeated response: ${trimmedDecision}`)
         processingRef.current = false
         return
       }
 
       store.addLog('decision', `LLM decided: ${trimmedDecision}`)
-      lastResponseRef.current = trimmedDecision
-
-      const upperDecision = trimmedDecision.toUpperCase()
+      if (upperDecision !== 'WAIT') {
+        lastResponseRef.current = trimmedDecision
+      }
 
       if (upperDecision === 'WAIT') {
         store.addLog('decision', 'Waiting for Claude to continue...')
+        // Set a new idle timer to check again - don't get stuck!
+        const cfg = getStore().config
+        const idleTimeout = (cfg?.idleTimeout || 5) * 1000
+        if (idleTimerRef.current) clearTimeout(idleTimerRef.current)
+        idleTimerRef.current = setTimeout(() => {
+          console.log('[SuperAgent] Re-checking after WAIT...')
+          handleIdle()
+        }, idleTimeout)
       } else if (upperDecision === 'DONE') {
         // LLM tried to stop - override and ask for improvements instead
         store.addLog('decision', 'Overriding DONE - asking for improvements')
