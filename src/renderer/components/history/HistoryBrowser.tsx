@@ -6,15 +6,11 @@ import {
   Play,
   Search,
   Calendar,
-  ArrowUpDown,
   Pin,
   PinOff,
   Trash2,
   Download,
   MessageSquare,
-  Timer,
-  ChevronDown,
-  X,
   AlertTriangle,
   Zap,
   User,
@@ -27,7 +23,7 @@ import { useToast, LoadingError, NoConversationsEmptyState } from '../common'
 import { logger } from '../../utils'
 
 type DateFilter = 'all' | 'today' | 'week' | 'month'
-type SortBy = 'date' | 'project'
+type SortBy = 'newest' | 'oldest' | 'project-asc' | 'project-desc'
 type GroupBy = 'none' | 'project' | 'date'
 
 interface HistoryBrowserProps {
@@ -91,9 +87,8 @@ export default function HistoryBrowser({ onBack, onResumeSession }: HistoryBrows
   const [error, setError] = useState<string | null>(null)
   const [searchQuery, setSearchQuery] = useState('')
   const [dateFilter, setDateFilter] = useState<DateFilter>('all')
-  const [sortBy, setSortBy] = useState<SortBy>('date')
-  const [groupBy, setGroupBy] = useState<GroupBy>('project')
-  const [showFilters, setShowFilters] = useState(false)
+  const [sortBy, setSortBy] = useState<SortBy>('newest')
+  const [groupBy, setGroupBy] = useState<GroupBy>('none')
   const [displayCount, setDisplayCount] = useState(ITEMS_PER_PAGE)
   const [searching, setSearching] = useState(false)
 
@@ -236,21 +231,24 @@ export default function HistoryBrowser({ onBack, onResumeSession }: HistoryBrows
   const filteredAndSortedConversations = useMemo(() => {
     let result = conversations.filter(filterByDate)
 
-    // Sort
-    if (sortBy === 'date') {
-      result.sort((a, b) => {
-        // Pinned first
-        if (a.pinned && !b.pinned) return -1
-        if (!a.pinned && b.pinned) return 1
-        return b.timestamp - a.timestamp
-      })
-    } else if (sortBy === 'project') {
-      result.sort((a, b) => {
-        if (a.pinned && !b.pinned) return -1
-        if (!a.pinned && b.pinned) return 1
-        return a.projectFolder.localeCompare(b.projectFolder)
-      })
-    }
+    // Sort - pinned always first
+    result.sort((a, b) => {
+      if (a.pinned && !b.pinned) return -1
+      if (!a.pinned && b.pinned) return 1
+
+      switch (sortBy) {
+        case 'newest':
+          return b.timestamp - a.timestamp
+        case 'oldest':
+          return a.timestamp - b.timestamp
+        case 'project-asc':
+          return a.projectFolder.localeCompare(b.projectFolder)
+        case 'project-desc':
+          return b.projectFolder.localeCompare(a.projectFolder)
+        default:
+          return b.timestamp - a.timestamp
+      }
+    })
 
     return result
   }, [conversations, filterByDate, sortBy])
@@ -448,147 +446,178 @@ export default function HistoryBrowser({ onBack, onResumeSession }: HistoryBrows
     <div className={`h-full flex flex-col bg-[#0d0d0d] transition-all duration-500 ease-out ${
       pageVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'
     }`}>
-      {/* Compact Header */}
-      <div className="flex items-center justify-between px-4 py-3 border-b border-white/[0.06]">
-        <div className="flex items-center gap-3">
-          <button
-            onClick={onBack}
-            className="p-1.5 rounded-lg text-gray-400 hover:text-white hover:bg-white/5 transition-colors"
-          >
-            <ArrowLeft size={18} />
-          </button>
-          <h1 className="text-lg font-semibold text-white">History</h1>
-          <span className="px-2 py-0.5 rounded text-xs bg-white/10 text-gray-400">
-            {filteredAndSortedConversations.length}
-          </span>
-          {pinnedCount > 0 && (
-            <span className="flex items-center gap-1 px-2 py-0.5 rounded text-xs bg-[#cc785c]/20 text-[#cc785c]">
-              <Pin size={10} />
-              {pinnedCount}
+      {/* Header */}
+      <div className="border-b border-white/[0.06]">
+        {/* Top row - Title and Search */}
+        <div className="flex items-center justify-between px-4 py-3">
+          <div className="flex items-center gap-3">
+            <button
+              onClick={onBack}
+              className="p-1.5 rounded-lg text-gray-400 hover:text-white hover:bg-white/5 transition-colors"
+            >
+              <ArrowLeft size={18} />
+            </button>
+            <h1 className="text-lg font-semibold text-white">History</h1>
+            <span className="px-2 py-0.5 rounded text-xs bg-white/10 text-gray-400">
+              {filteredAndSortedConversations.length}
             </span>
-          )}
-        </div>
-
-        <div className="flex items-center gap-2">
-          {/* Search */}
-          <div className="relative">
-            <Search
-              size={14}
-              className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-500"
-            />
-            <input
-              type="text"
-              placeholder="Search..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-48 pl-8 pr-3 py-1.5 rounded-lg bg-white/5 border border-white/10 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-[#cc785c]/50"
-            />
-            {searching && (
-              <div className="absolute right-2.5 top-1/2 -translate-y-1/2">
-                <div className="w-3 h-3 border-2 border-[#cc785c]/30 border-t-[#cc785c] rounded-full animate-spin" />
-              </div>
+            {pinnedCount > 0 && (
+              <span className="flex items-center gap-1 px-2 py-0.5 rounded text-xs bg-[#cc785c]/20 text-[#cc785c]">
+                <Pin size={10} />
+                {pinnedCount}
+              </span>
             )}
           </div>
 
-          {/* Filter Toggle */}
-          <button
-            onClick={() => setShowFilters(!showFilters)}
-            className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs transition-colors ${
-              showFilters
-                ? 'bg-[#cc785c]/20 text-[#cc785c]'
-                : 'bg-white/5 text-gray-400 hover:text-white hover:bg-white/10'
-            }`}
-          >
-            <ChevronDown
-              size={14}
-              className={`transition-transform ${showFilters ? 'rotate-180' : ''}`}
-            />
-            Filters
-          </button>
+          <div className="flex items-center gap-2">
+            {/* Search */}
+            <div className="relative">
+              <Search
+                size={14}
+                className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-500"
+              />
+              <input
+                type="text"
+                placeholder="Search..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-48 pl-8 pr-3 py-1.5 rounded-lg bg-white/5 border border-white/10 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-[#cc785c]/50"
+              />
+              {searching && (
+                <div className="absolute right-2.5 top-1/2 -translate-y-1/2">
+                  <div className="w-3 h-3 border-2 border-[#cc785c]/30 border-t-[#cc785c] rounded-full animate-spin" />
+                </div>
+              )}
+            </div>
 
-          {/* Panel Toggle */}
-          <button
-            onClick={() => setShowPreviewPanel(!showPreviewPanel)}
-            className={`p-1.5 rounded-lg transition-colors ${
-              showPreviewPanel
-                ? 'bg-[#cc785c]/20 text-[#cc785c]'
-                : 'bg-white/5 text-gray-400 hover:text-white hover:bg-white/10'
-            }`}
-            title={showPreviewPanel ? 'Hide preview' : 'Show preview'}
-          >
-            {showPreviewPanel ? <PanelRightClose size={16} /> : <PanelRight size={16} />}
-          </button>
+            {/* Panel Toggle */}
+            <button
+              onClick={() => setShowPreviewPanel(!showPreviewPanel)}
+              className={`p-1.5 rounded-lg transition-colors ${
+                showPreviewPanel
+                  ? 'bg-[#cc785c]/20 text-[#cc785c]'
+                  : 'bg-white/5 text-gray-400 hover:text-white hover:bg-white/10'
+              }`}
+              title={showPreviewPanel ? 'Hide preview' : 'Show preview'}
+            >
+              {showPreviewPanel ? <PanelRightClose size={16} /> : <PanelRight size={16} />}
+            </button>
+          </div>
         </div>
-      </div>
 
-      {/* Compact Filters Bar */}
-      {showFilters && (
-        <div className="flex items-center gap-3 px-4 py-2 border-b border-white/[0.06] bg-white/[0.02] animate-fade-in-down">
+        {/* Sort & Filter Bar - Always visible */}
+        <div className="flex items-center gap-4 px-4 py-2 bg-white/[0.02]">
+          {/* Sort Options */}
+          <div className="flex items-center gap-2">
+            <span className="text-[10px] uppercase tracking-wider text-gray-600">Sort</span>
+            <div className="flex rounded-lg bg-white/[0.04] p-0.5">
+              <button
+                onClick={() => setSortBy('newest')}
+                className={`px-2.5 py-1 rounded-md text-xs transition-all ${
+                  sortBy === 'newest'
+                    ? 'bg-[#cc785c] text-white shadow-sm'
+                    : 'text-gray-400 hover:text-white'
+                }`}
+              >
+                Newest
+              </button>
+              <button
+                onClick={() => setSortBy('oldest')}
+                className={`px-2.5 py-1 rounded-md text-xs transition-all ${
+                  sortBy === 'oldest'
+                    ? 'bg-[#cc785c] text-white shadow-sm'
+                    : 'text-gray-400 hover:text-white'
+                }`}
+              >
+                Oldest
+              </button>
+              <button
+                onClick={() => setSortBy('project-asc')}
+                className={`px-2.5 py-1 rounded-md text-xs transition-all ${
+                  sortBy === 'project-asc'
+                    ? 'bg-[#cc785c] text-white shadow-sm'
+                    : 'text-gray-400 hover:text-white'
+                }`}
+              >
+                Project A-Z
+              </button>
+              <button
+                onClick={() => setSortBy('project-desc')}
+                className={`px-2.5 py-1 rounded-md text-xs transition-all ${
+                  sortBy === 'project-desc'
+                    ? 'bg-[#cc785c] text-white shadow-sm'
+                    : 'text-gray-400 hover:text-white'
+                }`}
+              >
+                Project Z-A
+              </button>
+            </div>
+          </div>
+
+          <div className="w-px h-5 bg-white/10" />
+
+          {/* Group By */}
+          <div className="flex items-center gap-2">
+            <span className="text-[10px] uppercase tracking-wider text-gray-600">Group</span>
+            <div className="flex rounded-lg bg-white/[0.04] p-0.5">
+              <button
+                onClick={() => setGroupBy('none')}
+                className={`px-2.5 py-1 rounded-md text-xs transition-all ${
+                  groupBy === 'none'
+                    ? 'bg-purple-500 text-white shadow-sm'
+                    : 'text-gray-400 hover:text-white'
+                }`}
+              >
+                None
+              </button>
+              <button
+                onClick={() => setGroupBy('project')}
+                className={`flex items-center gap-1 px-2.5 py-1 rounded-md text-xs transition-all ${
+                  groupBy === 'project'
+                    ? 'bg-purple-500 text-white shadow-sm'
+                    : 'text-gray-400 hover:text-white'
+                }`}
+              >
+                <Folder size={10} />
+                Project
+              </button>
+              <button
+                onClick={() => setGroupBy('date')}
+                className={`flex items-center gap-1 px-2.5 py-1 rounded-md text-xs transition-all ${
+                  groupBy === 'date'
+                    ? 'bg-purple-500 text-white shadow-sm'
+                    : 'text-gray-400 hover:text-white'
+                }`}
+              >
+                <Calendar size={10} />
+                Date
+              </button>
+            </div>
+          </div>
+
+          <div className="w-px h-5 bg-white/10" />
+
           {/* Date Filter */}
-          <div className="flex items-center gap-1.5">
-            <Calendar size={12} className="text-gray-500" />
-            <div className="flex gap-0.5">
+          <div className="flex items-center gap-2">
+            <span className="text-[10px] uppercase tracking-wider text-gray-600">Time</span>
+            <div className="flex rounded-lg bg-white/[0.04] p-0.5">
               {(['all', 'today', 'week', 'month'] as DateFilter[]).map((filter) => (
                 <button
                   key={filter}
                   onClick={() => setDateFilter(filter)}
-                  className={`px-2 py-0.5 rounded text-xs transition-colors ${
+                  className={`px-2.5 py-1 rounded-md text-xs transition-all ${
                     dateFilter === filter
-                      ? 'bg-[#cc785c]/20 text-[#cc785c]'
-                      : 'text-gray-400 hover:text-white hover:bg-white/5'
+                      ? 'bg-blue-500 text-white shadow-sm'
+                      : 'text-gray-400 hover:text-white'
                   }`}
                 >
-                  {filter === 'all' ? 'All' : filter.charAt(0).toUpperCase() + filter.slice(1)}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          <div className="w-px h-4 bg-white/10" />
-
-          {/* Sort */}
-          <div className="flex items-center gap-1.5">
-            <ArrowUpDown size={12} className="text-gray-500" />
-            <div className="flex gap-0.5">
-              {(['date', 'project'] as SortBy[]).map((sort) => (
-                <button
-                  key={sort}
-                  onClick={() => setSortBy(sort)}
-                  className={`px-2 py-0.5 rounded text-xs transition-colors ${
-                    sortBy === sort
-                      ? 'bg-[#cc785c]/20 text-[#cc785c]'
-                      : 'text-gray-400 hover:text-white hover:bg-white/5'
-                  }`}
-                >
-                  {sort.charAt(0).toUpperCase() + sort.slice(1)}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          <div className="w-px h-4 bg-white/10" />
-
-          {/* Group By */}
-          <div className="flex items-center gap-1.5">
-            <Folder size={12} className="text-gray-500" />
-            <div className="flex gap-0.5">
-              {(['none', 'project', 'date'] as GroupBy[]).map((group) => (
-                <button
-                  key={group}
-                  onClick={() => setGroupBy(group)}
-                  className={`px-2 py-0.5 rounded text-xs transition-colors ${
-                    groupBy === group
-                      ? 'bg-[#cc785c]/20 text-[#cc785c]'
-                      : 'text-gray-400 hover:text-white hover:bg-white/5'
-                  }`}
-                >
-                  {group === 'none' ? 'None' : group.charAt(0).toUpperCase() + group.slice(1)}
+                  {filter === 'all' ? 'All Time' : filter === 'week' ? '7 Days' : filter === 'month' ? '30 Days' : 'Today'}
                 </button>
               ))}
             </div>
           </div>
         </div>
-      )}
+      </div>
 
       {/* Split View Content */}
       <div className="flex-1 flex overflow-hidden">
