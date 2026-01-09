@@ -81,7 +81,7 @@ function App() {
           )}
 
           {/* Main content */}
-          <main className="flex-1 overflow-hidden flex">
+          <main className={`flex-1 overflow-hidden ${screen === 'terminal' ? 'flex' : ''}`}>
             {screen === 'home' && (
               <HomeScreen
                 cwd={cwd}

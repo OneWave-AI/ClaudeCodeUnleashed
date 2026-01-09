@@ -14,6 +14,15 @@ A premium native desktop GUI for [Claude Code CLI](https://github.com/anthropics
 
 ## Features
 
+### Super Agent
+Autonomous AI-powered task execution that lets Claude work independently:
+- **LLM-Driven**: An outer LLM monitors Claude's terminal output and decides what to do next
+- **Auto-Approve**: Automatically approves tool calls and continues until the task is done
+- **Time Limits**: Set execution time limits (5-60 minutes)
+- **Smart Waiting**: Detects when Claude is waiting for input and prompts it to continue
+- **Activity Log**: Real-time visibility into the agent's thought process
+- **Side Panel**: Collapsible status bar shows progress without blocking the terminal
+
 ### Zero-Config Discovery
 Automatically detects everything already on your machine:
 - **Skills** in `~/.claude/skills/`
@@ -130,7 +139,7 @@ View documents directly in the app:
 
 ### From Release (Recommended)
 
-1. Go to [Releases](https://github.com/MarcGyongyosi/ClaudeCodeX/releases)
+1. Go to [Releases](https://github.com/OneWave-AI/ClaudeCodeArena/releases)
 2. Download the appropriate installer for your platform:
    - macOS: `.dmg` (universal - works on Intel and Apple Silicon)
    - Windows: `.exe` installer
@@ -150,8 +159,8 @@ Since the app is not signed with an Apple Developer certificate:
 
 ```bash
 # Clone the repository
-git clone https://github.com/MarcGyongyosi/ClaudeCodeUI-V2.git
-cd ClaudeCodeUI-V2
+git clone https://github.com/OneWave-AI/ClaudeCodeArena.git
+cd ClaudeCodeArena
 
 # Install dependencies
 npm install
