@@ -92,6 +92,7 @@ export default function AnalyticsScreen({ onBack }: AnalyticsScreenProps) {
       setLoading(true)
       try {
         const conversations: Conversation[] = await window.api.listConversations()
+        console.log('[Analytics] Loaded conversations:', conversations.length)
 
         const now = new Date()
         const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000)
@@ -185,12 +186,12 @@ export default function AnalyticsScreen({ onBack }: AnalyticsScreenProps) {
           if (conv.projectFolder) {
             let project = projectMap.get(conv.projectFolder)
             if (!project) {
-              // Initialize project daily activity
+              // Initialize project daily activity - use same local date format as global dailyMap
               const projectDaily = new Map<string, { sessions: number; minutes: number }>()
               for (let i = 29; i >= 0; i--) {
                 const date = new Date(now)
                 date.setDate(date.getDate() - i)
-                const dateStr = date.toISOString().split('T')[0]
+                const dateStr = getLocalDateStr(date)
                 projectDaily.set(dateStr, { sessions: 0, minutes: 0 })
               }
 
@@ -269,17 +270,17 @@ export default function AnalyticsScreen({ onBack }: AnalyticsScreenProps) {
             project.recentTrend = 'stable'
           }
 
-          // Build daily activity for project
+          // Build daily activity for project - use consistent local date format
           const projectDailyMap = new Map<string, { sessions: number; minutes: number }>()
           for (let i = 29; i >= 0; i--) {
             const date = new Date(now)
             date.setDate(date.getDate() - i)
-            const dateStr = date.toISOString().split('T')[0]
+            const dateStr = getLocalDateStr(date)
             projectDailyMap.set(dateStr, { sessions: 0, minutes: 0 })
           }
 
           for (const session of project.sessions) {
-            const dateStr = new Date(session.timestamp).toISOString().split('T')[0]
+            const dateStr = getLocalDateStr(new Date(session.timestamp))
             const dayData = projectDailyMap.get(dateStr)
             if (dayData) {
               dayData.sessions++
