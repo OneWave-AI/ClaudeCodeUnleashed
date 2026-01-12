@@ -89,6 +89,40 @@ export interface ConversationExportOptions {
   includeTimestamps?: boolean
 }
 
+// Analytics types
+export interface ProjectStats {
+  folder: string
+  name: string
+  totalSessions: number
+  totalTimeMinutes: number
+  totalTokens: number
+  lastActive: number
+  messageCount: number
+}
+
+export interface AnalyticsData {
+  // Overview
+  totalSessions: number
+  totalTimeMinutes: number
+  totalTokens: number
+  totalProjects: number
+
+  // Time periods
+  sessions7Days: number
+  sessions30Days: number
+  time7Days: number
+  time30Days: number
+
+  // Breakdowns
+  projectStats: ProjectStats[]
+  dailyActivity: { date: string; sessions: number; minutes: number }[]
+
+  // Trends
+  avgSessionLength: number
+  mostActiveDay: string
+  peakHour: number
+}
+
 export interface Settings {
   theme: string
   fontSize: number
@@ -204,8 +238,8 @@ export interface IpcApi {
   terminalResize: (cols: number, rows: number, terminalId: string) => Promise<void>
   getTerminals: () => Promise<Terminal[]>
   terminalSendText: (text: string, terminalId: string) => Promise<void>
-  onTerminalData: (callback: (data: string, terminalId: string) => void) => void
-  onTerminalExit: (callback: (code: number, terminalId: string) => void) => void
+  onTerminalData: (callback: (data: string, terminalId: string) => void) => (() => void) | void
+  onTerminalExit: (callback: (code: number, terminalId: string) => void) => (() => void) | void
 
   // Files
   selectFolder: () => Promise<string | null>
@@ -309,6 +343,14 @@ export interface IpcApi {
   saveSuperAgentSession: (session: SuperAgentSession) => Promise<{ success: boolean }>
   listSuperAgentSessions: () => Promise<SuperAgentSession[]>
   deleteSuperAgentSession: (sessionId: string) => Promise<{ success: boolean }>
+
+  // Window Controls
+  windowClose: () => Promise<void>
+  windowMinimize: () => Promise<void>
+  windowMaximize: () => Promise<void>
+
+  // Terminal Session State
+  setTerminalSessionActive: (active: boolean) => void
 }
 
 // Super Agent types

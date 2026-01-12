@@ -2,41 +2,63 @@ import { useState, useRef, useEffect, useCallback } from 'react'
 import {
   Plus,
   X,
-  Settings,
-  Maximize2,
-  Minimize2,
   Terminal as TerminalIcon,
   Sparkles,
   GripVertical,
   SplitSquareVertical,
-  ZoomIn,
-  ZoomOut,
   Trash2,
   ArrowDownToLine,
   Copy,
-  Monitor,
   Clock,
-  MemoryStick,
-  Highlighter,
   RotateCcw,
-  ExternalLink
+  ExternalLink,
+  Globe,
+  ChevronDown,
+  PanelLeft,
+  PanelRight,
+  Smartphone,
+  Monitor,
+  Upload,
+  FileUp,
+  Image,
+  FileText,
+  Folder,
+  ListOrdered,
+  Square,
+  Zap,
+  Hash,
+  Loader2
 } from 'lucide-react'
+
 import Terminal, { TerminalRef } from './Terminal'
 import PreviewBar from './PreviewBar'
+import TaskTimeline, { TimelineAction, ActionType, ActionStatus } from './TaskTimeline'
+import PlanPanel, { PlanItem } from './PlanPanel'
 
 interface Tab {
   id: string
   name: string
+  type: 'terminal' | 'browser'
+  url?: string
   active: boolean
 }
 
+interface Panel {
+  id: string
+  tabs: Tab[]
+  activeTabId: string
+}
+
 interface TerminalWrapperProps {
-  onOpenSettings: () => void
   onTerminalData?: (data: string, terminalId: string) => void
   onTerminalIdChange?: (terminalId: string | null) => void
   previewUrl?: string | null
   onClosePreview?: () => void
   onOpenPreview?: (url: string) => void
+  // Plan props
+  showPlanPanel?: boolean
+  onClosePlanPanel?: () => void
+  onPlanItemsChange?: (items: PlanItem[]) => void
 }
 
 // Format bytes to human readable
@@ -58,26 +80,47 @@ const formatDuration = (seconds: number): string => {
   return `${secs}s`
 }
 
-export default function TerminalWrapper({ onOpenSettings, onTerminalData, onTerminalIdChange, previewUrl, onClosePreview, onOpenPreview }: TerminalWrapperProps) {
-  const [tabs, setTabs] = useState<Tab[]>([
-    { id: '1', name: 'Claude', active: true }
+export default function TerminalWrapper({
+  onTerminalData,
+  onTerminalIdChange,
+  previewUrl,
+  onClosePreview,
+  onOpenPreview,
+  showPlanPanel = false,
+  onClosePlanPanel,
+  onPlanItemsChange
+}: TerminalWrapperProps) {
+  // Multi-panel state
+  const [panels, setPanels] = useState<Panel[]>([
+    {
+      id: 'left',
+      tabs: [{ id: '1', name: 'Claude', type: 'terminal', active: true }],
+      activeTabId: '1'
+    }
   ])
-  const [isMaximized, setIsMaximized] = useState(false)
+
   const [terminalSize, setTerminalSize] = useState({ cols: 80, rows: 24 })
 
-  // Split terminal state
-  const [isSplit, setIsSplit] = useState(false)
+  // Plus menu state
+  const [showPlusMenu, setShowPlusMenu] = useState<string | null>(null) // panel id
+  const plusMenuRef = useRef<HTMLDivElement>(null)
 
-  // Zoom level (percentage)
-  const [zoomLevel, setZoomLevel] = useState(100)
+  // Viewport mode for browser tabs (mobile/desktop)
+  const [viewportMode, setViewportMode] = useState<'desktop' | 'mobile'>('desktop')
 
-  // Scan lines effect
-  const [scanLinesEnabled, setScanLinesEnabled] = useState(false)
+  // File upload drag state
+  const [isDraggingFile, setIsDraggingFile] = useState(false)
+  const [showUploadMenu, setShowUploadMenu] = useState(false)
+  const uploadMenuRef = useRef<HTMLDivElement>(null)
+  const fileInputRef = useRef<HTMLInputElement>(null)
 
-  // Pattern highlighting
-  const [highlightPatterns, setHighlightPatterns] = useState(false)
+  // Task timeline state
+  const [timelineActions, setTimelineActions] = useState<TimelineAction[]>([])
+  const [showTimeline, setShowTimeline] = useState(false)
+  const [timelineCollapsed, setTimelineCollapsed] = useState(false)
+  const currentActionRef = useRef<string | null>(null)
 
-  // Claude status: 'working' | 'waiting' | 'idle'
+  // Claude status
   const [claudeStatus, setClaudeStatus] = useState<'working' | 'waiting' | 'idle'>('idle')
   const statusTimeoutRef = useRef<NodeJS.Timeout | null>(null)
 
@@ -88,9 +131,9 @@ export default function TerminalWrapper({ onOpenSettings, onTerminalData, onTerm
   const [detectedHtmlFile, setDetectedHtmlFile] = useState<string | null>(null)
   const lastDetectedFileRef = useRef<string | null>(null)
 
-  // Drag state for tab reordering
-  const [draggedTabId, setDraggedTabId] = useState<string | null>(null)
-  const [dragOverTabId, setDragOverTabId] = useState<string | null>(null)
+  // Drag state
+  const [draggedTab, setDraggedTab] = useState<{ tabId: string; panelId: string } | null>(null)
+  const [dropTarget, setDropTarget] = useState<{ panelId: string; position: 'tab' | 'left' | 'right' } | null>(null)
 
   // Session duration
   const [sessionStart] = useState(Date.now())
@@ -99,16 +142,49 @@ export default function TerminalWrapper({ onOpenSettings, onTerminalData, onTerm
   // Memory usage
   const [memoryUsage, setMemoryUsage] = useState(0)
 
-  // Terminal refs
-  const terminalRef = useRef<TerminalRef>(null)
-  const splitTerminalRef = useRef<TerminalRef>(null)
+  // Token and cost tracking
+  const [tokenCount, setTokenCount] = useState(0)
+  const [estimatedCost, setEstimatedCost] = useState(0)
+  const [currentModel, setCurrentModel] = useState<'opus' | 'sonnet' | 'haiku'>('sonnet')
+  const [showModelMenu, setShowModelMenu] = useState(false)
+  const modelMenuRef = useRef<HTMLDivElement>(null)
 
-  // Debounce ref to prevent spam-opening URLs
+  // Plan items state (showPlanPanel comes from props)
+  const [planItems, setPlanItems] = useState<PlanItem[]>([])
+
+  // Terminal refs - keyed by tab id
+  const terminalRefs = useRef<Map<string, TerminalRef>>(new Map())
+
+  // Debounce ref
   const lastOpenedUrlRef = useRef<{ url: string; time: number } | null>(null)
 
-  const activeTab = tabs.find(t => t.active)
+  // Get active tab from first panel (for backwards compat)
+  const activePanel = panels[0]
+  const activeTab = activePanel?.tabs.find(t => t.id === activePanel.activeTabId)
 
-  // Update session duration every second
+  // Get active terminal ID
+  const activeTerminalId = activeTab?.type === 'terminal'
+    ? terminalRefs.current.get(activeTab.id)?.getTerminalId() || null
+    : null
+
+  // Close menus on click outside
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (plusMenuRef.current && !plusMenuRef.current.contains(e.target as Node)) {
+        setShowPlusMenu(null)
+      }
+      if (uploadMenuRef.current && !uploadMenuRef.current.contains(e.target as Node)) {
+        setShowUploadMenu(false)
+      }
+      if (modelMenuRef.current && !modelMenuRef.current.contains(e.target as Node)) {
+        setShowModelMenu(false)
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [])
+
+  // Update session duration
   useEffect(() => {
     const interval = setInterval(() => {
       setSessionDuration(Math.floor((Date.now() - sessionStart) / 1000))
@@ -116,7 +192,7 @@ export default function TerminalWrapper({ onOpenSettings, onTerminalData, onTerm
     return () => clearInterval(interval)
   }, [sessionStart])
 
-  // Update memory usage periodically
+  // Update memory usage
   useEffect(() => {
     const updateMemory = () => {
       if ((performance as unknown as { memory?: { usedJSHeapSize: number } }).memory) {
@@ -128,7 +204,7 @@ export default function TerminalWrapper({ onOpenSettings, onTerminalData, onTerm
     return () => clearInterval(interval)
   }, [])
 
-  // Cleanup status timeout on unmount
+  // Cleanup status timeout
   useEffect(() => {
     return () => {
       if (statusTimeoutRef.current) {
@@ -137,168 +213,458 @@ export default function TerminalWrapper({ onOpenSettings, onTerminalData, onTerm
     }
   }, [])
 
-  const addTab = useCallback(() => {
+  // Notify parent of plan items changes
+  useEffect(() => {
+    onPlanItemsChange?.(planItems)
+  }, [planItems, onPlanItemsChange])
+
+  // Add tab to panel
+  const addTab = useCallback((panelId: string, type: 'terminal' | 'browser') => {
+    setShowPlusMenu(null)
+
+    setPanels(prev => prev.map(panel => {
+      if (panel.id !== panelId) return panel
+
+      const newTab: Tab = {
+        id: Date.now().toString(),
+        name: type === 'terminal' ? `Terminal ${panel.tabs.filter(t => t.type === 'terminal').length + 1}` : 'New Tab',
+        type,
+        url: type === 'browser' ? '' : undefined,
+        active: true
+      }
+
+      return {
+        ...panel,
+        tabs: panel.tabs.map(t => ({ ...t, active: false })).concat(newTab),
+        activeTabId: newTab.id
+      }
+    }))
+  }, [])
+
+  // Add second panel
+  const addPanel = useCallback((type: 'terminal' | 'browser') => {
+    if (panels.length >= 2) return
+
     const newTab: Tab = {
       id: Date.now().toString(),
-      name: `Terminal ${tabs.length + 1}`,
+      name: type === 'terminal' ? 'Terminal 1' : 'New Tab',
+      type,
+      url: type === 'browser' ? '' : undefined,
       active: true
     }
-    setTabs(tabs.map(t => ({ ...t, active: false })).concat(newTab))
-  }, [tabs])
 
-  const closeTab = useCallback((id: string) => {
-    if (tabs.length === 1) return
-    const newTabs = tabs.filter(t => t.id !== id)
-    if (tabs.find(t => t.id === id)?.active && newTabs.length > 0) {
-      newTabs[newTabs.length - 1].active = true
-    }
-    setTabs(newTabs)
-  }, [tabs])
+    setPanels(prev => [...prev, {
+      id: 'right',
+      tabs: [newTab],
+      activeTabId: newTab.id
+    }])
+    setShowPlusMenu(null)
+  }, [panels.length])
 
-  const selectTab = useCallback((id: string) => {
-    setTabs(tabs.map(t => ({ ...t, active: t.id === id })))
-  }, [tabs])
+  // Close tab
+  const closeTab = useCallback((panelId: string, tabId: string) => {
+    setPanels(prev => {
+      const panelIndex = prev.findIndex(p => p.id === panelId)
+      if (panelIndex === -1) return prev
 
-  // Tab drag handlers
-  const handleDragStart = useCallback((e: React.DragEvent, tabId: string) => {
-    setDraggedTabId(tabId)
-    e.dataTransfer.effectAllowed = 'move'
-    e.dataTransfer.setData('text/plain', tabId)
+      const panel = prev[panelIndex]
+
+      // If only one tab in only one panel, don't close
+      if (panel.tabs.length === 1 && prev.length === 1) return prev
+
+      // If only one tab but multiple panels, remove the panel
+      if (panel.tabs.length === 1) {
+        return prev.filter(p => p.id !== panelId)
+      }
+
+      // Remove tab and select another
+      const newTabs = panel.tabs.filter(t => t.id !== tabId)
+      const wasActive = panel.activeTabId === tabId
+      const newActiveId = wasActive ? newTabs[newTabs.length - 1].id : panel.activeTabId
+
+      return prev.map(p => {
+        if (p.id !== panelId) return p
+        return { ...p, tabs: newTabs, activeTabId: newActiveId }
+      })
+    })
   }, [])
 
-  const handleDragOver = useCallback((e: React.DragEvent, tabId: string) => {
+  // Select tab
+  const selectTab = useCallback((panelId: string, tabId: string) => {
+    setPanels(prev => prev.map(panel => {
+      if (panel.id !== panelId) return panel
+      return {
+        ...panel,
+        tabs: panel.tabs.map(t => ({ ...t, active: t.id === tabId })),
+        activeTabId: tabId
+      }
+    }))
+  }, [])
+
+  // Drag handlers for tabs between panels
+  const handleTabDragStart = useCallback((e: React.DragEvent, tabId: string, panelId: string) => {
+    setDraggedTab({ tabId, panelId })
+    e.dataTransfer.effectAllowed = 'move'
+    e.dataTransfer.setData('text/plain', JSON.stringify({ tabId, panelId }))
+
+    // Create custom drag image
+    const dragEl = e.currentTarget.cloneNode(true) as HTMLElement
+    dragEl.style.opacity = '0.8'
+    dragEl.style.transform = 'scale(1.05)'
+    document.body.appendChild(dragEl)
+    e.dataTransfer.setDragImage(dragEl, 50, 20)
+    setTimeout(() => document.body.removeChild(dragEl), 0)
+  }, [])
+
+  const handleTabDragOver = useCallback((e: React.DragEvent, panelId: string, position: 'tab' | 'left' | 'right') => {
     e.preventDefault()
     e.dataTransfer.dropEffect = 'move'
-    if (tabId !== draggedTabId) {
-      setDragOverTabId(tabId)
-    }
-  }, [draggedTabId])
-
-  const handleDragLeave = useCallback(() => {
-    setDragOverTabId(null)
+    setDropTarget({ panelId, position })
   }, [])
 
-  const handleDrop = useCallback((e: React.DragEvent, targetTabId: string) => {
+  const handleTabDragLeave = useCallback(() => {
+    setDropTarget(null)
+  }, [])
+
+  const handleTabDrop = useCallback((e: React.DragEvent, targetPanelId: string) => {
     e.preventDefault()
-    if (!draggedTabId || draggedTabId === targetTabId) return
+    if (!draggedTab) return
 
-    const newTabs = [...tabs]
-    const draggedIndex = newTabs.findIndex(t => t.id === draggedTabId)
-    const targetIndex = newTabs.findIndex(t => t.id === targetTabId)
+    const { tabId, panelId: sourcePanelId } = draggedTab
 
-    if (draggedIndex !== -1 && targetIndex !== -1) {
-      const [draggedTab] = newTabs.splice(draggedIndex, 1)
-      newTabs.splice(targetIndex, 0, draggedTab)
-      setTabs(newTabs)
+    // If dropping in same panel, just reorder
+    if (sourcePanelId === targetPanelId) {
+      setDraggedTab(null)
+      setDropTarget(null)
+      return
     }
 
-    setDraggedTabId(null)
-    setDragOverTabId(null)
-  }, [draggedTabId, tabs])
+    setPanels(prev => {
+      // Find source panel and tab
+      const sourcePanel = prev.find(p => p.id === sourcePanelId)
+      if (!sourcePanel) return prev
+
+      const tab = sourcePanel.tabs.find(t => t.id === tabId)
+      if (!tab) return prev
+
+      // If source panel only has one tab, remove the panel
+      if (sourcePanel.tabs.length === 1) {
+        return prev
+          .filter(p => p.id !== sourcePanelId)
+          .map(p => {
+            if (p.id !== targetPanelId) return p
+            return {
+              ...p,
+              tabs: [...p.tabs.map(t => ({ ...t, active: false })), { ...tab, active: true }],
+              activeTabId: tab.id
+            }
+          })
+      }
+
+      // Otherwise move tab between panels
+      return prev.map(p => {
+        if (p.id === sourcePanelId) {
+          const newTabs = p.tabs.filter(t => t.id !== tabId)
+          const newActiveId = p.activeTabId === tabId ? newTabs[0]?.id : p.activeTabId
+          return { ...p, tabs: newTabs, activeTabId: newActiveId || '' }
+        }
+        if (p.id === targetPanelId) {
+          return {
+            ...p,
+            tabs: [...p.tabs.map(t => ({ ...t, active: false })), { ...tab, active: true }],
+            activeTabId: tab.id
+          }
+        }
+        return p
+      })
+    })
+
+    setDraggedTab(null)
+    setDropTarget(null)
+  }, [draggedTab])
+
+  const handlePanelDrop = useCallback((e: React.DragEvent, side: 'left' | 'right') => {
+    e.preventDefault()
+    if (!draggedTab || panels.length >= 2) {
+      setDraggedTab(null)
+      setDropTarget(null)
+      return
+    }
+
+    const { tabId, panelId: sourcePanelId } = draggedTab
+
+    setPanels(prev => {
+      const sourcePanel = prev.find(p => p.id === sourcePanelId)
+      if (!sourcePanel) return prev
+
+      const tab = sourcePanel.tabs.find(t => t.id === tabId)
+      if (!tab) return prev
+
+      // Create new panel
+      const newPanel: Panel = {
+        id: side,
+        tabs: [{ ...tab, active: true }],
+        activeTabId: tab.id
+      }
+
+      // Remove tab from source
+      if (sourcePanel.tabs.length === 1) {
+        // Replace the source panel with new panel in correct position
+        return side === 'left' ? [newPanel, ...prev.filter(p => p.id !== sourcePanelId)] : [...prev.filter(p => p.id !== sourcePanelId), newPanel]
+      }
+
+      const updatedSource = {
+        ...sourcePanel,
+        tabs: sourcePanel.tabs.filter(t => t.id !== tabId),
+        activeTabId: sourcePanel.activeTabId === tabId ? sourcePanel.tabs.filter(t => t.id !== tabId)[0]?.id || '' : sourcePanel.activeTabId
+      }
+
+      return side === 'left'
+        ? [newPanel, ...prev.map(p => p.id === sourcePanelId ? updatedSource : p)]
+        : [...prev.map(p => p.id === sourcePanelId ? updatedSource : p), newPanel]
+    })
+
+    setDraggedTab(null)
+    setDropTarget(null)
+  }, [draggedTab, panels.length])
 
   const handleDragEnd = useCallback(() => {
-    setDraggedTabId(null)
-    setDragOverTabId(null)
+    setDraggedTab(null)
+    setDropTarget(null)
   }, [])
 
-  // Zoom controls
-  const zoomIn = useCallback(() => {
-    setZoomLevel(prev => Math.min(prev + 10, 200))
-  }, [])
-
-  const zoomOut = useCallback(() => {
-    setZoomLevel(prev => Math.max(prev - 10, 50))
-  }, [])
-
-  const resetZoom = useCallback(() => {
-    setZoomLevel(100)
-  }, [])
 
   // Quick actions
   const handleClear = useCallback(() => {
-    terminalRef.current?.clear()
-    if (isSplit) {
-      splitTerminalRef.current?.clear()
-    }
-  }, [isSplit])
+    terminalRefs.current.forEach(ref => ref?.clear())
+  }, [])
 
   const handleScrollToBottom = useCallback(() => {
-    terminalRef.current?.scrollToBottom()
-    if (isSplit) {
-      splitTerminalRef.current?.scrollToBottom()
-    }
-  }, [isSplit])
+    terminalRefs.current.forEach(ref => ref?.scrollToBottom())
+  }, [])
 
   const handleCopyAll = useCallback(() => {
-    terminalRef.current?.copyAll()
-  }, [])
+    const activeRef = terminalRefs.current.get(activeTab?.id || '')
+    activeRef?.copyAll()
+  }, [activeTab?.id])
 
-  const toggleSplit = useCallback(() => {
-    setIsSplit(prev => !prev)
-  }, [])
-
-  // Detect Claude status from terminal output
-  const detectClaudeStatus = useCallback((data: string) => {
-    // Clear any pending status timeout
-    if (statusTimeoutRef.current) {
-      clearTimeout(statusTimeoutRef.current)
+  // Kill current process (send Ctrl+C)
+  const handleKill = useCallback(() => {
+    if (activeTerminalId) {
+      window.api.terminalSendText('\x03', activeTerminalId) // Ctrl+C
     }
+  }, [activeTerminalId])
+
+  // Switch Claude model
+  const handleModelChange = useCallback((model: 'opus' | 'sonnet' | 'haiku') => {
+    setCurrentModel(model)
+    setShowModelMenu(false)
+    // Send /model command to Claude CLI
+    if (activeTerminalId) {
+      window.api.terminalSendText(`/model ${model}\n`, activeTerminalId)
+    }
+  }, [activeTerminalId])
+
+  // Screenshot terminal - copies terminal content to clipboard
+  const handleScreenshot = useCallback(() => {
+    const activeRef = terminalRefs.current.get(activeTab?.id || '')
+    if (activeRef) {
+      activeRef.copyAll()
+    }
+  }, [activeTab?.id])
+
+  // Token and cost tracking from terminal output
+  const trackTokensAndCost = useCallback((data: string) => {
+    const cleanData = data.replace(/\x1b\[[0-9;]*[a-zA-Z]/g, '')
+
+    // Detect model from output (Claude usually shows model info)
+    const modelMatch = cleanData.match(/claude-3[.-]?(opus|sonnet|haiku)/i) ||
+                       cleanData.match(/model[:\s]+(opus|sonnet|haiku)/i)
+    if (modelMatch) {
+      setCurrentModel(modelMatch[1].toLowerCase() as 'opus' | 'sonnet' | 'haiku')
+    }
+
+    // Detect token counts from Claude output patterns
+    // Claude Code shows: "Input tokens: X, Output tokens: Y" or similar
+    const tokenMatch = cleanData.match(/(\d+[,.]?\d*)\s*(?:tokens?|tok)/gi)
+    if (tokenMatch) {
+      const tokens = tokenMatch.map(t => parseInt(t.replace(/[^\d]/g, '')) || 0)
+      const totalNewTokens = tokens.reduce((a, b) => a + b, 0)
+      if (totalNewTokens > 0 && totalNewTokens < 100000) {
+        setTokenCount(prev => prev + totalNewTokens)
+
+        // Estimate cost based on model
+        // Approximate rates: Opus $15/1M in, $75/1M out | Sonnet $3/1M in, $15/1M out | Haiku $0.25/1M in, $1.25/1M out
+        const rates: Record<string, number> = {
+          opus: 0.000045, // ~$45/1M average
+          sonnet: 0.000009, // ~$9/1M average
+          haiku: 0.00000075 // ~$0.75/1M average
+        }
+        const rate = rates[currentModel] || rates.sonnet
+        setEstimatedCost(prev => prev + (totalNewTokens * rate))
+      }
+    }
+
+    // Also estimate tokens from text length (rough: ~4 chars per token)
+    // Only if no explicit token count found
+    if (!tokenMatch && cleanData.length > 100) {
+      const estimatedTokens = Math.floor(cleanData.length / 4)
+      // Only add significant chunks to avoid noise
+      if (estimatedTokens > 50) {
+        setTokenCount(prev => prev + Math.floor(estimatedTokens * 0.1)) // Conservative estimate
+      }
+    }
+  }, [currentModel])
+
+  // Parse plan items from Claude's TodoWrite output
+  const parsePlanItems = useCallback((data: string) => {
+    const cleanData = data.replace(/\x1b\[[0-9;]*[a-zA-Z]/g, '')
+
+    // Detect TodoWrite patterns:
+    // - "✓ Task completed" or "✔ Task"
+    // - "● Task in progress" or "○ Task pending"
+    // - "- [x] Task" (markdown checkbox completed)
+    // - "- [ ] Task" (markdown checkbox pending)
+    // - "1. [completed] Task"
+    // - "1. [in_progress] Task"
+    // - "1. [pending] Task"
+
+    // Numbered list with status: "1. [completed] Task"
+    const numberedPattern = /^\s*\d+\.\s*\[(completed|in_progress|pending)\]\s*(.+)$/gm
+    let match
+
+    while ((match = numberedPattern.exec(cleanData)) !== null) {
+      const status = match[1] as 'completed' | 'in_progress' | 'pending'
+      const content = match[2].trim()
+
+      setPlanItems(prev => {
+        // Check if task exists
+        const existingIndex = prev.findIndex(p => p.content === content)
+        if (existingIndex !== -1) {
+          // Update status
+          const updated = [...prev]
+          updated[existingIndex] = {
+            ...updated[existingIndex],
+            status,
+            completedAt: status === 'completed' ? new Date() : undefined
+          }
+          return updated
+        }
+
+        // Add new task
+        return [...prev, {
+          id: `plan-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`,
+          content,
+          status,
+          createdAt: new Date(),
+          completedAt: status === 'completed' ? new Date() : undefined
+        }]
+      })
+    }
+
+    // Markdown checkboxes: "- [x] Task" or "- [ ] Task"
+    const checkboxPattern = /^\s*-\s*\[(x| )\]\s*(.+)$/gm
+
+    while ((match = checkboxPattern.exec(cleanData)) !== null) {
+      const status = match[1] === 'x' ? 'completed' : 'pending'
+      const content = match[2].trim()
+
+      setPlanItems(prev => {
+        const existingIndex = prev.findIndex(p => p.content === content)
+        if (existingIndex !== -1) {
+          const updated = [...prev]
+          updated[existingIndex] = {
+            ...updated[existingIndex],
+            status,
+            completedAt: status === 'completed' ? new Date() : undefined
+          }
+          return updated
+        }
+
+        return [...prev, {
+          id: `plan-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`,
+          content,
+          status,
+          createdAt: new Date()
+        }]
+      })
+    }
+
+    // Unicode checkmarks: "✓ Task" (completed) or "○ Task" (pending) or "● Task" (in progress)
+    const completedPattern = /^\s*[✓✔]\s*(.+)$/gm
+    const inProgressPattern = /^\s*●\s*(.+)$/gm
+    const pendingPattern = /^\s*○\s*(.+)$/gm
+
+    while ((match = completedPattern.exec(cleanData)) !== null) {
+      const content = match[1].trim()
+      setPlanItems(prev => {
+        const existingIndex = prev.findIndex(p => p.content === content)
+        if (existingIndex !== -1) {
+          const updated = [...prev]
+          updated[existingIndex] = { ...updated[existingIndex], status: 'completed', completedAt: new Date() }
+          return updated
+        }
+        return [...prev, {
+          id: `plan-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`,
+          content,
+          status: 'completed',
+          createdAt: new Date(),
+          completedAt: new Date()
+        }]
+      })
+    }
+
+    while ((match = inProgressPattern.exec(cleanData)) !== null) {
+      const content = match[1].trim()
+      setPlanItems(prev => {
+        const existingIndex = prev.findIndex(p => p.content === content)
+        if (existingIndex !== -1) {
+          const updated = [...prev]
+          updated[existingIndex] = { ...updated[existingIndex], status: 'in_progress' }
+          return updated
+        }
+        return [...prev, {
+          id: `plan-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`,
+          content,
+          status: 'in_progress',
+          createdAt: new Date()
+        }]
+      })
+    }
+
+    while ((match = pendingPattern.exec(cleanData)) !== null) {
+      const content = match[1].trim()
+      setPlanItems(prev => {
+        const existingIndex = prev.findIndex(p => p.content === content)
+        if (existingIndex !== -1) return prev // Don't overwrite existing
+        return [...prev, {
+          id: `plan-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`,
+          content,
+          status: 'pending',
+          createdAt: new Date()
+        }]
+      })
+    }
+  }, [])
+
+  // Claude status detection
+  const detectClaudeStatus = useCallback((data: string) => {
+    if (statusTimeoutRef.current) clearTimeout(statusTimeoutRef.current)
 
     const cleanData = data.replace(/\x1b\[[0-9;]*[a-zA-Z]/g, '')
     const lastLines = cleanData.split('\n').slice(-10).join('\n')
 
-    // Check for working patterns (DON'T interrupt)
-    const workingPatterns = [
-      /\.\.\.\s*$/m, // Progress dots at end
-      /⠋|⠙|⠹|⠸|⠼|⠴|⠦|⠧|⠇|⠏/m, // Spinner characters
-      /thinking/i,
-      /analyzing/i,
-      /searching/i,
-      /reading/i,
-      /writing/i,
-      /running/i,
-      /executing/i,
-      /loading/i,
-      /processing/i,
-      /building/i,
-      /compiling/i,
-      /installing/i,
-      /fetching/i,
-      /creating/i,
-      /updating/i,
-      /Tool:/i,
-      /Read\(/i,
-      /Write\(/i,
-      /Edit\(/i,
-      /Bash\(/i
-    ]
+    const workingPatterns = [/\.\.\.\s*$/m, /⠋|⠙|⠹|⠸|⠼|⠴|⠦|⠧|⠇|⠏/m, /thinking|analyzing|searching|reading|writing|running|executing|loading|processing|building|compiling|installing|fetching|creating|updating/i, /Tool:|Read\(|Write\(|Edit\(|Bash\(/i]
+    const waitingPatterns = [/❯\s*$/m, />\s*$/m, /\(y\/n\)\s*$/im, /\[Y\/n\]\s*$/im, /What would you like|How can I help|anything else|Do you want to/i]
 
-    // Check for waiting/prompt patterns
-    const waitingPatterns = [
-      /❯\s*$/m, // Claude prompt at end
-      />\s*$/m, // Generic prompt at end
-      /\(y\/n\)\s*$/im, // Yes/no prompt
-      /\[Y\/n\]\s*$/im,
-      /\[y\/N\]\s*$/im,
-      /What would you like/i,
-      /How can I help/i,
-      /anything else/i,
-      /Do you want to/i
-    ]
-
-    // Check working patterns first (higher priority)
     for (const pattern of workingPatterns) {
       if (pattern.test(lastLines)) {
         setClaudeStatus('working')
-        // Still set timeout to catch when output stops
-        statusTimeoutRef.current = setTimeout(() => {
-          setClaudeStatus('waiting')
-        }, 3000)
+        statusTimeoutRef.current = setTimeout(() => setClaudeStatus('waiting'), 3000)
         return
       }
     }
 
-    // Check waiting patterns
     for (const pattern of waitingPatterns) {
       if (pattern.test(lastLines)) {
         setClaudeStatus('waiting')
@@ -306,496 +672,691 @@ export default function TerminalWrapper({ onOpenSettings, onTerminalData, onTerm
       }
     }
 
-    // Default to working if we're getting output
     setClaudeStatus('working')
-
-    // After 3 seconds of no activity, assume waiting
-    statusTimeoutRef.current = setTimeout(() => {
-      setClaudeStatus('waiting')
-    }, 3000)
+    statusTimeoutRef.current = setTimeout(() => setClaudeStatus('waiting'), 3000)
   }, [])
 
-  // Detect HTML files in terminal output
+  // HTML file detection
   const detectHtmlFile = useCallback((data: string) => {
     const cleanData = data.replace(/\x1b\[[0-9;]*[a-zA-Z]/g, '')
-
-    // Patterns for file creation messages
-    const patterns = [
-      /(?:created|wrote|saved|generated|file is ready at|file saved to)\s+([^\s]+\.html)/i,
-      /([\/~][^\s]+\.html)\b/,
-      /Writing to:\s*([^\s]+\.html)/i,
-      /Output:\s*([^\s]+\.html)/i
-    ]
+    const patterns = [/(?:created|wrote|saved|generated|file is ready at|file saved to)\s+([^\s]+\.html)/i, /([\/~][^\s]+\.html)\b/, /Writing to:\s*([^\s]+\.html)/i, /Output:\s*([^\s]+\.html)/i]
 
     for (const pattern of patterns) {
       const match = cleanData.match(pattern)
-      if (match && match[1]) {
-        let filePath = match[1]
-        // Expand ~ to home directory
-        if (filePath.startsWith('~')) {
-          filePath = filePath.replace('~', '')
-        }
-        // Only show if it's a new file (not the same one we already detected)
-        if (filePath !== lastDetectedFileRef.current) {
-          lastDetectedFileRef.current = filePath
-          setDetectedHtmlFile(filePath)
-        }
+      if (match && match[1] && match[1] !== lastDetectedFileRef.current) {
+        lastDetectedFileRef.current = match[1]
+        setDetectedHtmlFile(match[1].startsWith('~') ? match[1].replace('~', '') : match[1])
         return
       }
     }
   }, [])
 
-  // Watch preview file for live reload
+  // Watch preview file
   useEffect(() => {
     if (!previewUrl) return
-
     const filePath = previewUrl.replace('file://', '')
-
-    // Start watching the file
     window.api.watchFile(filePath)
-
-    // Listen for file changes
     window.api.onFileChanged((changedPath) => {
       if (changedPath === filePath) {
-        // Refresh the webview
         const webview = document.getElementById('preview-iframe') as Electron.WebviewTag | null
-        if (webview && 'reload' in webview) {
-          webview.reload()
-        }
+        if (webview && 'reload' in webview) webview.reload()
       }
     })
-
-    // Cleanup: stop watching when preview closes
-    return () => {
-      window.api.unwatchFile(filePath)
-    }
+    return () => { window.api.unwatchFile(filePath) }
   }, [previewUrl])
 
-  // Handle preview HTML file
+  // Preview handlers
   const handlePreviewHtmlFile = useCallback((filePath: string) => {
     setDetectedHtmlFile(null)
-    // Open in the in-app preview pane
+    if (onOpenPreview) onOpenPreview(filePath)
+    else window.api.openFileExternal(filePath)
+  }, [onOpenPreview])
+
+  const handleDismissHtmlFile = useCallback(() => setDetectedHtmlFile(null), [])
+  const handleLocalhostDetected = useCallback((url: string) => setDetectedLocalhostUrl(url), [])
+  const handleDismissPreview = useCallback(() => setDetectedLocalhostUrl(null), [])
+
+  const handleOpenPreview = useCallback((url: string) => {
+    const now = Date.now()
+    if (lastOpenedUrlRef.current && lastOpenedUrlRef.current.url === url && now - lastOpenedUrlRef.current.time < 2000) return
+    lastOpenedUrlRef.current = { url, time: now }
     if (onOpenPreview) {
-      onOpenPreview(filePath)
+      onOpenPreview(url)
+      setDetectedLocalhostUrl(null)
     } else {
-      // Fallback to external
-      window.api.openFileExternal(filePath)
+      window.api.openUrlExternal(url)
     }
   }, [onOpenPreview])
 
-  const handleDismissHtmlFile = useCallback(() => {
-    setDetectedHtmlFile(null)
-  }, [])
-
-  // Preview bar handlers
-  const handleLocalhostDetected = useCallback((url: string) => {
-    setDetectedLocalhostUrl(url)
-  }, [])
-
-  const handleDismissPreview = useCallback(() => {
-    setDetectedLocalhostUrl(null)
-  }, [])
-
-  const handleOpenPreview = useCallback((url: string) => {
-    // Debounce: prevent opening same URL within 2 seconds
-    const now = Date.now()
-    if (lastOpenedUrlRef.current &&
-        lastOpenedUrlRef.current.url === url &&
-        now - lastOpenedUrlRef.current.time < 2000) {
-      return // Skip duplicate open
-    }
-    lastOpenedUrlRef.current = { url, time: now }
-    // For now, open externally (webview can be added later)
-    window.api.openUrlExternal(url)
-  }, [])
-
   const handleOpenInBrowser = useCallback((url: string) => {
-    // Debounce: prevent opening same URL within 2 seconds
     const now = Date.now()
-    if (lastOpenedUrlRef.current &&
-        lastOpenedUrlRef.current.url === url &&
-        now - lastOpenedUrlRef.current.time < 2000) {
-      return // Skip duplicate open
-    }
+    if (lastOpenedUrlRef.current && lastOpenedUrlRef.current.url === url && now - lastOpenedUrlRef.current.time < 2000) return
     lastOpenedUrlRef.current = { url, time: now }
     window.api.openUrlExternal(url)
   }, [])
+
+  // File upload handlers
+  const handleFileDrop = useCallback((e: React.DragEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
+    setIsDraggingFile(false)
+
+    const files = Array.from(e.dataTransfer.files)
+    if (files.length > 0 && activeTerminalId) {
+      // Format file paths for Claude - wrap in quotes if spaces, join with newlines
+      const filePaths = files.map(f => {
+        const path = (f as File & { path?: string }).path || f.name
+        return path.includes(' ') ? `"${path}"` : path
+      }).join('\n')
+
+      // Send to terminal with a helpful prefix
+      const message = files.length === 1
+        ? `Here's the file: ${filePaths}`
+        : `Here are ${files.length} files:\n${filePaths}`
+
+      window.api.terminalSendText(message, activeTerminalId)
+    }
+  }, [activeTerminalId])
+
+  const handleFileDragOver = useCallback((e: React.DragEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
+    if (e.dataTransfer.types.includes('Files')) {
+      setIsDraggingFile(true)
+    }
+  }, [])
+
+  const handleFileDragLeave = useCallback((e: React.DragEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
+    // Only hide if leaving the container entirely
+    const rect = (e.currentTarget as HTMLElement).getBoundingClientRect()
+    const x = e.clientX
+    const y = e.clientY
+    if (x < rect.left || x > rect.right || y < rect.top || y > rect.bottom) {
+      setIsDraggingFile(false)
+    }
+  }, [])
+
+  const handleFileSelect = useCallback(async (type: 'file' | 'folder' | 'image') => {
+    if (!activeTerminalId) return
+    setShowUploadMenu(false)
+
+    try {
+      let result: string | null = null
+
+      if (type === 'folder') {
+        result = await window.api.selectFolder()
+      } else {
+        // Use a hidden file input for file selection
+        const input = fileInputRef.current
+        if (input) {
+          input.accept = type === 'image' ? 'image/*' : '*'
+          input.click()
+        }
+        return
+      }
+
+      if (result) {
+        const message = `Here's the ${type}: ${result.includes(' ') ? `"${result}"` : result}`
+        window.api.terminalSendText(message, activeTerminalId)
+      }
+    } catch (err) {
+      console.error('File selection failed:', err)
+    }
+  }, [activeTerminalId])
+
+  const handleFileInputChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files
+    if (files && files.length > 0 && activeTerminalId) {
+      const filePaths = Array.from(files).map(f => {
+        const path = (f as File & { path?: string }).path || f.name
+        return path.includes(' ') ? `"${path}"` : path
+      }).join('\n')
+
+      const message = files.length === 1
+        ? `Here's the file: ${filePaths}`
+        : `Here are ${files.length} files:\n${filePaths}`
+
+      window.api.terminalSendText(message, activeTerminalId)
+    }
+    // Reset input
+    e.target.value = ''
+  }, [activeTerminalId])
+
+  // Timeline action tracking - with debouncing
+  const lastActionRef = useRef<{ type: ActionType; title: string; time: number } | null>(null)
+  const DEBOUNCE_MS = 2000 // Minimum 2 seconds between similar actions
+
+  const addTimelineAction = useCallback((
+    type: ActionType,
+    title: string,
+    options?: {
+      description?: string
+      file?: string
+      details?: string
+      status?: ActionStatus
+    }
+  ) => {
+    // Debounce: Skip if same type/title was added recently
+    const now = Date.now()
+    if (lastActionRef.current) {
+      const { type: lastType, title: lastTitle, time: lastTime } = lastActionRef.current
+      if (lastType === type && lastTitle === title && (now - lastTime) < DEBOUNCE_MS) {
+        return null // Skip duplicate
+      }
+    }
+
+    const id = `action-${now}-${Math.random().toString(36).slice(2, 7)}`
+    const action: TimelineAction = {
+      id,
+      type,
+      title,
+      description: options?.description,
+      file: options?.file,
+      details: options?.details,
+      timestamp: new Date(),
+      status: options?.status || 'running'
+    }
+    setTimelineActions(prev => [...prev, action])
+    currentActionRef.current = id
+    lastActionRef.current = { type, title, time: now }
+    return id
+  }, [])
+
+  const updateTimelineAction = useCallback((id: string, updates: Partial<TimelineAction>) => {
+    setTimelineActions(prev => prev.map(action =>
+      action.id === id ? { ...action, ...updates } : action
+    ))
+  }, [])
+
+  const completeTimelineAction = useCallback((id: string, success: boolean = true, details?: string) => {
+    setTimelineActions(prev => prev.map(action => {
+      if (action.id !== id) return action
+      return {
+        ...action,
+        status: success ? 'success' : 'error',
+        duration: Date.now() - action.timestamp.getTime(),
+        details: details || action.details
+      }
+    }))
+    if (currentActionRef.current === id) {
+      currentActionRef.current = null
+    }
+  }, [])
+
+  const clearTimeline = useCallback(() => {
+    setTimelineActions([])
+    currentActionRef.current = null
+  }, [])
+
+  // Parse terminal output for Claude actions
+  // More specific patterns to avoid false positives
+  const parseClaudeAction = useCallback((data: string) => {
+    // Only look for Claude CLI specific tool markers
+    // These patterns are more specific to actual tool invocations
+    const toolPatterns = [
+      // Look for tool invocations with emoji markers or specific formats
+      { pattern: /⏳.*?(?:Read|Reading)\s+([^\s\n]+)/i, type: 'read' as ActionType, getTitle: (m: RegExpMatchArray) => `Reading ${m[1].split('/').pop()}`, getFile: (m: RegExpMatchArray) => m[1] },
+      { pattern: /⏳.*?(?:Write|Writing)\s+([^\s\n]+)/i, type: 'write' as ActionType, getTitle: (m: RegExpMatchArray) => `Writing ${m[1].split('/').pop()}`, getFile: (m: RegExpMatchArray) => m[1] },
+      { pattern: /⏳.*?(?:Edit|Editing)\s+([^\s\n]+)/i, type: 'edit' as ActionType, getTitle: (m: RegExpMatchArray) => `Editing ${m[1].split('/').pop()}`, getFile: (m: RegExpMatchArray) => m[1] },
+      { pattern: /⏳.*?Bash/i, type: 'bash' as ActionType, getTitle: () => 'Running command' },
+      { pattern: /⏳.*?(?:Glob|Grep)/i, type: 'search' as ActionType, getTitle: () => 'Searching files' },
+      { pattern: /⏳.*?(?:WebFetch|WebSearch)/i, type: 'browser' as ActionType, getTitle: () => 'Fetching web' },
+      { pattern: /⏳.*?TodoWrite/i, type: 'tool' as ActionType, getTitle: () => 'Updating tasks' },
+      { pattern: /⏳.*?Task/i, type: 'tool' as ActionType, getTitle: () => 'Running agent' },
+      // Alternative: Look for tool names at start of line with specific formatting
+      { pattern: /^(?:│\s*)?Read\s+\/[^\s]+/m, type: 'read' as ActionType, getTitle: () => 'Reading file' },
+      { pattern: /^(?:│\s*)?Write\s+\/[^\s]+/m, type: 'write' as ActionType, getTitle: () => 'Writing file' },
+      { pattern: /^(?:│\s*)?Edit\s+\/[^\s]+/m, type: 'edit' as ActionType, getTitle: () => 'Editing file' },
+    ]
+
+    // Check for completion patterns - more specific
+    const successPattern = /✓|✔|Done|Completed successfully/
+    const errorPattern = /✗|✘|Error:|Failed:/
+
+    for (const { pattern, type, getTitle, getFile } of toolPatterns) {
+      const match = data.match(pattern)
+      if (match) {
+        // Complete previous action if there was one
+        if (currentActionRef.current) {
+          const isSuccess = successPattern.test(data)
+          const isError = errorPattern.test(data)
+          if (isSuccess || isError) {
+            completeTimelineAction(currentActionRef.current, isSuccess)
+          }
+        }
+
+        // Add new action (debouncing handled in addTimelineAction)
+        addTimelineAction(type, getTitle(match), {
+          file: getFile?.(match)
+        })
+        return
+      }
+    }
+
+    // Check for completion markers only
+    if (currentActionRef.current) {
+      if (successPattern.test(data)) {
+        completeTimelineAction(currentActionRef.current, true)
+      } else if (errorPattern.test(data)) {
+        completeTimelineAction(currentActionRef.current, false)
+      }
+    }
+  }, [addTimelineAction, completeTimelineAction])
+
+  // Update browser tab URL
+  const updateBrowserUrl = useCallback((panelId: string, tabId: string, url: string) => {
+    setPanels(prev => prev.map(panel => {
+      if (panel.id !== panelId) return panel
+      return {
+        ...panel,
+        tabs: panel.tabs.map(tab => {
+          if (tab.id !== tabId) return tab
+          const displayUrl = url.replace(/^https?:\/\//, '').replace(/\/$/, '')
+          return { ...tab, url, name: displayUrl || 'New Tab' }
+        })
+      }
+    }))
+  }, [])
+
+  // Navigate browser
+  const navigateBrowser = useCallback((panelId: string, tabId: string) => {
+    const panel = panels.find(p => p.id === panelId)
+    const tab = panel?.tabs.find(t => t.id === tabId)
+    if (!tab?.url) return
+
+    let url = tab.url
+    if (!url.startsWith('http://') && !url.startsWith('https://')) {
+      url = 'https://' + url
+    }
+
+    updateBrowserUrl(panelId, tabId, url)
+  }, [panels, updateBrowserUrl])
+
+  // Render panel
+  const renderPanel = (panel: Panel, isOnly: boolean) => {
+    const currentTab = panel.tabs.find(t => t.id === panel.activeTabId)
+    const isDropping = dropTarget?.panelId === panel.id
+
+    return (
+      <div
+        key={panel.id}
+        className={`h-full flex flex-col bg-[#0d0d0d] ${isOnly ? 'flex-1' : 'w-1/2'} ${isDropping ? 'ring-2 ring-[#cc785c]/50 ring-inset' : ''}`}
+        onDragOver={(e) => handleTabDragOver(e, panel.id, 'tab')}
+        onDragLeave={handleTabDragLeave}
+        onDrop={(e) => handleTabDrop(e, panel.id)}
+      >
+        {/* Panel Tab Bar */}
+        <div className="flex items-center justify-between px-2 py-1 bg-gradient-to-b from-[#1a1a1a] to-[#141414] border-b border-white/[0.06]">
+          {/* Tabs container - scrollable */}
+          <div className="flex items-center gap-1 overflow-x-auto scrollbar-hide flex-1 min-w-0">
+            {panel.tabs.map((tab) => (
+              <button
+                key={tab.id}
+                onClick={() => selectTab(panel.id, tab.id)}
+                draggable
+                onDragStart={(e) => handleTabDragStart(e, tab.id, panel.id)}
+                onDragEnd={handleDragEnd}
+                className={`group relative flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-medium transition-all duration-200 flex-shrink-0 ${
+                  tab.id === panel.activeTabId
+                    ? 'bg-[#cc785c]/15 text-[#cc785c]'
+                    : 'text-gray-500 hover:text-gray-300 hover:bg-white/5'
+                } ${draggedTab?.tabId === tab.id ? 'opacity-50 scale-95' : ''}`}
+              >
+                {/* Drag Handle */}
+                <GripVertical
+                  size={10}
+                  className="opacity-0 group-hover:opacity-50 cursor-grab active:cursor-grabbing transition-opacity"
+                />
+                {tab.type === 'terminal' ? (
+                  <TerminalIcon size={12} />
+                ) : (
+                  <Globe size={12} />
+                )}
+                <span className="max-w-[120px] truncate">{tab.name}</span>
+                {panel.tabs.length > 1 && (
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      closeTab(panel.id, tab.id)
+                    }}
+                    className="p-0.5 rounded opacity-0 group-hover:opacity-100 hover:bg-white/10 transition-all"
+                  >
+                    <X size={10} />
+                  </button>
+                )}
+              </button>
+            ))}
+          </div>
+
+          {/* Action buttons - outside scroll container for proper dropdown rendering */}
+          <div className="flex items-center gap-1 flex-shrink-0 ml-2">
+            {/* Plus Button with Menu */}
+            <div className="relative" ref={showPlusMenu === panel.id ? plusMenuRef : null}>
+              <button
+                onClick={() => setShowPlusMenu(showPlusMenu === panel.id ? null : panel.id)}
+                className="flex items-center gap-1 px-2 py-1.5 rounded-lg text-gray-400 hover:text-white hover:bg-white/[0.08] border border-transparent hover:border-white/[0.1] transition-all duration-200"
+                title="Add Tab"
+              >
+                <Plus size={14} />
+                <span className="text-xs">New</span>
+                <ChevronDown size={10} />
+              </button>
+
+              {showPlusMenu === panel.id && (
+                <div className="absolute top-full right-0 mt-1 w-48 bg-[#1a1a1a] border border-white/10 rounded-xl shadow-2xl z-[100] overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200">
+                  <div className="p-1">
+                    <button
+                      onClick={() => addTab(panel.id, 'terminal')}
+                      className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-gray-300 hover:bg-white/[0.08] hover:text-white transition-colors"
+                    >
+                      <TerminalIcon size={16} className="text-[#cc785c]" />
+                      <span>New Terminal</span>
+                    </button>
+                    <button
+                      onClick={() => addTab(panel.id, 'browser')}
+                      className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-gray-300 hover:bg-white/[0.08] hover:text-white transition-colors"
+                    >
+                      <Globe size={16} className="text-blue-400" />
+                      <span>New Browser</span>
+                    </button>
+                  </div>
+                  {panels.length < 2 && (
+                    <>
+                      <div className="h-px bg-white/10 mx-2" />
+                      <div className="p-1">
+                        <button
+                          onClick={() => addPanel('terminal')}
+                          className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-gray-300 hover:bg-white/[0.08] hover:text-white transition-colors"
+                        >
+                          <SplitSquareVertical size={16} className="text-purple-400" />
+                          <span>Split Panel</span>
+                        </button>
+                      </div>
+                    </>
+                  )}
+                </div>
+              )}
+            </div>
+
+            {/* Direct Split Panel Button - Always visible when only one panel */}
+            {panels.length < 2 && (
+              <button
+                onClick={() => addPanel('terminal')}
+                className="flex items-center gap-1.5 px-2 py-1.5 rounded-lg text-purple-400 hover:text-purple-300 hover:bg-purple-500/10 border border-purple-500/20 hover:border-purple-500/40 transition-all duration-200"
+                title="Split into two panels"
+              >
+                <SplitSquareVertical size={14} />
+                <span className="text-xs font-medium">Split</span>
+              </button>
+            )}
+          </div>
+
+          {/* Panel close button (only if not the only panel) */}
+          {panels.length > 1 && (
+            <button
+              onClick={() => setPanels(prev => prev.filter(p => p.id !== panel.id))}
+              className="p-1 rounded-lg text-gray-600 hover:text-white hover:bg-white/5 transition-colors"
+              title="Close Panel"
+            >
+              <X size={14} />
+            </button>
+          )}
+        </div>
+
+        {/* Panel Content */}
+        <div className="flex-1 relative overflow-hidden">
+          {currentTab?.type === 'terminal' ? (
+            <Terminal
+              ref={(ref) => {
+                if (ref) terminalRefs.current.set(currentTab.id, ref)
+              }}
+              onResize={(cols, rows) => setTerminalSize({ cols, rows })}
+              onLocalhostDetected={handleLocalhostDetected}
+              onTerminalIdReady={(terminalId) => {
+                if (panel.id === 'left') onTerminalIdChange?.(terminalId)
+              }}
+              onTerminalData={(data, terminalId) => {
+                detectClaudeStatus(data)
+                detectHtmlFile(data)
+                parseClaudeAction(data)
+                trackTokensAndCost(data)
+                parsePlanItems(data)
+                onTerminalData?.(data, terminalId)
+              }}
+            />
+          ) : currentTab?.type === 'browser' ? (
+            <div className="h-full flex flex-col">
+              {/* URL Bar */}
+              <div className="flex items-center gap-2 px-3 py-2 bg-[#141414] border-b border-white/[0.06]">
+                <button
+                  onClick={() => {
+                    const webview = document.getElementById(`browser-${currentTab.id}`) as Electron.WebviewTag | null
+                    if (webview && 'goBack' in webview) webview.goBack()
+                  }}
+                  className="p-1 rounded hover:bg-white/5 text-gray-500 hover:text-white transition-colors"
+                >
+                  <PanelLeft size={14} />
+                </button>
+                <button
+                  onClick={() => {
+                    const webview = document.getElementById(`browser-${currentTab.id}`) as Electron.WebviewTag | null
+                    if (webview && 'goForward' in webview) webview.goForward()
+                  }}
+                  className="p-1 rounded hover:bg-white/5 text-gray-500 hover:text-white transition-colors"
+                >
+                  <PanelRight size={14} />
+                </button>
+                <button
+                  onClick={() => {
+                    const webview = document.getElementById(`browser-${currentTab.id}`) as Electron.WebviewTag | null
+                    if (webview && 'reload' in webview) webview.reload()
+                  }}
+                  className="p-1 rounded hover:bg-white/5 text-gray-500 hover:text-white transition-colors"
+                >
+                  <RotateCcw size={14} />
+                </button>
+                <div className="flex-1 flex items-center gap-2 px-3 py-1.5 bg-[#0d0d0d] rounded-lg border border-white/[0.06]">
+                  <Globe size={12} className="text-gray-500" />
+                  <input
+                    type="text"
+                    value={currentTab.url || ''}
+                    onChange={(e) => updateBrowserUrl(panel.id, currentTab.id, e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') navigateBrowser(panel.id, currentTab.id)
+                    }}
+                    placeholder="Enter URL..."
+                    className="flex-1 bg-transparent text-sm text-white placeholder-gray-600 outline-none"
+                  />
+                </div>
+                {/* Viewport Toggle */}
+                <div className="flex items-center gap-0.5 px-1 border-l border-white/10 ml-1">
+                  <button
+                    onClick={() => setViewportMode('mobile')}
+                    className={`p-1 rounded transition-colors ${
+                      viewportMode === 'mobile'
+                        ? 'bg-[#cc785c]/20 text-[#cc785c]'
+                        : 'hover:bg-white/5 text-gray-500 hover:text-white'
+                    }`}
+                    title="Mobile View (375px)"
+                  >
+                    <Smartphone size={14} />
+                  </button>
+                  <button
+                    onClick={() => setViewportMode('desktop')}
+                    className={`p-1 rounded transition-colors ${
+                      viewportMode === 'desktop'
+                        ? 'bg-[#cc785c]/20 text-[#cc785c]'
+                        : 'hover:bg-white/5 text-gray-500 hover:text-white'
+                    }`}
+                    title="Desktop View (Full Width)"
+                  >
+                    <Monitor size={14} />
+                  </button>
+                </div>
+                <button
+                  onClick={() => {
+                    if (currentTab.url) window.api.openUrlExternal(currentTab.url)
+                  }}
+                  className="p-1 rounded hover:bg-white/5 text-gray-500 hover:text-white transition-colors"
+                  title="Open in Browser"
+                >
+                  <ExternalLink size={14} />
+                </button>
+              </div>
+              {/* Browser Content */}
+              <div className={`flex-1 flex items-start justify-center overflow-auto ${viewportMode === 'mobile' ? 'bg-[#1a1a1a] p-4' : ''}`}>
+                {currentTab.url ? (
+                  <div className={viewportMode === 'mobile'
+                    ? 'w-[375px] h-[667px] rounded-2xl overflow-hidden shadow-2xl border-4 border-[#2a2a2a] bg-white'
+                    : 'w-full h-full bg-white'
+                  }>
+                    <webview
+                      id={`browser-${currentTab.id}`}
+                      src={currentTab.url.startsWith('http') ? currentTab.url : `https://${currentTab.url}`}
+                      className="w-full h-full"
+                    />
+                  </div>
+                ) : (
+                  <div className={`flex items-center justify-center bg-[#0d0d0d] ${viewportMode === 'mobile' ? 'w-[375px] h-[667px] rounded-2xl border-4 border-[#2a2a2a]' : 'w-full h-full'}`}>
+                    <div className="text-center">
+                      <Globe size={48} className="mx-auto mb-4 text-gray-600" />
+                      <p className="text-gray-500 text-sm">Enter a URL to get started</p>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          ) : null}
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div
       className="h-full flex-1 flex flex-col bg-[#0a0a0a] relative overflow-hidden"
-      role="region"
-      aria-label="Terminal panel"
+      onDragOver={handleFileDragOver}
+      onDragLeave={handleFileDragLeave}
+      onDrop={handleFileDrop}
     >
-      {/* Ambient glow effects */}
-      <div className="absolute inset-0 pointer-events-none" aria-hidden="true">
-        {/* Top edge glow */}
+      {/* File Drop Overlay */}
+      {isDraggingFile && (
+        <div className="absolute inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center animate-fade-in">
+          <div className="text-center p-8 rounded-2xl border-2 border-dashed border-[#cc785c] bg-[#cc785c]/10">
+            <FileUp size={48} className="mx-auto mb-4 text-[#cc785c]" />
+            <p className="text-lg font-medium text-white mb-1">Drop files here</p>
+            <p className="text-sm text-gray-400">Files will be added to your chat with Claude</p>
+          </div>
+        </div>
+      )}
+
+      {/* Ambient glow */}
+      <div className="absolute inset-0 pointer-events-none">
         <div className="absolute top-0 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-[#cc785c]/30 to-transparent" />
-        {/* Corner accents */}
         <div className="absolute top-0 left-0 w-32 h-32 bg-gradient-radial from-[#cc785c]/5 to-transparent" />
         <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-radial from-purple-500/5 to-transparent" />
       </div>
 
-      {/* Premium Terminal Header */}
-      <div className="relative flex items-center justify-between px-2 py-1.5 bg-gradient-to-b from-[#1a1a1a] to-[#141414] border-b border-white/[0.06]">
-        {/* Subtle top highlight */}
-        <div className="absolute inset-x-0 top-0 h-[1px] bg-gradient-to-r from-transparent via-white/10 to-transparent" aria-hidden="true" />
 
-        {/* Tabs */}
-        <div
-          className="flex items-center gap-1 overflow-x-auto scrollbar-hide"
-          role="tablist"
-          aria-label="Terminal tabs"
-        >
-          {tabs.map((tab, index) => (
-            <button
-              key={tab.id}
-              role="tab"
-              aria-selected={tab.active}
-              aria-controls={`terminal-panel-${tab.id}`}
-              id={`terminal-tab-${tab.id}`}
-              tabIndex={tab.active ? 0 : -1}
-              onClick={() => selectTab(tab.id)}
-              draggable
-              onDragStart={(e) => handleDragStart(e, tab.id)}
-              onDragOver={(e) => handleDragOver(e, tab.id)}
-              onDragLeave={handleDragLeave}
-              onDrop={(e) => handleDrop(e, tab.id)}
-              onDragEnd={handleDragEnd}
-              className={`group relative flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-medium transition-all duration-300 focus-ring ${
-                tab.active
-                  ? 'bg-[#cc785c]/15 text-[#cc785c] shadow-[0_0_20px_rgba(204,120,92,0.1)]'
-                  : 'text-gray-500 hover:text-gray-300 hover:bg-white/5'
-              } ${
-                draggedTabId === tab.id ? 'opacity-50 scale-95' : ''
-              } ${
-                dragOverTabId === tab.id ? 'border-l-2 border-[#cc785c]' : ''
-              }`}
-              style={{
-                transform: draggedTabId === tab.id ? 'scale(0.95)' : 'scale(1)',
-                transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)'
-              }}
-              onKeyDown={(e) => {
-                if (e.key === 'ArrowRight') {
-                  const nextIndex = (index + 1) % tabs.length
-                  selectTab(tabs[nextIndex].id)
-                  document.getElementById(`terminal-tab-${tabs[nextIndex].id}`)?.focus()
-                } else if (e.key === 'ArrowLeft') {
-                  const prevIndex = (index - 1 + tabs.length) % tabs.length
-                  selectTab(tabs[prevIndex].id)
-                  document.getElementById(`terminal-tab-${tabs[prevIndex].id}`)?.focus()
-                }
-              }}
-            >
-              {tab.active && (
-                <div
-                  className="absolute inset-0 rounded-lg bg-gradient-to-b from-[#cc785c]/10 to-transparent animate-pulse-slow"
-                  aria-hidden="true"
-                />
-              )}
-              <GripVertical
-                size={10}
-                className="relative z-10 opacity-0 group-hover:opacity-50 cursor-grab active:cursor-grabbing transition-opacity"
-                aria-hidden="true"
-              />
-              <TerminalIcon size={12} className="relative z-10" aria-hidden="true" />
-              <span className="relative z-10">{tab.name}</span>
-              {tabs.length > 1 && (
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation()
-                    closeTab(tab.id)
-                  }}
-                  className="relative z-10 p-0.5 rounded opacity-0 group-hover:opacity-100 hover:bg-white/10 transition-all duration-200 focus-ring"
-                  aria-label={`Close ${tab.name} tab`}
-                  tabIndex={tab.active ? 0 : -1}
-                >
-                  <X size={10} aria-hidden="true" />
-                </button>
-              )}
-            </button>
-          ))}
+      {/* Hidden file input */}
+      <input
+        ref={fileInputRef}
+        type="file"
+        multiple
+        className="hidden"
+        onChange={handleFileInputChange}
+      />
 
-          {/* New Tab Button */}
-          <button
-            onClick={addTab}
-            className="p-1.5 rounded-lg text-gray-600 hover:text-gray-400 hover:bg-white/5 transition-all duration-300 hover:scale-110 focus-ring"
-            aria-label="Open new terminal tab"
-            title="New Terminal"
-          >
-            <Plus size={14} aria-hidden="true" />
-          </button>
-        </div>
-
-        {/* Right Controls */}
-        <div
-          className="flex items-center gap-1"
-          role="toolbar"
-          aria-label="Terminal controls"
-        >
-          {/* Terminal Size Indicator */}
-          <div
-            className="px-2 py-1 rounded bg-white/5 text-[10px] text-gray-600 font-mono"
-            aria-label={`Terminal size: ${terminalSize.cols} columns by ${terminalSize.rows} rows`}
-          >
-            {terminalSize.cols}x{terminalSize.rows}
-          </div>
-
-          {/* Zoom Controls */}
-          <div className="flex items-center gap-0.5 ml-1">
-            <button
-              onClick={zoomOut}
-              className="p-1 rounded text-gray-500 hover:text-white hover:bg-white/5 transition-all focus-ring"
-              aria-label="Zoom out"
-              title="Zoom Out"
-              disabled={zoomLevel <= 50}
-            >
-              <ZoomOut size={12} aria-hidden="true" />
-            </button>
-            <button
-              onClick={resetZoom}
-              className="px-1.5 py-0.5 rounded text-[10px] text-gray-500 hover:text-white hover:bg-white/5 transition-all focus-ring font-mono"
-              aria-label={`Zoom level ${zoomLevel}%`}
-              title="Reset Zoom"
-            >
-              {zoomLevel}%
-            </button>
-            <button
-              onClick={zoomIn}
-              className="p-1 rounded text-gray-500 hover:text-white hover:bg-white/5 transition-all focus-ring"
-              aria-label="Zoom in"
-              title="Zoom In"
-              disabled={zoomLevel >= 200}
-            >
-              <ZoomIn size={12} aria-hidden="true" />
-            </button>
-          </div>
-
-          {/* Claude Status */}
-          <div
-            className={`flex items-center gap-1.5 px-2 py-1 rounded-lg ml-1 transition-colors ${
-              claudeStatus === 'working'
-                ? 'bg-green-500/10 text-green-400'
-                : claudeStatus === 'waiting'
-                ? 'bg-amber-500/10 text-amber-400'
-                : 'bg-gray-500/10 text-gray-400'
-            }`}
-            role="status"
-            aria-live="polite"
-            aria-label={`Claude is ${claudeStatus}`}
-          >
+      {/* Panels Container */}
+      <div className="flex-1 flex relative">
+        {/* Drop zone indicators when dragging */}
+        {draggedTab && panels.length < 2 && (
+          <>
             <div
-              className={`w-1.5 h-1.5 rounded-full ${
-                claudeStatus === 'working'
-                  ? 'bg-green-400 animate-pulse'
-                  : claudeStatus === 'waiting'
-                  ? 'bg-amber-400'
-                  : 'bg-gray-400'
-              }`}
-              aria-hidden="true"
-            />
-            <span className="text-[10px] font-medium">
-              {claudeStatus === 'working' ? 'Working...' : claudeStatus === 'waiting' ? 'Waiting' : 'Idle'}
-            </span>
-          </div>
-
-          <div className="w-px h-4 bg-white/10 mx-1" role="separator" aria-hidden="true" />
-
-          {/* Pattern Highlighting Toggle */}
-          <button
-            onClick={() => setHighlightPatterns(!highlightPatterns)}
-            className={`p-1.5 rounded-lg transition-all focus-ring ${
-              highlightPatterns
-                ? 'text-[#cc785c] bg-[#cc785c]/10'
-                : 'text-gray-500 hover:text-white hover:bg-white/5'
-            }`}
-            aria-label={highlightPatterns ? 'Disable pattern highlighting' : 'Enable pattern highlighting'}
-            aria-pressed={highlightPatterns}
-            title="Highlight Patterns (errors, success, etc.)"
-          >
-            <Highlighter size={14} aria-hidden="true" />
-          </button>
-
-          {/* Scan Lines Toggle */}
-          <button
-            onClick={() => setScanLinesEnabled(!scanLinesEnabled)}
-            className={`p-1.5 rounded-lg transition-all focus-ring ${
-              scanLinesEnabled
-                ? 'text-[#cc785c] bg-[#cc785c]/10'
-                : 'text-gray-500 hover:text-white hover:bg-white/5'
-            }`}
-            aria-label={scanLinesEnabled ? 'Disable scan lines' : 'Enable scan lines'}
-            aria-pressed={scanLinesEnabled}
-            title="Retro Scan Lines"
-          >
-            <Monitor size={14} aria-hidden="true" />
-          </button>
-
-          {/* Split Terminal */}
-          <button
-            onClick={toggleSplit}
-            className={`p-1.5 rounded-lg transition-all focus-ring ${
-              isSplit
-                ? 'text-[#cc785c] bg-[#cc785c]/10'
-                : 'text-gray-500 hover:text-white hover:bg-white/5'
-            }`}
-            aria-label={isSplit ? 'Close split terminal' : 'Split terminal'}
-            aria-pressed={isSplit}
-            title="Split Terminal"
-          >
-            <SplitSquareVertical size={14} aria-hidden="true" />
-          </button>
-
-          {/* Settings */}
-          <button
-            onClick={onOpenSettings}
-            className="p-1.5 rounded-lg text-gray-500 hover:text-white hover:bg-white/5 transition-all focus-ring"
-            aria-label="Open terminal settings"
-            title="Settings"
-          >
-            <Settings size={14} aria-hidden="true" />
-          </button>
-
-          {/* Maximize */}
-          <button
-            onClick={() => setIsMaximized(!isMaximized)}
-            className="p-1.5 rounded-lg text-gray-500 hover:text-white hover:bg-white/5 transition-all focus-ring"
-            aria-label={isMaximized ? 'Restore terminal size' : 'Maximize terminal'}
-            aria-pressed={isMaximized}
-            title={isMaximized ? 'Restore' : 'Maximize'}
-          >
-            {isMaximized ? <Minimize2 size={14} aria-hidden="true" /> : <Maximize2 size={14} aria-hidden="true" />}
-          </button>
-        </div>
-      </div>
-
-      {/* Terminal Container */}
-      <div
-        className={`flex-1 relative ${isSplit || previewUrl ? 'flex' : ''}`}
-        id={activeTab ? `terminal-panel-${activeTab.id}` : undefined}
-        role="tabpanel"
-        aria-labelledby={activeTab ? `terminal-tab-${activeTab.id}` : undefined}
-        tabIndex={0}
-      >
-        {/* Inner glow frame */}
-        <div className="absolute inset-0 pointer-events-none z-10" aria-hidden="true">
-          <div className="absolute inset-0 border border-white/[0.03] rounded-sm" />
-          {/* Subtle vignette */}
-          <div className="absolute inset-0 bg-gradient-to-b from-black/20 via-transparent to-black/30" />
-        </div>
-
-        {/* Main Terminal */}
-        <div className={`h-full bg-[#0d0d0d] ${isSplit || previewUrl ? 'w-1/2' : 'w-full'}`}>
-          <Terminal
-            ref={terminalRef}
-            onResize={(cols, rows) => setTerminalSize({ cols, rows })}
-            scanLinesEnabled={scanLinesEnabled}
-            zoomLevel={zoomLevel}
-            highlightPatterns={highlightPatterns}
-            onLocalhostDetected={handleLocalhostDetected}
-            onTerminalIdReady={(terminalId) => {
-              // Notify parent immediately when terminal is ready
-              onTerminalIdChange?.(terminalId)
-            }}
-            onTerminalData={(data, terminalId) => {
-              detectClaudeStatus(data)
-              detectHtmlFile(data)
-              onTerminalData?.(data, terminalId)
-            }}
-          />
-        </div>
-
-        {/* Split Divider */}
-        {isSplit && (
-          <div
-            className="w-1 bg-[#1a1a1a] hover:bg-[#cc785c]/30 cursor-col-resize transition-colors"
-            aria-hidden="true"
-          />
+              className={`absolute left-0 top-0 bottom-0 w-16 z-40 flex items-center justify-center transition-all ${dropTarget?.position === 'left' ? 'bg-[#cc785c]/20' : 'bg-transparent hover:bg-[#cc785c]/10'}`}
+              onDragOver={(e) => { e.preventDefault(); setDropTarget({ panelId: 'new', position: 'left' }) }}
+              onDragLeave={handleTabDragLeave}
+              onDrop={(e) => handlePanelDrop(e, 'left')}
+            >
+              <div className={`p-2 rounded-lg ${dropTarget?.position === 'left' ? 'bg-[#cc785c]/30' : ''}`}>
+                <PanelLeft size={20} className="text-[#cc785c]" />
+              </div>
+            </div>
+            <div
+              className={`absolute right-0 top-0 bottom-0 w-16 z-40 flex items-center justify-center transition-all ${dropTarget?.position === 'right' ? 'bg-[#cc785c]/20' : 'bg-transparent hover:bg-[#cc785c]/10'}`}
+              onDragOver={(e) => { e.preventDefault(); setDropTarget({ panelId: 'new', position: 'right' }) }}
+              onDragLeave={handleTabDragLeave}
+              onDrop={(e) => handlePanelDrop(e, 'right')}
+            >
+              <div className={`p-2 rounded-lg ${dropTarget?.position === 'right' ? 'bg-[#cc785c]/30' : ''}`}>
+                <PanelRight size={20} className="text-[#cc785c]" />
+              </div>
+            </div>
+          </>
         )}
 
-        {/* Split Terminal */}
-        {isSplit && !previewUrl && (
-          <div className="h-full w-1/2 bg-[#0d0d0d]">
-            <Terminal
-              ref={splitTerminalRef}
-              scanLinesEnabled={scanLinesEnabled}
-              zoomLevel={zoomLevel}
-              highlightPatterns={highlightPatterns}
-              onLocalhostDetected={handleLocalhostDetected}
-            />
+        {/* Render panels */}
+        {panels.map((panel, index) => (
+          <div key={panel.id} className="contents">
+            {renderPanel(panel, panels.length === 1)}
+            {index < panels.length - 1 && (
+              <div className="w-1 bg-[#1a1a1a] hover:bg-[#cc785c]/30 cursor-col-resize transition-colors" />
+            )}
           </div>
-        )}
+        ))}
 
-        {/* File Preview Pane */}
+        {/* Preview pane (for file/localhost previews) */}
         {previewUrl && (
           <>
-            {/* Divider */}
-            <div
-              className="w-1 bg-[#1a1a1a] hover:bg-[#cc785c]/30 cursor-col-resize transition-colors"
-              aria-hidden="true"
-            />
-            {/* Preview Panel */}
+            <div className="w-1 bg-[#1a1a1a] hover:bg-[#cc785c]/30 cursor-col-resize transition-colors" />
             <div className="h-full w-1/2 bg-[#0d0d0d] flex flex-col">
-              {/* Preview Header */}
               <div className="flex items-center justify-between px-3 py-2 bg-[#141414] border-b border-white/[0.06]">
                 <div className="flex items-center gap-2">
                   <div className="w-2 h-2 rounded-full bg-[#cc785c] animate-pulse" />
                   <span className="text-xs text-gray-400">Preview</span>
-                  <span className="text-[10px] text-gray-600 font-mono truncate max-w-[200px]" title={previewUrl}>
-                    {previewUrl.split('/').pop()}
-                  </span>
+                  <span className="text-[10px] text-gray-600 font-mono truncate max-w-[200px]">{previewUrl.split('/').pop()}</span>
                 </div>
                 <div className="flex items-center gap-1">
                   <button
                     onClick={() => {
                       const webview = document.getElementById('preview-iframe') as Electron.WebviewTag | null
-                      if (webview && 'reload' in webview) {
-                        webview.reload()
-                      }
+                      if (webview && 'reload' in webview) webview.reload()
                     }}
                     className="p-1 rounded hover:bg-white/[0.06] text-gray-500 hover:text-white transition-colors"
-                    title="Refresh"
                   >
                     <RotateCcw size={12} />
                   </button>
                   <button
-                    onClick={() => window.api.openFileExternal(previewUrl)}
+                    onClick={() => {
+                      if (previewUrl.startsWith('http')) window.api.openUrlExternal(previewUrl)
+                      else window.api.openFileExternal(previewUrl)
+                    }}
                     className="p-1 rounded hover:bg-white/[0.06] text-gray-500 hover:text-white transition-colors"
-                    title="Open in Browser"
                   >
                     <ExternalLink size={12} />
                   </button>
-                  <button
-                    onClick={onClosePreview}
-                    className="p-1 rounded hover:bg-white/[0.06] text-gray-500 hover:text-white transition-colors"
-                    title="Close Preview"
-                  >
+                  <button onClick={onClosePreview} className="p-1 rounded hover:bg-white/[0.06] text-gray-500 hover:text-white transition-colors">
                     <X size={12} />
                   </button>
                 </div>
               </div>
-              {/* Preview Content */}
               <div className="flex-1 bg-white overflow-hidden">
                 <webview
                   id="preview-iframe"
-                  src={`file://${previewUrl.replace('file://', '')}`}
+                  src={previewUrl.startsWith('http') ? previewUrl : `file://${previewUrl.replace('file://', '')}`}
                   className="w-full h-full"
-                  style={{ display: 'flex', flex: 1 }}
                 />
               </div>
             </div>
           </>
         )}
 
-        {/* Preview Bar for detected localhost URLs */}
-        <PreviewBar
-          url={detectedLocalhostUrl}
-          onDismiss={handleDismissPreview}
-          onOpenPreview={handleOpenPreview}
-          onOpenInBrowser={handleOpenInBrowser}
-        />
+        {/* Preview bar for detected URLs */}
+        <PreviewBar url={detectedLocalhostUrl} onDismiss={handleDismissPreview} onOpenPreview={handleOpenPreview} onOpenInBrowser={handleOpenInBrowser} />
 
-        {/* HTML File Detection Bar */}
+        {/* HTML file detection bar */}
         {detectedHtmlFile && (
           <div className="absolute bottom-16 left-4 right-4 bg-[#1a1a1c] border border-[#cc785c]/30 rounded-xl shadow-xl z-40 overflow-hidden animate-slide-up">
             <div className="flex items-center justify-between px-4 py-3">
@@ -816,105 +1377,245 @@ export default function TerminalWrapper({ onOpenSettings, onTerminalData, onTerm
                   <ExternalLink size={12} />
                   Preview
                 </button>
-                <button
-                  onClick={handleDismissHtmlFile}
-                  className="p-1.5 hover:bg-white/[0.06] rounded-lg text-gray-500 hover:text-white transition-colors"
-                >
+                <button onClick={handleDismissHtmlFile} className="p-1.5 hover:bg-white/[0.06] rounded-lg text-gray-500 hover:text-white transition-colors">
                   <X size={14} />
                 </button>
               </div>
             </div>
           </div>
         )}
+
+        {/* Task Timeline Panel */}
+        {showTimeline && (
+          <TaskTimeline
+            actions={timelineActions}
+            onClear={clearTimeline}
+            isCollapsed={timelineCollapsed}
+            onToggleCollapse={() => {
+              if (timelineCollapsed) {
+                setTimelineCollapsed(false)
+              } else {
+                setShowTimeline(false)
+              }
+            }}
+          />
+        )}
+
+        {/* Plan Panel */}
+        {showPlanPanel && (
+          <PlanPanel
+            items={planItems}
+            onClose={() => onClosePlanPanel?.()}
+            onClear={() => setPlanItems([])}
+          />
+        )}
       </div>
 
-      {/* Premium Status Bar */}
-      <footer className="relative flex items-center justify-between px-3 py-1.5 bg-gradient-to-b from-[#141414] to-[#0d0d0d] border-t border-white/[0.04]">
-        {/* Left: Session info */}
-        <div
-          className="flex items-center gap-3 text-[10px] text-gray-600"
-          role="status"
-        >
-          <div className="flex items-center gap-1.5">
-            <Sparkles size={10} className="text-[#cc785c]" aria-hidden="true" />
-            <span>Claude Code</span>
+      {/* Streamlined Status Bar - Improved Readability */}
+      <footer className="relative flex items-center justify-between px-4 py-2 bg-[#0d0d0d] border-t border-white/[0.06]">
+        {/* Left: Session Info */}
+        <div className="flex items-center gap-3">
+          {/* Claude Status Indicator */}
+          <div className={`flex items-center gap-2 px-2.5 py-1.5 rounded-lg transition-colors ${
+            claudeStatus === 'working' ? 'bg-green-500/15 text-green-400' :
+            claudeStatus === 'waiting' ? 'bg-amber-500/15 text-amber-400' :
+            'bg-gray-500/10 text-gray-400'
+          }`}>
+            <div className={`w-2 h-2 rounded-full ${
+              claudeStatus === 'working' ? 'bg-green-400 animate-pulse' :
+              claudeStatus === 'waiting' ? 'bg-amber-400' : 'bg-gray-400'
+            }`} />
+            <span className="text-[11px] font-medium">
+              {claudeStatus === 'working' ? 'Working' : claudeStatus === 'waiting' ? 'Ready' : 'Idle'}
+            </span>
           </div>
-          <span className="text-gray-700" aria-hidden="true">|</span>
-          <div className="flex items-center gap-1">
-            <Clock size={10} aria-hidden="true" />
-            <span>{formatDuration(sessionDuration)}</span>
-          </div>
-          {memoryUsage > 0 && (
-            <>
-              <span className="text-gray-700" aria-hidden="true">|</span>
-              <div className="flex items-center gap-1">
-                <MemoryStick size={10} aria-hidden="true" />
-                <span>{formatBytes(memoryUsage)}</span>
+
+          {/* Model Toggle Button */}
+          <div className="relative" ref={modelMenuRef}>
+            <button
+              onClick={() => setShowModelMenu(!showModelMenu)}
+              className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border transition-all ${
+                showModelMenu
+                  ? 'bg-[#cc785c]/25 text-[#cc785c] border-[#cc785c]/40'
+                  : 'bg-[#cc785c]/15 text-[#cc785c] border-[#cc785c]/20 hover:bg-[#cc785c]/25 hover:border-[#cc785c]/40'
+              }`}
+              title="Switch model"
+            >
+              <Zap size={12} />
+              <span className="text-[11px] font-semibold uppercase tracking-wide">{currentModel}</span>
+              <ChevronDown size={10} className={`transition-transform ${showModelMenu ? 'rotate-180' : ''}`} />
+            </button>
+
+            {/* Model Dropdown */}
+            {showModelMenu && (
+              <div className="absolute bottom-full left-0 mb-2 w-44 bg-[#1a1a1a] border border-white/10 rounded-xl shadow-2xl z-50 overflow-hidden animate-in fade-in slide-in-from-bottom-2 duration-200">
+                <div className="px-3 py-2 border-b border-white/[0.06]">
+                  <span className="text-[10px] uppercase tracking-wider text-gray-500 font-medium">Select Model</span>
+                </div>
+                <div className="p-1">
+                  {[
+                    { id: 'opus', name: 'Opus', desc: 'Most capable', color: 'text-purple-400', bg: 'bg-purple-500/10' },
+                    { id: 'sonnet', name: 'Sonnet', desc: 'Balanced', color: 'text-[#cc785c]', bg: 'bg-[#cc785c]/10' },
+                    { id: 'haiku', name: 'Haiku', desc: 'Fastest', color: 'text-emerald-400', bg: 'bg-emerald-500/10' }
+                  ].map((model) => (
+                    <button
+                      key={model.id}
+                      onClick={() => handleModelChange(model.id as 'opus' | 'sonnet' | 'haiku')}
+                      className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-left transition-colors ${
+                        currentModel === model.id
+                          ? `${model.bg} ${model.color}`
+                          : 'text-gray-300 hover:bg-white/[0.06]'
+                      }`}
+                    >
+                      <div className={`w-2 h-2 rounded-full ${currentModel === model.id ? model.color.replace('text-', 'bg-') : 'bg-gray-600'}`} />
+                      <div className="flex-1">
+                        <span className="text-sm font-medium">{model.name}</span>
+                        <span className="text-[10px] text-gray-500 ml-2">{model.desc}</span>
+                      </div>
+                      {currentModel === model.id && (
+                        <span className="text-[10px] px-1.5 py-0.5 rounded bg-white/10">Active</span>
+                      )}
+                    </button>
+                  ))}
+                </div>
               </div>
-            </>
-          )}
+            )}
+          </div>
+
+          <div className="flex items-center gap-2 px-2 py-1 rounded-md bg-white/[0.04]">
+            <Clock size={11} className="text-gray-500" />
+            <span className="text-[11px] text-gray-300 font-medium">{formatDuration(sessionDuration)}</span>
+          </div>
+          <div className="flex items-center gap-2 px-2 py-1 rounded-md bg-white/[0.04]">
+            <Hash size={11} className="text-gray-500" />
+            <span className="text-[11px] text-gray-300 font-medium">{tokenCount > 1000 ? `${(tokenCount / 1000).toFixed(1)}K` : tokenCount} tokens</span>
+          </div>
         </div>
 
-        {/* Center: Quick Actions */}
-        <div className="flex items-center gap-2">
+        {/* Center: Key Actions */}
+        <div className="flex items-center gap-1">
+          {/* Timeline Toggle */}
+          <button
+            onClick={() => {
+              if (showTimeline) {
+                setShowTimeline(false)
+                setTimelineCollapsed(false)
+              } else {
+                setShowTimeline(true)
+              }
+            }}
+            className={`p-2 rounded-lg transition-all relative ${
+              showTimeline
+                ? 'bg-[#cc785c]/20 text-[#cc785c]'
+                : 'text-gray-400 hover:text-white hover:bg-white/[0.08]'
+            }`}
+            title="Task Timeline"
+          >
+            <ListOrdered size={14} />
+            {timelineActions.length > 0 && (
+              <span className="absolute -top-1 -right-1 w-4 h-4 bg-[#cc785c] text-white text-[9px] font-bold rounded-full flex items-center justify-center">
+                {timelineActions.length > 99 ? '99+' : timelineActions.length}
+              </span>
+            )}
+          </button>
+
+          {/* Upload Button */}
+          <div className="relative" ref={uploadMenuRef}>
+            <button
+              onClick={() => setShowUploadMenu(!showUploadMenu)}
+              disabled={!activeTerminalId}
+              className={`p-2 rounded-lg transition-all ${
+                showUploadMenu
+                  ? 'bg-[#cc785c]/20 text-[#cc785c]'
+                  : 'text-gray-400 hover:text-white hover:bg-white/[0.08] disabled:opacity-40 disabled:cursor-not-allowed'
+              }`}
+              title="Upload files"
+            >
+              <Upload size={14} />
+            </button>
+
+            {/* Upload Menu Dropdown */}
+            {showUploadMenu && (
+              <div className="absolute bottom-full right-0 mb-2 w-48 bg-[#1e1e1e] border border-white/[0.08] rounded-xl shadow-xl z-50 overflow-hidden">
+                <div className="px-3 py-2 border-b border-white/[0.06] text-[10px] uppercase tracking-wider text-gray-500">
+                  Add to Chat
+                </div>
+                <button
+                  onClick={() => handleFileSelect('file')}
+                  className="w-full flex items-center gap-3 px-3 py-2.5 hover:bg-white/[0.04] transition-colors"
+                >
+                  <FileText size={14} className="text-gray-400" />
+                  <span className="text-sm text-gray-300">Upload File</span>
+                </button>
+                <button
+                  onClick={() => handleFileSelect('image')}
+                  className="w-full flex items-center gap-3 px-3 py-2.5 hover:bg-white/[0.04] transition-colors"
+                >
+                  <Image size={14} className="text-gray-400" />
+                  <span className="text-sm text-gray-300">Upload Image</span>
+                </button>
+                <button
+                  onClick={() => handleFileSelect('folder')}
+                  className="w-full flex items-center gap-3 px-3 py-2.5 hover:bg-white/[0.04] transition-colors"
+                >
+                  <Folder size={14} className="text-gray-400" />
+                  <span className="text-sm text-gray-300">Select Folder</span>
+                </button>
+                <div className="px-3 py-2 border-t border-white/[0.06] text-[10px] text-gray-600">
+                  Or drag & drop files anywhere
+                </div>
+              </div>
+            )}
+          </div>
+
+          <div className="w-px h-4 bg-white/[0.08] mx-1" />
+
+          <button
+            onClick={handleKill}
+            disabled={!activeTerminalId || claudeStatus === 'idle'}
+            className="p-2 rounded-lg text-red-400/80 hover:text-red-400 hover:bg-red-500/15 transition-all disabled:opacity-20 disabled:cursor-not-allowed"
+            title="Stop (Ctrl+C)"
+          >
+            <Square size={14} className="fill-current" />
+          </button>
+
           <button
             onClick={handleClear}
-            className="flex items-center gap-1 px-2 py-0.5 rounded text-[10px] text-gray-600 hover:text-white hover:bg-white/5 transition-all focus-ring"
-            aria-label="Clear terminal"
-            title="Clear"
+            className="p-2 rounded-lg text-gray-400 hover:text-white hover:bg-white/[0.08] transition-all"
+            title="Clear (⌘K)"
           >
-            <Trash2 size={10} aria-hidden="true" />
-            <span>Clear</span>
+            <Trash2 size={14} />
           </button>
-          <button
-            onClick={handleScrollToBottom}
-            className="flex items-center gap-1 px-2 py-0.5 rounded text-[10px] text-gray-600 hover:text-white hover:bg-white/5 transition-all focus-ring"
-            aria-label="Scroll to bottom"
-            title="Scroll to Bottom"
-          >
-            <ArrowDownToLine size={10} aria-hidden="true" />
-            <span>Bottom</span>
-          </button>
+
           <button
             onClick={handleCopyAll}
-            className="flex items-center gap-1 px-2 py-0.5 rounded text-[10px] text-gray-600 hover:text-white hover:bg-white/5 transition-all focus-ring"
-            aria-label="Copy all terminal content"
+            className="p-2 rounded-lg text-gray-400 hover:text-white hover:bg-white/[0.08] transition-all"
             title="Copy All"
           >
-            <Copy size={10} aria-hidden="true" />
-            <span>Copy All</span>
+            <Copy size={14} />
+          </button>
+
+          <button
+            onClick={handleScrollToBottom}
+            className="p-2 rounded-lg text-gray-400 hover:text-white hover:bg-white/[0.08] transition-all"
+            title="Scroll to Bottom"
+          >
+            <ArrowDownToLine size={14} />
           </button>
         </div>
 
-        {/* Right: Quick actions hint */}
-        <div
-          className="flex items-center gap-4 text-[10px] text-gray-700"
-          aria-label="Keyboard shortcuts"
-        >
-          <span>
-            <kbd className="px-1 py-0.5 rounded bg-white/5 text-gray-600" aria-label="Command">Cmd</kbd>
-            <span aria-hidden="true">+</span>
-            <kbd className="px-1 py-0.5 rounded bg-white/5 text-gray-600 ml-0.5">K</kbd>
-            <span className="ml-1">Clear</span>
-          </span>
-          <span>
-            <kbd className="px-1 py-0.5 rounded bg-white/5 text-gray-600" aria-label="Command">Cmd</kbd>
-            <span aria-hidden="true">+</span>
-            <kbd className="px-1 py-0.5 rounded bg-white/5 text-gray-600 ml-0.5">P</kbd>
-            <span className="ml-1">Palette</span>
-          </span>
+        {/* Right: Keyboard Shortcut */}
+        <div className="flex items-center gap-2">
+          <kbd className="px-1.5 py-1 rounded-md bg-white/[0.05] text-gray-400 text-[10px] font-mono border border-white/[0.08]">⌘K</kbd>
+          <Sparkles size={12} className="text-[#cc785c]/60" />
         </div>
       </footer>
 
-      {/* CSS for animations */}
       <style>{`
-        @keyframes pulse-slow {
-          0%, 100% { opacity: 1; }
-          50% { opacity: 0.7; }
-        }
-        .animate-pulse-slow {
-          animation: pulse-slow 3s ease-in-out infinite;
-        }
+        @keyframes pulse-slow { 0%, 100% { opacity: 1; } 50% { opacity: 0.7; } }
+        .animate-pulse-slow { animation: pulse-slow 3s ease-in-out infinite; }
+        @keyframes slide-up { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        .animate-slide-up { animation: slide-up 0.2s ease-out; }
       `}</style>
     </div>
   )

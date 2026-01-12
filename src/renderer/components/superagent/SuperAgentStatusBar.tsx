@@ -11,7 +11,10 @@ import {
   Copy,
   Check,
   ChevronRight,
-  ChevronLeft
+  ChevronLeft,
+  Hand,
+  Pause,
+  Play
 } from 'lucide-react'
 import { useSuperAgent } from '../../hooks/useSuperAgent'
 
@@ -34,7 +37,7 @@ const LOG_CONFIG = {
 }
 
 export function SuperAgentStatusBar({ onStop }: SuperAgentStatusBarProps) {
-  const { isRunning, task, startTime, timeLimit, activityLog, stopSuperAgent } = useSuperAgent()
+  const { isRunning, isPaused, task, startTime, timeLimit, activityLog, stopSuperAgent, nudgeSuperAgent, togglePause } = useSuperAgent()
   const [elapsed, setElapsed] = useState(0)
   const [isThinking, setIsThinking] = useState(false)
   const [copied, setCopied] = useState(false)
@@ -173,7 +176,7 @@ export function SuperAgentStatusBar({ onStop }: SuperAgentStatusBarProps) {
             <div>
               <h3 className="text-xs font-semibold text-white">Super Agent</h3>
               <p className="text-[10px] text-gray-500">
-                {isThinking ? 'Analyzing...' : 'Running'}
+                {isPaused ? 'Paused' : isThinking ? 'Analyzing...' : 'Running'}
               </p>
             </div>
           </div>
@@ -263,8 +266,39 @@ export function SuperAgentStatusBar({ onStop }: SuperAgentStatusBarProps) {
         </div>
       </div>
 
-      {/* Stop Button */}
-      <div className="shrink-0 p-3 border-t border-white/[0.06]">
+      {/* Action Buttons */}
+      <div className="shrink-0 p-3 border-t border-white/[0.06] space-y-2">
+        {/* Nudge Button */}
+        <button
+          onClick={nudgeSuperAgent}
+          disabled={isPaused}
+          className="w-full flex items-center justify-center gap-2 px-3 py-2 bg-[#cc785c]/10 hover:bg-[#cc785c] border border-[#cc785c]/30 hover:border-[#cc785c] text-[#cc785c] hover:text-white rounded-lg text-xs font-medium transition-all group disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-[#cc785c]/10 disabled:hover:text-[#cc785c]"
+        >
+          <Hand size={12} className="group-hover:scale-110 transition-transform" />
+          <span>Nudge Agent</span>
+        </button>
+        {/* Pause/Resume Button */}
+        <button
+          onClick={togglePause}
+          className={`w-full flex items-center justify-center gap-2 px-3 py-2 border rounded-lg text-xs font-medium transition-all group ${
+            isPaused
+              ? 'bg-green-500/10 hover:bg-green-500 border-green-500/30 hover:border-green-500 text-green-400 hover:text-white'
+              : 'bg-purple-500/10 hover:bg-purple-500 border-purple-500/30 hover:border-purple-500 text-purple-400 hover:text-white'
+          }`}
+        >
+          {isPaused ? (
+            <>
+              <Play size={12} className="group-hover:scale-110 transition-transform" />
+              <span>Resume Agent</span>
+            </>
+          ) : (
+            <>
+              <Pause size={12} className="group-hover:scale-110 transition-transform" />
+              <span>Pause Agent</span>
+            </>
+          )}
+        </button>
+        {/* Stop Button */}
         <button
           onClick={handleStop}
           className="w-full flex items-center justify-center gap-2 px-3 py-2 bg-red-500/10 hover:bg-red-500 border border-red-500/30 hover:border-red-500 text-red-400 hover:text-white rounded-lg text-xs font-medium transition-all group"

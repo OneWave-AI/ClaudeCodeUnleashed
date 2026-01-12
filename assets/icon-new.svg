@@ -1,0 +1,144 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024">
+  <defs>
+    <!-- Background gradient - deep black with subtle warmth -->
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#141414"/>
+      <stop offset="50%" style="stop-color:#0a0a0a"/>
+      <stop offset="100%" style="stop-color:#0d0d0d"/>
+    </linearGradient>
+
+    <!-- Gold gradient - rich and warm -->
+    <linearGradient id="goldGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#FFD700"/>
+      <stop offset="50%" style="stop-color:#F5A623"/>
+      <stop offset="100%" style="stop-color:#D4941C"/>
+    </linearGradient>
+
+    <!-- Bright gold for highlights -->
+    <linearGradient id="goldBright" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#FFE566"/>
+      <stop offset="100%" style="stop-color:#F5A623"/>
+    </linearGradient>
+
+    <!-- Gold glow effect -->
+    <filter id="goldGlow" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur stdDeviation="20" result="blur"/>
+      <feFlood flood-color="#F5A623" flood-opacity="0.6"/>
+      <feComposite in2="blur" operator="in"/>
+      <feMerge>
+        <feMergeNode/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+
+    <!-- Subtle gold glow for small elements -->
+    <filter id="subtleGlow" x="-30%" y="-30%" width="160%" height="160%">
+      <feGaussianBlur stdDeviation="8" result="blur"/>
+      <feFlood flood-color="#FFD700" flood-opacity="0.4"/>
+      <feComposite in2="blur" operator="in"/>
+      <feMerge>
+        <feMergeNode/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+
+    <!-- Inner shadow for depth -->
+    <filter id="innerShadow" x="-10%" y="-10%" width="120%" height="120%">
+      <feOffset dx="0" dy="4"/>
+      <feGaussianBlur stdDeviation="6"/>
+      <feComposite operator="out" in="SourceGraphic"/>
+      <feColorMatrix values="0 0 0 0 0   0 0 0 0 0   0 0 0 0 0   0 0 0 0.5 0"/>
+      <feComposite operator="atop" in2="SourceGraphic"/>
+    </filter>
+
+    <!-- Ambient gold radial -->
+    <radialGradient id="ambientGold" cx="50%" cy="50%" r="60%">
+      <stop offset="0%" style="stop-color:#F5A623;stop-opacity:0.08"/>
+      <stop offset="100%" style="stop-color:#F5A623;stop-opacity:0"/>
+    </radialGradient>
+  </defs>
+
+  <!-- Background -->
+  <rect width="1024" height="1024" rx="220" fill="url(#bgGrad)"/>
+
+  <!-- Subtle border -->
+  <rect width="1024" height="1024" rx="220" fill="none" stroke="#2a2a2a" stroke-width="2"/>
+
+  <!-- Ambient gold glow in center -->
+  <ellipse cx="512" cy="520" rx="350" ry="300" fill="url(#ambientGold)"/>
+
+  <!-- Terminal window frame - subtle -->
+  <rect x="180" y="220" width="664" height="584" rx="24" fill="none" stroke="#333333" stroke-width="3" opacity="0.5"/>
+
+  <!-- Terminal header bar -->
+  <rect x="180" y="220" width="664" height="56" rx="24" fill="#1a1a1a"/>
+  <rect x="180" y="252" width="664" height="24" fill="#1a1a1a"/>
+
+  <!-- Window control dots -->
+  <circle cx="224" cy="248" r="12" fill="#3a3a3a"/>
+  <circle cx="264" cy="248" r="12" fill="#3a3a3a"/>
+  <circle cx="304" cy="248" r="12" fill="#3a3a3a"/>
+
+  <!-- Terminal content area -->
+  <rect x="180" y="276" width="664" height="528" fill="#0a0a0a" opacity="0.5"/>
+
+  <!-- Command prompt > symbol -->
+  <text x="240" y="520" font-family="SF Mono, Monaco, Consolas, monospace" font-size="140" font-weight="600" fill="url(#goldGrad)" filter="url(#subtleGlow)">
+    &gt;
+  </text>
+
+  <!-- Blinking cursor - the hero element -->
+  <rect
+    x="400"
+    y="400"
+    width="88"
+    height="148"
+    rx="8"
+    fill="url(#goldBright)"
+    filter="url(#goldGlow)"
+  />
+
+  <!-- Cursor highlight shine -->
+  <rect
+    x="408"
+    y="408"
+    width="24"
+    height="80"
+    rx="4"
+    fill="#FFFFFF"
+    opacity="0.25"
+  />
+
+  <!-- Subtle scan lines effect -->
+  <g opacity="0.03">
+    <line x1="180" y1="350" x2="844" y2="350" stroke="#FFD700" stroke-width="1"/>
+    <line x1="180" y1="400" x2="844" y2="400" stroke="#FFD700" stroke-width="1"/>
+    <line x1="180" y1="450" x2="844" y2="450" stroke="#FFD700" stroke-width="1"/>
+    <line x1="180" y1="500" x2="844" y2="500" stroke="#FFD700" stroke-width="1"/>
+    <line x1="180" y1="550" x2="844" y2="550" stroke="#FFD700" stroke-width="1"/>
+    <line x1="180" y1="600" x2="844" y2="600" stroke="#FFD700" stroke-width="1"/>
+    <line x1="180" y1="650" x2="844" y2="650" stroke="#FFD700" stroke-width="1"/>
+    <line x1="180" y1="700" x2="844" y2="700" stroke="#FFD700" stroke-width="1"/>
+    <line x1="180" y1="750" x2="844" y2="750" stroke="#FFD700" stroke-width="1"/>
+  </g>
+
+  <!-- Underscore after cursor for terminal feel -->
+  <rect
+    x="520"
+    y="520"
+    width="60"
+    height="12"
+    rx="2"
+    fill="url(#goldGrad)"
+    opacity="0.4"
+    filter="url(#subtleGlow)"
+  />
+
+  <!-- Corner accents - gold -->
+  <g stroke="url(#goldGrad)" stroke-width="4" stroke-linecap="round" opacity="0.3" filter="url(#subtleGlow)">
+    <path d="M140,140 L140,200 M140,140 L200,140"/>
+    <path d="M884,140 L884,200 M884,140 L824,140"/>
+    <path d="M140,884 L140,824 M140,884 L200,884"/>
+    <path d="M884,884 L884,824 M884,884 L824,884"/>
+  </g>
+</svg>

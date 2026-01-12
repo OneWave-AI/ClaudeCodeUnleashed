@@ -1,0 +1,109 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024">
+  <defs>
+    <!-- Deep black -->
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#0f0f0f"/>
+      <stop offset="100%" style="stop-color:#050505"/>
+    </linearGradient>
+
+    <!-- Premium gold -->
+    <linearGradient id="goldPremium" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#FFF1A8"/>
+      <stop offset="20%" style="stop-color:#FFD700"/>
+      <stop offset="80%" style="stop-color:#E5B800"/>
+      <stop offset="100%" style="stop-color:#B8930F"/>
+    </linearGradient>
+
+    <!-- Side gold for 3D effect -->
+    <linearGradient id="goldSide" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" style="stop-color:#997700"/>
+      <stop offset="100%" style="stop-color:#B8930F"/>
+    </linearGradient>
+
+    <!-- Massive glow -->
+    <filter id="megaGlow" x="-100%" y="-100%" width="300%" height="300%">
+      <feGaussianBlur stdDeviation="40" result="blur"/>
+      <feFlood flood-color="#FFD700" flood-opacity="0.8"/>
+      <feComposite in2="blur" operator="in"/>
+      <feMerge>
+        <feMergeNode/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+
+    <!-- Outer glow ring -->
+    <radialGradient id="outerGlow" cx="50%" cy="50%" r="50%">
+      <stop offset="30%" style="stop-color:#FFD700;stop-opacity:0.1"/>
+      <stop offset="60%" style="stop-color:#FFD700;stop-opacity:0.05"/>
+      <stop offset="100%" style="stop-color:#FFD700;stop-opacity:0"/>
+    </radialGradient>
+  </defs>
+
+  <!-- Background -->
+  <rect width="1024" height="1024" rx="220" fill="url(#bg)"/>
+
+  <!-- Outer glow -->
+  <circle cx="512" cy="512" r="450" fill="url(#outerGlow)"/>
+
+  <!-- THE CURSOR - Bold, iconic, unmistakable -->
+  <!-- 3D effect - back shadow -->
+  <rect
+    x="362"
+    y="222"
+    width="300"
+    height="580"
+    rx="32"
+    fill="#1a1a1a"
+  />
+
+  <!-- 3D effect - side -->
+  <rect
+    x="352"
+    y="212"
+    width="300"
+    height="580"
+    rx="32"
+    fill="url(#goldSide)"
+    opacity="0.6"
+  />
+
+  <!-- Main cursor face -->
+  <rect
+    x="340"
+    y="200"
+    width="300"
+    height="580"
+    rx="32"
+    fill="url(#goldPremium)"
+    filter="url(#megaGlow)"
+  />
+
+  <!-- Highlight stripe -->
+  <rect
+    x="370"
+    y="240"
+    width="60"
+    height="300"
+    rx="12"
+    fill="#FFFFFF"
+    opacity="0.35"
+  />
+
+  <!-- Secondary highlight -->
+  <rect
+    x="370"
+    y="560"
+    width="40"
+    height="100"
+    rx="8"
+    fill="#FFFFFF"
+    opacity="0.15"
+  />
+
+  <!-- Subtle terminal lines at bottom -->
+  <g opacity="0.3">
+    <rect x="280" y="820" width="120" height="8" rx="4" fill="url(#goldPremium)"/>
+    <rect x="420" y="820" width="80" height="8" rx="4" fill="url(#goldPremium)" opacity="0.5"/>
+    <rect x="520" y="820" width="200" height="8" rx="4" fill="url(#goldPremium)" opacity="0.3"/>
+  </g>
+</svg>

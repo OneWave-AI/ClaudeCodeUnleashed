@@ -8,10 +8,13 @@ const ANSI_REGEX = /\x1b\[[0-9;]*[a-zA-Z]/g
 // System prompt for the Super Agent LLM
 const SYSTEM_PROMPT = `You are an autonomous agent controlling Claude Code CLI. Your job is to keep Claude working on the task until it's PERFECT.
 
+MODE: {MODE}
 ORIGINAL TASK: {TASK}
 
 TERMINAL OUTPUT:
 {OUTPUT}
+
+{TAKEOVER_CONTEXT}
 
 === DECISION RULES (in priority order) ===
 
@@ -41,11 +44,14 @@ TERMINAL OUTPUT:
    → NEVER say "DONE" - keep pushing for perfection
 
 === CRITICAL RULES ===
-- Output ONLY your response text, nothing else
+- Output ONLY the EXACT text to type into the terminal - nothing else!
+- NEVER say "You should type:" or "Run this command:" - just output the actual text
+- NEVER say "Suggest adding..." - instead say "Add..." as a direct instruction
 - If Claude is working, respond exactly "WAIT"
 - NEVER respond "DONE" - always suggest improvements until time runs out
-- Never repeat the exact same message twice
-- Be specific with improvement suggestions, not vague`
+- Never repeat the exact same message or semantically similar suggestions twice
+- Be SPECIFIC with improvements - don't just say "add error handling" repeatedly
+- Vary your suggestions: try different aspects like UX, performance, accessibility, animations, tests`
 
 // Patterns that indicate Claude is waiting for input (check last few lines)
 const WAITING_PATTERNS = [
@@ -147,6 +153,7 @@ const getStore = () => useSuperAgentStore.getState()
 export function useSuperAgent() {
   // Subscribe to specific state we need for rendering
   const isRunning = useSuperAgentStore((s) => s.isRunning)
+  const isPaused = useSuperAgentStore((s) => s.isPaused)
   const task = useSuperAgentStore((s) => s.task)
   const startTime = useSuperAgentStore((s) => s.startTime)
   const timeLimit = useSuperAgentStore((s) => s.timeLimit)
@@ -159,6 +166,7 @@ export function useSuperAgent() {
   const setTimeLimit = useSuperAgentStore((s) => s.setTimeLimit)
   const setSafetyLevel = useSuperAgentStore((s) => s.setSafetyLevel)
   const setProvider = useSuperAgentStore((s) => s.setProvider)
+  const togglePause = useSuperAgentStore((s) => s.togglePause)
 
   const idleTimerRef = useRef<NodeJS.Timeout | null>(null)
   const durationTimerRef = useRef<NodeJS.Timeout | null>(null)
@@ -171,6 +179,11 @@ export function useSuperAgent() {
   const lastStatusTimeRef = useRef<number>(0) // Debounce status changes
   const statusDebounceRef = useRef<NodeJS.Timeout | null>(null) // Debounce timer
   const waitingForReadyRef = useRef(true) // Wait for user to get Claude ready before taking over
+  const takeoverModeRef = useRef(false) // Track if we're in takeover mode
+  const waitingForReadyTimeoutRef = useRef<NodeJS.Timeout | null>(null) // Fallback timer for waiting
+  const decisionCountRef = useRef(0) // Track decision count for re-anchoring
+  const recentSuggestionsRef = useRef<string[]>([]) // Track recent suggestions for semantic dedup
+  const errorCountRef = useRef(0) // Track consecutive errors for pattern detection
 
   // Load config function - stable, no dependencies
   const loadConfig = useCallback(async () => {
@@ -234,35 +247,77 @@ export function useSuperAgent() {
       stateContext += `\n\n🚨 URGENT: Claude has been WAITING for input for ${Math.floor((Date.now() - (waitingStartRef.current || Date.now())) / 1000)} seconds! You've said WAIT ${consecutiveWaitsRef.current} times. DO NOT say WAIT again. You MUST provide actual input now - suggest an improvement, answer a question, or give Claude something to do. The terminal shows the ❯ prompt which means Claude is READY for your input.`
     }
 
+    // Task re-anchoring every 10 decisions to prevent drift
+    if (decisionCountRef.current > 0 && decisionCountRef.current % 10 === 0) {
+      stateContext += `\n\n📌 REMINDER (Decision #${decisionCountRef.current}): Your original task is: "${currentTask}". Stay focused on this goal and make meaningful progress.`
+    }
+
     const cleanedOutput = stripAnsi(output).slice(-3500)
-    const systemPrompt = SYSTEM_PROMPT.replace('{TASK}', currentTask).replace(
-      '{OUTPUT}',
-      cleanedOutput
-    ) + stateContext
+
+    // Add takeover context if in takeover mode
+    const takeoverContext = takeoverModeRef.current
+      ? `=== TAKEOVER MODE ===
+You're taking control of an existing Claude conversation that was already in progress.
+- Analyze what Claude is currently doing from the terminal output
+- If Claude is waiting for input, provide helpful input to continue the work
+- If Claude is working, respond WAIT
+- Your task guidance may be generic - use the terminal output to understand the actual context
+- Focus on helping Claude complete whatever it was working on`
+      : ''
+
+    const systemPrompt = SYSTEM_PROMPT
+      .replace('{MODE}', takeoverModeRef.current ? 'TAKEOVER' : 'NEW_TASK')
+      .replace('{TASK}', currentTask)
+      .replace('{OUTPUT}', cleanedOutput)
+      .replace('{TAKEOVER_CONTEXT}', takeoverContext) + stateContext
 
     // Log what the LLM is seeing (last 500 chars for debugging)
     console.log('[SuperAgent] LLM seeing output (last 500 chars):', cleanedOutput.slice(-500))
 
-    try {
-      const response = await window.api.callLLMApi({
-        provider: prov,
-        apiKey,
-        model,
-        systemPrompt,
-        userPrompt: 'Analyze the terminal output. What EXACTLY should I type? Just the response, nothing else.',
-        temperature: 0.2
-      })
+    // Retry logic with exponential backoff
+    const MAX_RETRIES = 3
+    for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
+      try {
+        const response = await window.api.callLLMApi({
+          provider: prov,
+          apiKey,
+          model,
+          systemPrompt,
+          userPrompt: 'Analyze the terminal output. What EXACTLY should I type? Just the response, nothing else.',
+          temperature: 0.2
+        })
 
-      if (!response.success) {
-        store.addLog('error', `LLM error: ${response.error}`)
-        return null
+        if (response.success) {
+          // Log token usage if available
+          if (response.usage) {
+            const { promptTokens, completionTokens, totalTokens } = response.usage
+            console.log(`[SuperAgent] Tokens: ${promptTokens} prompt + ${completionTokens} completion = ${totalTokens} total`)
+            // Could add to store for cumulative tracking
+          }
+          return response.content || null
+        }
+
+        // API returned error - retry if we have attempts left
+        if (attempt < MAX_RETRIES) {
+          const delay = attempt * 1000 // 1s, 2s, 3s
+          store.addLog('error', `LLM failed (${response.error}), retrying in ${delay/1000}s (${attempt}/${MAX_RETRIES})...`)
+          await new Promise(r => setTimeout(r, delay))
+        } else {
+          store.addLog('error', `LLM error after ${MAX_RETRIES} attempts: ${response.error}`)
+          return null
+        }
+      } catch (error) {
+        if (attempt < MAX_RETRIES) {
+          const delay = attempt * 1000
+          store.addLog('error', `LLM call failed, retrying in ${delay/1000}s (${attempt}/${MAX_RETRIES})...`)
+          await new Promise(r => setTimeout(r, delay))
+        } else {
+          store.addLog('error', `LLM call failed after ${MAX_RETRIES} attempts: ${error}`)
+          return null
+        }
       }
-
-      return response.content || null
-    } catch (error) {
-      store.addLog('error', `LLM call failed: ${error}`)
-      return null
     }
+    return null
   }, [stripAnsi])
 
   // Send input to terminal
@@ -297,6 +352,10 @@ export function useSuperAgent() {
       console.log('[SuperAgent] handleIdle skipped - not running')
       return
     }
+    if (store.isPaused) {
+      console.log('[SuperAgent] handleIdle skipped - paused')
+      return
+    }
     processingRef.current = true
 
     try {
@@ -311,12 +370,60 @@ export function useSuperAgent() {
       const decision = await callLLM(outputBuffer)
 
       if (!decision) {
+        errorCountRef.current++
+        if (errorCountRef.current >= 3) {
+          store.addLog('error', `${errorCountRef.current} consecutive LLM failures - consider stopping`)
+        }
         processingRef.current = false
         return
       }
 
-      const trimmedDecision = decision.trim()
+      // Reset error count on successful LLM response
+      errorCountRef.current = 0
+
+      // Increment decision counter
+      decisionCountRef.current++
+
+      let trimmedDecision = decision.trim()
+
+      // Clean up LLM meta-instructions - extract actual text to send
+      // Remove patterns like "You should type: '...'" or "Run this command: ..."
+      const metaPatterns = [
+        /^You should (?:type|say|respond|enter|input):\s*["']?(.+?)["']?$/is,
+        /^(?:Type|Say|Respond|Enter|Send):\s*["']?(.+?)["']?$/is,
+        /^Run (?:this )?(?:command|script)?:?\s*["']?(.+?)["']?$/is,
+        /^Suggest(?:ion)?:?\s*["']?(.+?)["']?$/is,
+      ]
+      for (const pattern of metaPatterns) {
+        const match = trimmedDecision.match(pattern)
+        if (match && match[1]) {
+          console.log('[SuperAgent] Cleaned meta-instruction:', trimmedDecision, '->', match[1])
+          trimmedDecision = match[1].trim()
+          break
+        }
+      }
+
+      // Also clean "Suggest adding X" -> "Add X"
+      if (trimmedDecision.toLowerCase().startsWith('suggest adding ')) {
+        trimmedDecision = 'Add ' + trimmedDecision.slice(15)
+      } else if (trimmedDecision.toLowerCase().startsWith('suggest ')) {
+        trimmedDecision = trimmedDecision.slice(8)
+      }
+
       const upperDecision = trimmedDecision.toUpperCase()
+
+      // Semantic duplicate detection - check if response is too similar to recent suggestions
+      const isSemanticallyDuplicate = (newResponse: string): boolean => {
+        if (newResponse.length <= 5) return false // Short responses OK
+        const newWords = new Set(newResponse.toLowerCase().split(/\s+/).filter(w => w.length > 2))
+        for (const prev of recentSuggestionsRef.current) {
+          const prevWords = new Set(prev.toLowerCase().split(/\s+/).filter(w => w.length > 2))
+          const overlap = [...newWords].filter(w => prevWords.has(w)).length
+          const similarity = overlap / Math.max(newWords.size, prevWords.size)
+          if (similarity > 0.7) return true
+        }
+        return false
+      }
 
       // Avoid repeating the exact same response, EXCEPT:
       // - WAIT (always re-check)
@@ -328,19 +435,44 @@ export function useSuperAgent() {
         return
       }
 
+      // Check for semantic duplicates (similar suggestions)
+      if (upperDecision !== 'WAIT' && !isShortResponse && isSemanticallyDuplicate(trimmedDecision)) {
+        store.addLog('decision', `Skipping similar suggestion: ${trimmedDecision.slice(0, 50)}...`)
+        processingRef.current = false
+        // Set a timer to re-check
+        if (idleTimerRef.current) clearTimeout(idleTimerRef.current)
+        idleTimerRef.current = setTimeout(() => handleIdle(), 3000)
+        return
+      }
+
       store.addLog('decision', `LLM decided: ${trimmedDecision}`)
       if (upperDecision !== 'WAIT') {
         lastResponseRef.current = trimmedDecision
+        // Track recent suggestions for semantic dedup (keep last 5)
+        recentSuggestionsRef.current = [...recentSuggestionsRef.current.slice(-4), trimmedDecision]
       }
 
-      if (upperDecision === 'WAIT') {
+      // Handle WAIT with hard limit
+      if (upperDecision === 'WAIT' || upperDecision.startsWith('WAIT') || trimmedDecision.toLowerCase().includes("i'll wait")) {
         consecutiveWaitsRef.current++
+
+        // HARD LIMIT: After 5 consecutive WAITs, force an action
+        if (consecutiveWaitsRef.current >= 5) {
+          store.addLog('decision', `⚠️ WAIT limit reached (${consecutiveWaitsRef.current}). Forcing action...`)
+          consecutiveWaitsRef.current = 0
+          waitingStartRef.current = null
+          await sendToTerminal('Please continue with the next step or suggest an improvement')
+          store.clearOutput()
+          processingRef.current = false
+          return
+        }
+
         // Start tracking waiting time if not already
         if (!waitingStartRef.current) {
           waitingStartRef.current = Date.now()
         }
         const waitTime = Math.floor((Date.now() - waitingStartRef.current) / 1000)
-        store.addLog('decision', `Waiting for Claude... (${waitTime}s, ${consecutiveWaitsRef.current} checks)`)
+        store.addLog('decision', `Waiting for Claude... (${waitTime}s, ${consecutiveWaitsRef.current}/5 checks)`)
 
         // Set a new idle timer to check again - don't get stuck!
         const cfg = getStore().config
@@ -412,6 +544,12 @@ export function useSuperAgent() {
       return
     }
 
+    // Check if paused - still accumulate output but don't process
+    if (store.isPaused) {
+      store.appendOutput(data)
+      return
+    }
+
     store.appendOutput(data)
     const fullOutput = outputBuffer + data
 
@@ -424,8 +562,21 @@ export function useSuperAgent() {
       const hasReadyPrompt = /❯\s*$/.test(lastLines)
       const hasTrustPrompt = /trust this project|trust settings|\(y\)|\(n\)|y\/n/i.test(lastLines)
 
+      console.log('[SuperAgent] Waiting for ready - hasReadyPrompt:', hasReadyPrompt, 'hasTrustPrompt:', hasTrustPrompt)
+      console.log('[SuperAgent] Last lines:', lastLines.slice(-100))
+
       if (hasReadyPrompt && !hasTrustPrompt) {
+        // Guard against race condition - check we're still waiting
+        if (!waitingForReadyRef.current) {
+          console.log('[SuperAgent] Already started, ignoring duplicate ready trigger')
+          return
+        }
         console.log('[SuperAgent] Claude is ready! Sending task...')
+        // Clear the fallback timer
+        if (waitingForReadyTimeoutRef.current) {
+          clearTimeout(waitingForReadyTimeoutRef.current)
+          waitingForReadyTimeoutRef.current = null
+        }
         waitingForReadyRef.current = false
         taskSentRef.current = true
         store.addLog('ready', 'Claude is ready! Taking over now...')
@@ -435,7 +586,7 @@ export function useSuperAgent() {
         return
       } else {
         // Still waiting - don't start autonomous loop yet
-        console.log('[SuperAgent] Waiting for user to get Claude ready...')
+        // But DO accumulate output for when we're ready
         return
       }
     }
@@ -491,9 +642,9 @@ export function useSuperAgent() {
   const startSuperAgent = useCallback(async (
     taskDescription: string,
     terminalId: string,
-    options?: { timeLimit?: number; safetyLevel?: SafetyLevel; projectFolder?: string }
+    options?: { timeLimit?: number; safetyLevel?: SafetyLevel; projectFolder?: string; takeover?: boolean }
   ) => {
-    console.log('[SuperAgent] Starting with terminalId:', terminalId)
+    console.log('[SuperAgent] Starting with terminalId:', terminalId, 'takeover:', options?.takeover)
     const store = getStore()
     const { config: cfg, provider: prov } = store
 
@@ -513,7 +664,7 @@ export function useSuperAgent() {
     lastResponseRef.current = ''
     waitingStartRef.current = null
     consecutiveWaitsRef.current = 0
-    waitingForReadyRef.current = true // Wait for user to get Claude ready
+    takeoverModeRef.current = options?.takeover ?? false
 
     // Set options
     if (options?.timeLimit !== undefined) store.setTimeLimit(options.timeLimit)
@@ -532,12 +683,78 @@ export function useSuperAgent() {
       }, limit * 60 * 1000)
     }
 
-    // Don't send task immediately - wait for user to get Claude ready
-    // The task will be sent automatically when Claude shows the ❯ prompt
-    store.addLog('start', `Waiting for Claude to be ready... Get through any prompts, then Super Agent will take over.`)
+    if (options?.takeover) {
+      // Takeover mode - start immediately, don't wait for ready prompt
+      waitingForReadyRef.current = false
+      taskSentRef.current = true // Don't send task as initial message
+      store.addLog('start', 'Taking over current conversation...')
+      store.addLog('ready', 'Analyzing current state...')
+
+      // Trigger first idle check to analyze current state
+      // Use a short delay to let terminal output settle
+      setTimeout(() => {
+        handleIdle()
+      }, 500)
+    } else {
+      // Normal mode - wait for user to get Claude ready
+      waitingForReadyRef.current = true
+      store.addLog('start', `Waiting for Claude to be ready... Get through any prompts, then Super Agent will take over.`)
+
+      // Add fallback timer - if still waiting after 30 seconds, auto-start anyway
+      if (waitingForReadyTimeoutRef.current) {
+        clearTimeout(waitingForReadyTimeoutRef.current)
+      }
+      waitingForReadyTimeoutRef.current = setTimeout(() => {
+        // Double-check we're still waiting (guard against race condition)
+        if (waitingForReadyRef.current && getStore().isRunning) {
+          console.log('[SuperAgent] Fallback: waited 30s, starting anyway')
+          waitingForReadyRef.current = false
+          // In fallback mode, we DO want to send the task
+          const currentTask = getStore().task
+          getStore().addLog('ready', 'Auto-starting after timeout...')
+          getStore().addLog('input', `Sending task: ${currentTask}`)
+          window.api.terminalSendText(currentTask, getStore().activeTerminalId!)
+          getStore().clearOutput()
+          // Then start the idle loop
+          setTimeout(() => handleIdle(), 2000)
+        }
+      }, 30000)
+    }
 
     return true
-  }, [])
+  }, [handleIdle])
+
+  // Nudge Super Agent - force check terminal state
+  const nudgeSuperAgent = useCallback(() => {
+    const store = getStore()
+    if (!store.isRunning) return
+
+    // Skip waiting for ready - user is nudging, they know it's ready
+    if (waitingForReadyRef.current) {
+      waitingForReadyRef.current = false
+      taskSentRef.current = true // Don't send task, just start analyzing
+      store.addLog('ready', 'Nudged! Starting autonomous mode...')
+    } else {
+      store.addLog('decision', 'Nudged! Re-analyzing terminal...')
+    }
+
+    // Clear any pending timers
+    if (idleTimerRef.current) {
+      clearTimeout(idleTimerRef.current)
+      idleTimerRef.current = null
+    }
+    if (waitingForReadyTimeoutRef.current) {
+      clearTimeout(waitingForReadyTimeoutRef.current)
+      waitingForReadyTimeoutRef.current = null
+    }
+
+    // Reset consecutive waits
+    consecutiveWaitsRef.current = 0
+    waitingStartRef.current = null
+
+    // Force immediate idle check
+    handleIdle()
+  }, [handleIdle])
 
   // Stop Super Agent session
   const stopSuperAgent = useCallback(() => {
@@ -553,7 +770,12 @@ export function useSuperAgent() {
       clearTimeout(statusDebounceRef.current)
       statusDebounceRef.current = null
     }
+    if (waitingForReadyTimeoutRef.current) {
+      clearTimeout(waitingForReadyTimeoutRef.current)
+      waitingForReadyTimeoutRef.current = null
+    }
     lastStatusRef.current = 'unknown'
+    takeoverModeRef.current = false
     getStore().stopSession()
   }, [])
 
@@ -563,12 +785,14 @@ export function useSuperAgent() {
       if (idleTimerRef.current) clearTimeout(idleTimerRef.current)
       if (durationTimerRef.current) clearTimeout(durationTimerRef.current)
       if (statusDebounceRef.current) clearTimeout(statusDebounceRef.current)
+      if (waitingForReadyTimeoutRef.current) clearTimeout(waitingForReadyTimeoutRef.current)
     }
   }, [])
 
   return {
     // State (subscribed via selectors)
     isRunning,
+    isPaused,
     task,
     startTime,
     timeLimit,
@@ -584,6 +808,8 @@ export function useSuperAgent() {
     loadConfig,
     startSuperAgent,
     stopSuperAgent,
+    nudgeSuperAgent,
+    togglePause,
     processOutput
   }
 }

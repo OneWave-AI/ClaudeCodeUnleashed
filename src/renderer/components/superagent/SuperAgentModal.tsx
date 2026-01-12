@@ -1,8 +1,23 @@
 import React, { useState, useEffect } from 'react'
-import { X, Zap, Shield, ShieldAlert, ShieldOff, Loader2, Rocket, Sparkles, ChevronDown, ChevronUp } from 'lucide-react'
+import {
+  X,
+  Zap,
+  Shield,
+  ShieldAlert,
+  ShieldOff,
+  Loader2,
+  Rocket,
+  RefreshCw,
+  Clock,
+  Bot,
+  ArrowRight,
+  ChevronDown
+} from 'lucide-react'
 import { useSuperAgent } from '../../hooks/useSuperAgent'
 import { useAppStore } from '../../store'
 import type { SafetyLevel, LLMProvider } from '../../../shared/types'
+
+type LaunchMode = 'new' | 'takeover'
 
 interface SuperAgentModalProps {
   isOpen: boolean
@@ -11,11 +26,10 @@ interface SuperAgentModalProps {
   onStart: () => void
 }
 
-const QUICK_TASKS = [
-  { label: 'Build a website', prompt: 'Build a modern, responsive website with' },
-  { label: 'Fix a bug', prompt: 'Find and fix the bug in' },
-  { label: 'Write tests', prompt: 'Write comprehensive tests for' },
-  { label: 'Create component', prompt: 'Create a new React component for' },
+const SAFETY_OPTIONS = [
+  { level: 'safe' as SafetyLevel, icon: Shield, color: 'emerald', label: 'Safe' },
+  { level: 'moderate' as SafetyLevel, icon: ShieldAlert, color: 'amber', label: 'Balanced' },
+  { level: 'yolo' as SafetyLevel, icon: ShieldOff, color: 'red', label: 'YOLO' }
 ]
 
 export function SuperAgentModal({ isOpen, onClose, terminalId, onStart }: SuperAgentModalProps) {
@@ -27,21 +41,23 @@ export function SuperAgentModal({ isOpen, onClose, terminalId, onStart }: SuperA
   const [isStarting, setIsStarting] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [isLoadingConfig, setIsLoadingConfig] = useState(false)
-  const [showAdvanced, setShowAdvanced] = useState(false)
+  const [showSettings, setShowSettings] = useState(false)
+  const [launchMode, setLaunchMode] = useState<LaunchMode>('new')
 
   useEffect(() => {
     if (isOpen) {
       setTask('')
       setError(null)
       setIsStarting(false)
-      setShowAdvanced(false)
+      setShowSettings(false)
+      setLaunchMode('new')
       setIsLoadingConfig(true)
       loadConfig().finally(() => setIsLoadingConfig(false))
     }
   }, [isOpen, loadConfig])
 
-  const handleStart = async () => {
-    if (!task.trim()) {
+  const handleStart = async (mode: LaunchMode = launchMode) => {
+    if (mode === 'new' && !task.trim()) {
       setError('Tell Claude what to build')
       return
     }
@@ -65,7 +81,16 @@ export function SuperAgentModal({ isOpen, onClose, terminalId, onStart }: SuperA
     setIsStarting(true)
     setError(null)
 
-    const success = await startSuperAgent(task, terminalId, { timeLimit, safetyLevel, projectFolder: cwd })
+    const taskToSend = mode === 'takeover' && !task.trim()
+      ? 'Continue working on the current task. Analyze what Claude is doing and help it make progress.'
+      : task
+
+    const success = await startSuperAgent(taskToSend, terminalId, {
+      timeLimit,
+      safetyLevel,
+      projectFolder: cwd,
+      takeover: mode === 'takeover'
+    })
 
     if (success) {
       onStart()
@@ -76,111 +101,100 @@ export function SuperAgentModal({ isOpen, onClose, terminalId, onStart }: SuperA
     }
   }
 
-  const handleQuickTask = (prompt: string) => {
-    setTask(prompt + ' ')
-    setTimeout(() => {
-      const textarea = document.getElementById('task-input') as HTMLTextAreaElement
-      if (textarea) {
-        textarea.focus()
-        textarea.setSelectionRange(prompt.length + 1, prompt.length + 1)
-      }
-    }, 50)
-  }
-
   if (!isOpen) return null
 
   return (
     <div
-      className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-4"
+      className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-in fade-in duration-150"
       onClick={(e) => e.target === e.currentTarget && onClose()}
     >
       <div
-        className="bg-[#1a1a1c] rounded-2xl w-full max-w-md overflow-hidden border border-white/[0.08] shadow-2xl"
+        className="bg-[#141416] rounded-2xl w-full max-w-md overflow-hidden border border-white/[0.08] shadow-2xl animate-in zoom-in-95 duration-200"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="relative overflow-hidden">
-          <div className="absolute inset-0 bg-gradient-to-br from-[#cc785c]/20 to-transparent" />
-          <div className="relative flex items-center justify-between px-5 py-4">
-            <div className="flex items-center gap-3">
-              <div className="p-2.5 bg-gradient-to-br from-[#cc785c] to-[#a55d45] rounded-xl shadow-lg">
-                <Zap className="w-5 h-5 text-white" />
-              </div>
-              <div>
-                <h2 className="text-lg font-bold text-white">Super Agent</h2>
-                <p className="text-xs text-gray-400">Autonomous mode</p>
-              </div>
+        <div className="flex items-center justify-between px-5 py-4 border-b border-white/[0.06]">
+          <div className="flex items-center gap-3">
+            <div className="p-2 bg-gradient-to-br from-[#cc785c] to-[#a55d45] rounded-xl">
+              <Bot className="w-5 h-5 text-white" />
             </div>
-            <button
-              onClick={onClose}
-              className="p-2 hover:bg-white/[0.06] rounded-xl transition-colors"
-            >
-              <X className="w-5 h-5 text-gray-500" />
-            </button>
+            <div>
+              <h2 className="text-lg font-semibold text-white">Super Agent</h2>
+              <p className="text-xs text-gray-500">Autonomous execution</p>
+            </div>
           </div>
+          <button onClick={onClose} className="p-2 hover:bg-white/[0.06] rounded-lg transition-colors">
+            <X className="w-5 h-5 text-gray-500" />
+          </button>
         </div>
 
         {/* Content */}
         <div className="p-5 space-y-4">
-          {/* Requirement */}
-          <p className="text-xs text-gray-500 text-center">
-            Make sure Claude shows the <span className="text-white font-mono">❯</span> prompt before launching
-          </p>
+          {/* Mode Toggle */}
+          <div className="flex gap-2 p-1 bg-[#0a0a0b] rounded-lg">
+            <button
+              onClick={() => setLaunchMode('new')}
+              className={`flex-1 py-2 px-3 rounded-md text-sm font-medium transition-all flex items-center justify-center gap-2 ${
+                launchMode === 'new'
+                  ? 'bg-[#cc785c] text-white'
+                  : 'text-gray-500 hover:text-gray-300'
+              }`}
+            >
+              <Rocket className="w-4 h-4" />
+              New Task
+            </button>
+            <button
+              onClick={() => setLaunchMode('takeover')}
+              className={`flex-1 py-2 px-3 rounded-md text-sm font-medium transition-all flex items-center justify-center gap-2 ${
+                launchMode === 'takeover'
+                  ? 'bg-purple-500 text-white'
+                  : 'text-gray-500 hover:text-gray-300'
+              }`}
+            >
+              <RefreshCw className="w-4 h-4" />
+              Take Over
+            </button>
+          </div>
 
           {/* Task Input */}
           <div>
             <textarea
-              id="task-input"
               value={task}
-              onChange={(e) => setTask(e.target.value)}
-              placeholder="What should Claude build? Be specific..."
-              className="w-full h-24 bg-[#0d0d0d] border border-white/[0.08] rounded-xl px-4 py-3 text-white placeholder-gray-600 focus:outline-none focus:border-[#cc785c]/50 focus:ring-1 focus:ring-[#cc785c]/30 resize-none text-sm leading-relaxed"
+              onChange={(e) => setTask(e.target.value.slice(0, 500))}
+              placeholder={launchMode === 'takeover'
+                ? "Optional: Provide guidance..."
+                : "What should Claude build?"}
+              className="w-full h-24 bg-[#0a0a0b] border border-white/[0.08] rounded-xl px-4 py-3 text-white placeholder-gray-600 focus:outline-none focus:border-[#cc785c]/50 resize-none text-sm"
               autoFocus
               onKeyDown={(e) => {
-                if (e.key === 'Enter' && e.metaKey) {
-                  handleStart()
-                }
+                if (e.key === 'Enter' && e.metaKey) handleStart()
               }}
             />
           </div>
 
-          {/* Quick Tasks */}
-          <div className="flex flex-wrap gap-1.5">
-            {QUICK_TASKS.map((qt) => (
-              <button
-                key={qt.label}
-                onClick={() => handleQuickTask(qt.prompt)}
-                className="px-2.5 py-1 bg-white/[0.04] hover:bg-white/[0.08] border border-white/[0.06] rounded-lg text-[11px] text-gray-400 hover:text-white transition-colors flex items-center gap-1"
-              >
-                <Sparkles className="w-3 h-3" />
-                {qt.label}
-              </button>
-            ))}
-          </div>
-
-          {/* Advanced Settings Toggle */}
+          {/* Settings Toggle */}
           <button
-            onClick={() => setShowAdvanced(!showAdvanced)}
-            className="w-full flex items-center justify-center gap-1 text-xs text-gray-500 hover:text-gray-400 transition-colors py-1"
+            onClick={() => setShowSettings(!showSettings)}
+            className="w-full flex items-center justify-between px-3 py-2 bg-white/[0.02] hover:bg-white/[0.04] rounded-lg text-xs text-gray-500 transition-colors"
           >
-            {showAdvanced ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
-            {showAdvanced ? 'Hide options' : 'Show options'}
+            <span>Settings</span>
+            <ChevronDown className={`w-4 h-4 transition-transform ${showSettings ? 'rotate-180' : ''}`} />
           </button>
 
-          {/* Advanced Settings */}
-          {showAdvanced && (
-            <div className="grid grid-cols-3 gap-2 pt-1">
+          {/* Settings Panel */}
+          {showSettings && (
+            <div className="space-y-4 p-3 bg-white/[0.02] rounded-lg animate-in slide-in-from-top-1 duration-150">
               {/* Provider */}
-              <div>
-                <label className="block text-[10px] font-medium text-gray-500 mb-1.5">Provider</label>
-                <div className="flex gap-0.5 p-0.5 bg-[#0d0d0d] rounded-lg">
+              <div className="flex items-center gap-2">
+                <span className="text-xs text-gray-500 w-16">Provider</span>
+                <div className="flex-1 flex gap-2">
                   {(['groq', 'openai'] as LLMProvider[]).map((p) => (
                     <button
                       key={p}
                       onClick={() => setProvider(p)}
-                      className={`flex-1 py-1.5 rounded text-[10px] font-medium transition-all ${
+                      className={`flex-1 py-1.5 rounded-md text-xs font-medium transition-all ${
                         provider === p
-                          ? 'bg-[#cc785c] text-white'
+                          ? 'bg-white/[0.1] text-white'
                           : 'text-gray-500 hover:text-gray-300'
                       }`}
                     >
@@ -190,40 +204,48 @@ export function SuperAgentModal({ isOpen, onClose, terminalId, onStart }: SuperA
                 </div>
               </div>
 
-              {/* Duration */}
-              <div>
-                <label className="block text-[10px] font-medium text-gray-500 mb-1.5">Duration</label>
-                <select
-                  value={timeLimit}
-                  onChange={(e) => setTimeLimit(Number(e.target.value))}
-                  className="w-full py-1.5 px-2 bg-[#0d0d0d] border border-white/[0.08] rounded-lg text-[10px] text-white focus:outline-none appearance-none cursor-pointer"
-                >
-                  <option value={5}>5 min</option>
-                  <option value={15}>15 min</option>
-                  <option value={30}>30 min</option>
-                  <option value={0}>No limit</option>
-                </select>
+              {/* Time Limit */}
+              <div className="flex items-center gap-2">
+                <span className="text-xs text-gray-500 w-16 flex items-center gap-1">
+                  <Clock className="w-3 h-3" /> Time
+                </span>
+                <div className="flex-1 flex gap-1">
+                  {[5, 15, 30, 0].map((mins) => (
+                    <button
+                      key={mins}
+                      onClick={() => setTimeLimit(mins)}
+                      className={`flex-1 py-1.5 rounded-md text-xs font-medium transition-all ${
+                        timeLimit === mins
+                          ? 'bg-[#cc785c]/20 text-[#cc785c]'
+                          : 'text-gray-500 hover:text-gray-300'
+                      }`}
+                    >
+                      {mins === 0 ? '∞' : `${mins}m`}
+                    </button>
+                  ))}
+                </div>
               </div>
 
               {/* Safety */}
-              <div>
-                <label className="block text-[10px] font-medium text-gray-500 mb-1.5">Safety</label>
-                <div className="flex gap-0.5 p-0.5 bg-[#0d0d0d] rounded-lg">
-                  {([
-                    { level: 'safe' as SafetyLevel, icon: Shield, color: 'text-emerald-400' },
-                    { level: 'moderate' as SafetyLevel, icon: ShieldAlert, color: 'text-amber-400' },
-                    { level: 'yolo' as SafetyLevel, icon: ShieldOff, color: 'text-red-400' }
-                  ]).map(({ level, icon: Icon, color }) => (
+              <div className="flex items-center gap-2">
+                <span className="text-xs text-gray-500 w-16 flex items-center gap-1">
+                  <Shield className="w-3 h-3" /> Safety
+                </span>
+                <div className="flex-1 flex gap-1">
+                  {SAFETY_OPTIONS.map(({ level, icon: Icon, color, label }) => (
                     <button
                       key={level}
                       onClick={() => setSafetyLevel(level)}
-                      className={`flex-1 py-1.5 rounded transition-all flex items-center justify-center ${
+                      className={`flex-1 py-1.5 rounded-md text-xs font-medium transition-all flex items-center justify-center gap-1 ${
                         safetyLevel === level
-                          ? `bg-white/[0.1] ${color}`
-                          : 'text-gray-600 hover:text-gray-400'
+                          ? color === 'emerald' ? 'bg-emerald-500/20 text-emerald-400'
+                          : color === 'amber' ? 'bg-amber-500/20 text-amber-400'
+                          : 'bg-red-500/20 text-red-400'
+                          : 'text-gray-500 hover:text-gray-300'
                       }`}
                     >
-                      <Icon className="w-3.5 h-3.5" />
+                      <Icon className="w-3 h-3" />
+                      {label}
                     </button>
                   ))}
                 </div>
@@ -240,29 +262,31 @@ export function SuperAgentModal({ isOpen, onClose, terminalId, onStart }: SuperA
 
           {/* Launch Button */}
           <button
-            onClick={handleStart}
-            disabled={isStarting || isLoadingConfig || !task.trim()}
-            className="w-full py-3 bg-gradient-to-r from-[#cc785c] to-[#a55d45] hover:from-[#b86a50] hover:to-[#944d39] disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-xl font-semibold transition-all flex items-center justify-center gap-2 shadow-lg"
+            onClick={() => handleStart()}
+            disabled={isStarting || isLoadingConfig || (launchMode === 'new' && !task.trim())}
+            className={`w-full py-3 rounded-xl font-medium transition-all flex items-center justify-center gap-2 ${
+              isStarting || isLoadingConfig || (launchMode === 'new' && !task.trim())
+                ? 'bg-gray-800 text-gray-500 cursor-not-allowed'
+                : launchMode === 'takeover'
+                  ? 'bg-purple-500 hover:bg-purple-400 text-white'
+                  : 'bg-[#cc785c] hover:bg-[#d88a6a] text-white'
+            }`}
           >
             {isLoadingConfig ? (
-              <>
-                <Loader2 className="w-5 h-5 animate-spin" />
-                Loading...
-              </>
+              <><Loader2 className="w-4 h-4 animate-spin" /> Loading...</>
             ) : isStarting ? (
-              <>
-                <Loader2 className="w-5 h-5 animate-spin" />
-                Launching...
-              </>
+              <><Loader2 className="w-4 h-4 animate-spin" /> {launchMode === 'takeover' ? 'Taking Over...' : 'Launching...'}</>
             ) : (
               <>
-                <Rocket className="w-5 h-5" />
-                Launch Super Agent
+                {launchMode === 'takeover' ? <RefreshCw className="w-4 h-4" /> : <Rocket className="w-4 h-4" />}
+                {launchMode === 'takeover' ? 'Take Over' : 'Launch'}
+                <ArrowRight className="w-4 h-4 opacity-50" />
               </>
             )}
           </button>
 
-          <p className="text-[10px] text-gray-600 text-center">
+          {/* Hint */}
+          <p className="text-center text-[10px] text-gray-600">
             <kbd className="px-1 py-0.5 bg-white/[0.04] rounded">⌘</kbd> + <kbd className="px-1 py-0.5 bg-white/[0.04] rounded">Enter</kbd> to launch
           </p>
         </div>

@@ -75,6 +75,10 @@ export function registerSuperAgentHandlers(): void {
         : 'https://api.groq.com/openai/v1/chat/completions'
 
     try {
+      // Add 15-second timeout to prevent hanging
+      const controller = new AbortController()
+      const timeoutId = setTimeout(() => controller.abort(), 15000)
+
       const response = await fetch(baseUrl, {
         method: 'POST',
         headers: {
@@ -89,8 +93,11 @@ export function registerSuperAgentHandlers(): void {
           ],
           temperature,
           max_tokens: 500
-        })
+        }),
+        signal: controller.signal
       })
+
+      clearTimeout(timeoutId)
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}))
@@ -115,6 +122,13 @@ export function registerSuperAgentHandlers(): void {
           : undefined
       }
     } catch (error) {
+      // Handle timeout specifically
+      if (error instanceof Error && error.name === 'AbortError') {
+        return {
+          success: false,
+          error: 'Request timed out after 15 seconds'
+        }
+      }
       return {
         success: false,
         error: error instanceof Error ? error.message : 'Unknown error'

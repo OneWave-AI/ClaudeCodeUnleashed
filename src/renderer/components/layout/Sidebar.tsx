@@ -299,13 +299,48 @@ export default function Sidebar({ cwd, onSelectFolder }: SidebarProps) {
               </span>
             )}
 
-            {/* Actions on hover */}
-            <button
-              onClick={e => { e.stopPropagation(); handleContext(e, node) }}
-              className="opacity-0 group-hover:opacity-100 p-0.5 rounded hover:bg-white/10 text-gray-500 hover:text-gray-300 transition-all"
-            >
-              <MoreHorizontal size={12} />
-            </button>
+            {/* Quick actions on hover */}
+            <div className="opacity-0 group-hover:opacity-100 flex items-center gap-0.5 transition-all">
+              {/* Terminal cd button - folders only */}
+              {node.isDirectory && (
+                <button
+                  onClick={async (e) => {
+                    e.stopPropagation()
+                    try {
+                      const terminals = await window.api.getTerminals()
+                      if (terminals && terminals.length > 0) {
+                        // Send cd command to first active terminal
+                        await window.api.terminalSendText(`cd "${node.path}"\n`, terminals[0].id)
+                      }
+                    } catch (err) {
+                      console.error('Failed to cd:', err)
+                    }
+                  }}
+                  className="p-0.5 rounded hover:bg-[#cc785c]/20 text-gray-500 hover:text-[#cc785c] transition-all"
+                  title="Open in Terminal"
+                >
+                  <Terminal size={12} />
+                </button>
+              )}
+              {/* Copy path button */}
+              <button
+                onClick={e => {
+                  e.stopPropagation()
+                  navigator.clipboard.writeText(node.path)
+                }}
+                className="p-0.5 rounded hover:bg-white/10 text-gray-500 hover:text-gray-300 transition-all"
+                title="Copy Path"
+              >
+                <Copy size={12} />
+              </button>
+              {/* More options */}
+              <button
+                onClick={e => { e.stopPropagation(); handleContext(e, node) }}
+                className="p-0.5 rounded hover:bg-white/10 text-gray-500 hover:text-gray-300 transition-all"
+              >
+                <MoreHorizontal size={12} />
+              </button>
+            </div>
           </div>
 
           {/* Children */}
@@ -435,7 +470,7 @@ export default function Sidebar({ cwd, onSelectFolder }: SidebarProps) {
       {/* Keyboard hint */}
       {cwd && (
         <div className="px-3 py-2 border-t border-white/[0.06] text-[10px] text-gray-600">
-          Right-click for options • Double-click to rename
+          Hover for quick actions • Right-click for more
         </div>
       )}
 

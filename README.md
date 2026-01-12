@@ -14,6 +14,23 @@ A premium native desktop GUI for [Claude Code CLI](https://github.com/anthropics
 
 ## Features
 
+### Analytics Dashboard
+Track your coding time and productivity:
+- **Usage Statistics**: Sessions, time coded, tokens used at a glance
+- **7-Day/30-Day Views**: See trends over different time periods
+- **Project Time Tracking**: Know exactly how long you've spent on each project (for billing!)
+- **Activity Charts**: Visual breakdown of your daily coding activity
+- **Top Projects**: See which projects got the most attention
+- **Skeleton Loaders**: Smooth loading experience with beautiful placeholder animations
+
+### Agent Hive (Swarm)
+Launch multiple AI agents to audit and fix your codebase:
+- **Audit Mode**: Spawn 3+ specialized agents to review code quality, security, and performance
+- **Action Mode**: Deploy agents to fix issues, refactor, and add tests
+- **Real-Time Progress**: Visual tracking of agent status and completion
+- **One-Click Launch**: Glowing "Hive" button for instant agent deployment
+- **Smart Selection**: Claude automatically picks the most relevant agents for your situation
+
 ### Super Agent
 Autonomous AI-powered task execution that lets Claude work independently:
 - **LLM-Driven**: An outer LLM monitors Claude's terminal output and decides what to do next
@@ -22,6 +39,20 @@ Autonomous AI-powered task execution that lets Claude work independently:
 - **Smart Waiting**: Detects when Claude is waiting for input and prompts it to continue
 - **Activity Log**: Real-time visibility into the agent's thought process
 - **Side Panel**: Collapsible status bar shows progress without blocking the terminal
+
+### Plan Panel
+Track Claude's multi-step tasks in real-time:
+- **Live Task Tracking**: See Claude's current plan and progress
+- **Status Indicators**: Visual markers for pending, in-progress, and completed tasks
+- **Progress Bar**: Overall completion percentage at a glance
+- **Slide-In Animation**: Smooth panel appearance when toggled
+
+### Split Terminal Panels
+Work with multiple terminals simultaneously:
+- **Dual Panels**: Run two terminals side-by-side
+- **Tab Support**: Multiple tabs per panel
+- **Browser Tabs**: Built-in browser with mobile/desktop viewport toggle
+- **Drag & Drop**: Reorganize tabs between panels
 
 ### Zero-Config Discovery
 Automatically detects everything already on your machine:

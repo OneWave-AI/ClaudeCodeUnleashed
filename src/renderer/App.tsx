@@ -5,17 +5,21 @@ import HomeScreen from './components/HomeScreen'
 import TerminalWrapper from './components/terminal/TerminalWrapper'
 import SkillsManager from './components/skills/SkillsManager'
 import HistoryBrowser from './components/history/HistoryBrowser'
+import AnalyticsScreen from './components/analytics/AnalyticsScreen'
 import SettingsPanel from './components/settings/SettingsPanel'
 import SplashScreen from './components/SplashScreen'
+import WelcomeScreen from './components/WelcomeScreen'
 import { ToastProvider } from './components/common/Toast'
 import { useAppStore } from './store'
 import { SuperAgentModal, SuperAgentStatusBar } from './components/superagent'
 import { useSuperAgent } from './hooks/useSuperAgent'
+import type { PlanItem } from './components/terminal/PlanPanel'
 
-type Screen = 'home' | 'terminal' | 'skills' | 'history'
+type Screen = 'home' | 'terminal' | 'skills' | 'history' | 'analytics'
 
 function App() {
   const [showSplash, setShowSplash] = useState(true)
+  const [showWelcome, setShowWelcome] = useState(false)
   const [screen, setScreen] = useState<Screen>('home')
   const [claudeInstalled, setClaudeInstalled] = useState<boolean | null>(null)
   const [settingsOpen, setSettingsOpen] = useState(false)
@@ -23,6 +27,8 @@ function App() {
   const [superAgentModalOpen, setSuperAgentModalOpen] = useState(false)
   const [activeTerminalId, setActiveTerminalId] = useState<string | null>(null)
   const [previewUrl, setPreviewUrl] = useState<string | null>(null)
+  const [planItems, setPlanItems] = useState<PlanItem[]>([])
+  const [showPlan, setShowPlan] = useState(false)
   const pendingSuperAgentOpen = useRef(false) // Flag to open modal when terminal is ready
   const { cwd, setCwd } = useAppStore()
   const { isRunning: superAgentRunning, stopSuperAgent, processOutput } = useSuperAgent()
@@ -32,6 +38,11 @@ function App() {
     window.api.checkClaudeInstalled().then(setClaudeInstalled)
     window.api.getCwd().then(setCwd)
   }, [setCwd])
+
+  // Track terminal session state for close confirmation
+  useEffect(() => {
+    window.api.setTerminalSessionActive(terminalMounted && !!activeTerminalId)
+  }, [terminalMounted, activeTerminalId])
 
   // Navigation
   const navigateTo = useCallback((newScreen: Screen) => {
@@ -56,14 +67,17 @@ function App() {
   }, [setCwd])
 
   const handleNavigate = useCallback((screenName: string) => {
-    if (['home', 'terminal', 'skills', 'history'].includes(screenName)) {
+    if (['home', 'terminal', 'skills', 'history', 'analytics'].includes(screenName)) {
       navigateTo(screenName as Screen)
     }
   }, [navigateTo])
 
   // Show splash screen on first load
   if (showSplash) {
-    return <SplashScreen onComplete={() => setShowSplash(false)} />
+    return <SplashScreen onComplete={() => {
+      setShowSplash(false)
+      setShowWelcome(true)
+    }} />
   }
 
   return (
@@ -79,6 +93,9 @@ function App() {
           onNavigate={handleNavigate}
           onOpenPreview={(url) => setPreviewUrl(url)}
           onOpenSuperAgent={() => setSuperAgentModalOpen(true)}
+          planCount={planItems.length}
+          showPlan={showPlan}
+          onTogglePlan={() => setShowPlan(!showPlan)}
         />
 
         <div className="flex flex-1 overflow-hidden">
@@ -98,6 +115,7 @@ function App() {
                 onOpenSkills={() => navigateTo('skills')}
                 onOpenHistory={() => navigateTo('history')}
                 onOpenSettings={() => setSettingsOpen(true)}
+                onOpenAnalytics={() => navigateTo('analytics')}
                 onOpenSuperAgent={() => {
                   // Start a terminal session first
                   navigateTo('terminal')
@@ -112,22 +130,27 @@ function App() {
               />
             )}
 
-            {screen === 'terminal' && terminalMounted && (
-              <TerminalWrapper
-                onOpenSettings={() => setSettingsOpen(true)}
-                onTerminalData={processOutput}
-                onTerminalIdChange={(terminalId) => {
-                  setActiveTerminalId(terminalId)
-                  // Check if we were waiting to open Super Agent modal
-                  if (terminalId && pendingSuperAgentOpen.current) {
-                    pendingSuperAgentOpen.current = false
-                    setSuperAgentModalOpen(true)
-                  }
-                }}
-                previewUrl={previewUrl}
-                onClosePreview={() => setPreviewUrl(null)}
-                onOpenPreview={(url) => setPreviewUrl(url)}
-              />
+            {/* Terminal - always render once mounted, hide when not active to preserve session */}
+            {terminalMounted && (
+              <div className={`${screen === 'terminal' ? 'contents' : 'hidden'}`}>
+                <TerminalWrapper
+                  onTerminalData={processOutput}
+                  onTerminalIdChange={(terminalId) => {
+                    setActiveTerminalId(terminalId)
+                    // Check if we were waiting to open Super Agent modal
+                    if (terminalId && pendingSuperAgentOpen.current) {
+                      pendingSuperAgentOpen.current = false
+                      setSuperAgentModalOpen(true)
+                    }
+                  }}
+                  previewUrl={previewUrl}
+                  onClosePreview={() => setPreviewUrl(null)}
+                  onOpenPreview={(url) => setPreviewUrl(url)}
+                  showPlanPanel={showPlan}
+                  onClosePlanPanel={() => setShowPlan(false)}
+                  onPlanItemsChange={(items) => setPlanItems(items)}
+                />
+              </div>
             )}
 
             {screen === 'skills' && (
@@ -143,6 +166,10 @@ function App() {
                   navigateTo('terminal')
                 }}
               />
+            )}
+
+            {screen === 'analytics' && (
+              <AnalyticsScreen onBack={() => navigateTo('home')} />
             )}
 
             {/* Super Agent Status Panel - integrated into layout */}
@@ -163,6 +190,10 @@ function App() {
           onStart={() => setSuperAgentModalOpen(false)}
         />
 
+        {/* Welcome/Updates Screen */}
+        {showWelcome && (
+          <WelcomeScreen onComplete={() => setShowWelcome(false)} />
+        )}
       </div>
     </ToastProvider>
   )

@@ -4,6 +4,7 @@ import type { LLMProvider, SafetyLevel, ActivityLogEntry, SuperAgentConfig } fro
 interface SuperAgentState {
   // Running state
   isRunning: boolean
+  isPaused: boolean
   task: string
   startTime: number | null
   timeLimit: number // minutes (0 = unlimited)
@@ -34,6 +35,7 @@ interface SuperAgentState {
   setConfig: (config: SuperAgentConfig) => void
   setActiveTerminalId: (id: string | null) => void
   setProjectFolder: (folder: string) => void
+  togglePause: () => void
 
   // Output handling
   appendOutput: (data: string) => void
@@ -64,9 +66,10 @@ const DEFAULT_CONFIG: SuperAgentConfig = {
 export const useSuperAgentStore = create<SuperAgentState>((set, get) => ({
   // Initial state - use DEFAULT_CONFIG immediately to prevent loading state
   isRunning: false,
+  isPaused: false,
   task: '',
   startTime: null,
-  timeLimit: 30,
+  timeLimit: 15,
   safetyLevel: 'safe',
   projectFolder: '',
   outputBuffer: '',
@@ -86,6 +89,18 @@ export const useSuperAgentStore = create<SuperAgentState>((set, get) => ({
   setConfig: (config) => set({ config, provider: config.defaultProvider }),
   setActiveTerminalId: (id) => set({ activeTerminalId: id }),
   setProjectFolder: (folder) => set({ projectFolder: folder }),
+  togglePause: () => {
+    const state = get()
+    const newPaused = !state.isPaused
+    // Log the pause/resume action
+    set((s) => ({
+      isPaused: newPaused,
+      activityLog: [
+        ...s.activityLog,
+        { timestamp: Date.now(), type: newPaused ? 'stop' : 'start', message: newPaused ? 'Agent paused' : 'Agent resumed' }
+      ]
+    }))
+  },
 
   // Output handling
   appendOutput: (data) =>
@@ -158,6 +173,7 @@ export const useSuperAgentStore = create<SuperAgentState>((set, get) => ({
 
     set({
       isRunning: false,
+      isPaused: false,
       startTime: null,
       activeTerminalId: null,
       isIdle: false,
@@ -168,9 +184,10 @@ export const useSuperAgentStore = create<SuperAgentState>((set, get) => ({
   reset: () =>
     set({
       isRunning: false,
+      isPaused: false,
       task: '',
       startTime: null,
-      timeLimit: 30,
+      timeLimit: 15,
       safetyLevel: 'safe',
       projectFolder: '',
       outputBuffer: '',

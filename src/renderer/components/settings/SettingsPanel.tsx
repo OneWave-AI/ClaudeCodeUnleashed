@@ -23,6 +23,38 @@ const BUILT_IN_THEMES = [
   { id: 'solarized', name: 'Solarized', bg: '#002b36', accent: '#b58900' }
 ]
 
+// Full theme presets for the theme creator
+const THEME_PRESETS: Record<string, Omit<CustomTheme, 'id' | 'name'>> = {
+  default: {
+    background: '#1a1a1a', foreground: '#e0e0e0', accent: '#cc785c', cursor: '#cc785c', selection: '#3d3d3d',
+    black: '#000000', red: '#ff5555', green: '#50fa7b', yellow: '#f1fa8c', blue: '#6272a4', magenta: '#ff79c6', cyan: '#8be9fd', white: '#ffffff'
+  },
+  pro: {
+    background: '#1e1e1e', foreground: '#d4d4d4', accent: '#569cd6', cursor: '#569cd6', selection: '#264f78',
+    black: '#000000', red: '#f44747', green: '#6a9955', yellow: '#dcdcaa', blue: '#569cd6', magenta: '#c586c0', cyan: '#4ec9b0', white: '#d4d4d4'
+  },
+  dracula: {
+    background: '#282a36', foreground: '#f8f8f2', accent: '#ff79c6', cursor: '#ff79c6', selection: '#44475a',
+    black: '#21222c', red: '#ff5555', green: '#50fa7b', yellow: '#f1fa8c', blue: '#6272a4', magenta: '#ff79c6', cyan: '#8be9fd', white: '#f8f8f2'
+  },
+  ocean: {
+    background: '#1b2b34', foreground: '#c0c5ce', accent: '#5fb3b3', cursor: '#5fb3b3', selection: '#4f5b66',
+    black: '#1b2b34', red: '#ec5f67', green: '#99c794', yellow: '#fac863', blue: '#6699cc', magenta: '#c594c5', cyan: '#5fb3b3', white: '#d8dee9'
+  },
+  neon: {
+    background: '#0a0a0f', foreground: '#e0e0e0', accent: '#00ffff', cursor: '#00ffff', selection: '#1a1a2e',
+    black: '#000000', red: '#ff0055', green: '#00ff88', yellow: '#ffff00', blue: '#00aaff', magenta: '#ff00ff', cyan: '#00ffff', white: '#ffffff'
+  },
+  homebrew: {
+    background: '#000000', foreground: '#00ff00', accent: '#00ff00', cursor: '#00ff00', selection: '#003300',
+    black: '#000000', red: '#990000', green: '#00ff00', yellow: '#999900', blue: '#0000b2', magenta: '#b200b2', cyan: '#00a6b2', white: '#bfbfbf'
+  },
+  solarized: {
+    background: '#002b36', foreground: '#839496', accent: '#b58900', cursor: '#b58900', selection: '#073642',
+    black: '#073642', red: '#dc322f', green: '#859900', yellow: '#b58900', blue: '#268bd2', magenta: '#d33682', cyan: '#2aa198', white: '#eee8d5'
+  }
+}
+
 const FONT_FAMILIES = [
   'JetBrains Mono',
   'Fira Code',
@@ -64,6 +96,7 @@ export default function SettingsPanel({ isOpen, onClose }: SettingsPanelProps) {
   const [showClearConfirm, setShowClearConfirm] = useState(false)
   const [showResetConfirm, setShowResetConfirm] = useState(false)
   const [showThemeCreator, setShowThemeCreator] = useState(false)
+  const [selectedPreset, setSelectedPreset] = useState<string>('default')
   const [newTheme, setNewTheme] = useState<CustomTheme>({
     id: '',
     name: '',
@@ -483,86 +516,185 @@ export default function SettingsPanel({ isOpen, onClose }: SettingsPanelProps) {
                   (v) => `${Math.round(v * 100)}%`
                 )}
 
-                {/* Custom Theme Creator Modal */}
+                {/* Custom Theme Creator Modal - Redesigned */}
                 {showThemeCreator && (
-                  <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center">
-                    <div className="bg-[#1a1a1a] rounded-2xl border border-white/[0.06] w-[500px] max-h-[80vh] overflow-hidden">
-                      <div className="flex items-center justify-between px-6 py-4 border-b border-white/[0.06]">
+                  <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+                    <div className="bg-[#141416] rounded-2xl border border-white/[0.08] w-[680px] max-h-[90vh] overflow-hidden shadow-2xl">
+                      {/* Header */}
+                      <div className="flex items-center justify-between px-6 py-4 border-b border-white/[0.06] bg-gradient-to-r from-[#1a1a1c] to-[#141416]">
                         <h3 className="text-lg font-semibold text-white flex items-center gap-2">
                           <Sparkles size={18} className="text-[#cc785c]" />
                           Create Custom Theme
                         </h3>
                         <button
                           onClick={() => setShowThemeCreator(false)}
-                          className="p-2 rounded-lg text-gray-400 hover:text-white hover:bg-white/5"
+                          className="p-2 rounded-lg text-gray-400 hover:text-white hover:bg-white/[0.06] transition-colors"
                         >
                           <X size={18} />
                         </button>
                       </div>
-                      <div className="p-6 space-y-4 overflow-y-auto max-h-[60vh]">
+
+                      <div className="p-6 space-y-6 overflow-y-auto max-h-[70vh]">
+                        {/* Theme Name */}
                         <div>
-                          <label className="block text-xs text-gray-400 mb-2">Theme Name</label>
+                          <label className="block text-xs font-medium text-gray-400 mb-2">Theme Name</label>
                           <input
                             type="text"
                             value={newTheme.name}
                             onChange={(e) => setNewTheme({ ...newTheme, name: e.target.value })}
                             placeholder="My Custom Theme"
-                            className="w-full px-4 py-2.5 rounded-lg bg-white/5 border border-white/[0.06] text-white text-sm placeholder-gray-500 focus:outline-none focus:border-[#cc785c]/50"
+                            className="w-full px-4 py-3 rounded-xl bg-black/30 border border-white/[0.06] text-white text-sm placeholder-gray-600 focus:outline-none focus:border-[#cc785c]/50 focus:ring-1 focus:ring-[#cc785c]/20"
                           />
                         </div>
-                        <div className="grid grid-cols-2 gap-4">
-                          {[
-                            { key: 'background', label: 'Background' },
-                            { key: 'foreground', label: 'Foreground' },
-                            { key: 'accent', label: 'Accent' },
-                            { key: 'cursor', label: 'Cursor' },
-                            { key: 'selection', label: 'Selection' },
-                            { key: 'black', label: 'Black' },
-                            { key: 'red', label: 'Red' },
-                            { key: 'green', label: 'Green' },
-                            { key: 'yellow', label: 'Yellow' },
-                            { key: 'blue', label: 'Blue' },
-                            { key: 'magenta', label: 'Magenta' },
-                            { key: 'cyan', label: 'Cyan' },
-                            { key: 'white', label: 'White' }
-                          ].map((color) => (
-                            <div key={color.key} className="flex items-center gap-3">
-                              <input
-                                type="color"
-                                value={newTheme[color.key as keyof CustomTheme] as string}
-                                onChange={(e) => setNewTheme({ ...newTheme, [color.key]: e.target.value })}
-                                className="w-8 h-8 rounded-lg cursor-pointer border border-white/10"
-                              />
-                              <div>
-                                <div className="text-xs text-gray-400">{color.label}</div>
-                                <div className="text-xs text-gray-600 font-mono">
-                                  {newTheme[color.key as keyof CustomTheme]}
+
+                        {/* Start From Preset */}
+                        <div>
+                          <label className="block text-xs font-medium text-gray-400 mb-3">Start From</label>
+                          <div className="flex flex-wrap gap-2">
+                            {Object.entries(THEME_PRESETS).map(([presetId, preset]) => (
+                              <button
+                                key={presetId}
+                                onClick={() => {
+                                  setSelectedPreset(presetId)
+                                  setNewTheme({ ...newTheme, ...preset })
+                                }}
+                                className={`px-3 py-2 rounded-lg text-xs font-medium transition-all flex items-center gap-2 ${
+                                  selectedPreset === presetId
+                                    ? 'bg-[#cc785c] text-white ring-2 ring-[#cc785c]/50'
+                                    : 'bg-black/30 text-gray-400 hover:bg-white/[0.06] hover:text-white border border-white/[0.06]'
+                                }`}
+                              >
+                                <div className="w-4 h-4 rounded-full border border-white/20" style={{ backgroundColor: preset.background }} />
+                                {presetId.charAt(0).toUpperCase() + presetId.slice(1)}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+
+                        {/* Color Sections */}
+                        <div className="grid grid-cols-2 gap-6">
+                          {/* UI Colors */}
+                          <div className="space-y-3">
+                            <div className="text-xs font-medium text-gray-500 uppercase tracking-wider">UI Colors</div>
+                            <div className="space-y-2 p-4 rounded-xl bg-black/20 border border-white/[0.04]">
+                              {[
+                                { key: 'background', label: 'Background' },
+                                { key: 'foreground', label: 'Text' },
+                                { key: 'accent', label: 'Accent' },
+                                { key: 'cursor', label: 'Cursor' },
+                                { key: 'selection', label: 'Selection' }
+                              ].map(({ key, label }) => (
+                                <div key={key} className="flex items-center gap-3">
+                                  <div className="relative">
+                                    <input
+                                      type="color"
+                                      value={newTheme[key as keyof CustomTheme] as string}
+                                      onChange={(e) => setNewTheme({ ...newTheme, [key]: e.target.value })}
+                                      className="w-10 h-10 rounded-lg cursor-pointer border-2 border-white/10 hover:border-white/20 transition-colors"
+                                      style={{ backgroundColor: newTheme[key as keyof CustomTheme] as string }}
+                                    />
+                                  </div>
+                                  <div className="flex-1">
+                                    <div className="text-xs text-gray-300">{label}</div>
+                                    <input
+                                      type="text"
+                                      value={newTheme[key as keyof CustomTheme] as string}
+                                      onChange={(e) => setNewTheme({ ...newTheme, [key]: e.target.value })}
+                                      className="w-full text-[10px] text-gray-500 font-mono bg-transparent border-none focus:outline-none focus:text-gray-400"
+                                    />
+                                  </div>
                                 </div>
+                              ))}
+                            </div>
+                          </div>
+
+                          {/* Terminal Colors */}
+                          <div className="space-y-3">
+                            <div className="text-xs font-medium text-gray-500 uppercase tracking-wider">Terminal Colors</div>
+                            <div className="p-4 rounded-xl bg-black/20 border border-white/[0.04]">
+                              <div className="grid grid-cols-4 gap-2">
+                                {[
+                                  { key: 'black', label: 'Blk' },
+                                  { key: 'red', label: 'Red' },
+                                  { key: 'green', label: 'Grn' },
+                                  { key: 'yellow', label: 'Yel' },
+                                  { key: 'blue', label: 'Blu' },
+                                  { key: 'magenta', label: 'Mag' },
+                                  { key: 'cyan', label: 'Cyn' },
+                                  { key: 'white', label: 'Wht' }
+                                ].map(({ key, label }) => (
+                                  <div key={key} className="flex flex-col items-center gap-1">
+                                    <input
+                                      type="color"
+                                      value={newTheme[key as keyof CustomTheme] as string}
+                                      onChange={(e) => setNewTheme({ ...newTheme, [key]: e.target.value })}
+                                      className="w-10 h-10 rounded-lg cursor-pointer border-2 border-white/10 hover:border-white/20 transition-colors"
+                                      style={{ backgroundColor: newTheme[key as keyof CustomTheme] as string }}
+                                    />
+                                    <span className="text-[9px] text-gray-500">{label}</span>
+                                  </div>
+                                ))}
                               </div>
                             </div>
-                          ))}
+                          </div>
                         </div>
-                        {/* Preview */}
-                        <div
-                          className="p-4 rounded-xl border border-white/[0.06] font-mono text-sm"
-                          style={{ backgroundColor: newTheme.background }}
-                        >
-                          <div style={{ color: newTheme.foreground }}>$ claude</div>
-                          <div style={{ color: newTheme.green }}>Welcome to Claude Code!</div>
-                          <div style={{ color: newTheme.accent }}>Ready to assist...</div>
+
+                        {/* Live Preview */}
+                        <div>
+                          <div className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-3">Preview</div>
+                          <div
+                            className="rounded-xl border border-white/[0.08] overflow-hidden font-mono text-sm"
+                            style={{ backgroundColor: newTheme.background }}
+                          >
+                            {/* Terminal header bar */}
+                            <div className="flex items-center gap-2 px-4 py-2 bg-black/30 border-b border-white/[0.06]">
+                              <div className="flex gap-1.5">
+                                <div className="w-3 h-3 rounded-full bg-[#ff5f56]" />
+                                <div className="w-3 h-3 rounded-full bg-[#ffbd2e]" />
+                                <div className="w-3 h-3 rounded-full bg-[#27ca40]" />
+                              </div>
+                              <span className="text-xs text-gray-500 ml-2">Terminal Preview</span>
+                            </div>
+                            {/* Terminal content */}
+                            <div className="p-4 space-y-1.5 text-[13px] leading-relaxed">
+                              <div style={{ color: newTheme.foreground }}>
+                                <span style={{ color: newTheme.accent }}>❯</span> claude
+                              </div>
+                              <div style={{ color: newTheme.cyan }}>╭───────────────────────────────────────────╮</div>
+                              <div style={{ color: newTheme.cyan }}>│</div>
+                              <div style={{ color: newTheme.foreground }}>
+                                <span style={{ color: newTheme.cyan }}>│</span>  Welcome to <span style={{ color: newTheme.accent }}>Claude Code</span>!
+                              </div>
+                              <div style={{ color: newTheme.cyan }}>│</div>
+                              <div style={{ color: newTheme.cyan }}>╰───────────────────────────────────────────╯</div>
+                              <div style={{ color: newTheme.foreground }} className="mt-2">
+                                <span style={{ color: newTheme.accent }}>❯</span> npm install
+                              </div>
+                              <div style={{ color: newTheme.foreground }}>added 245 packages in 3.2s</div>
+                              <div style={{ color: newTheme.green }}>✓ Dependencies installed successfully</div>
+                              <div style={{ color: newTheme.yellow }}>⚠ 2 moderate vulnerabilities found</div>
+                              <div style={{ color: newTheme.red }}>✗ Error: Missing required configuration</div>
+                              <div style={{ color: newTheme.foreground }} className="mt-2">
+                                <span style={{ color: newTheme.accent }}>❯</span> <span style={{ backgroundColor: newTheme.cursor, color: newTheme.background }} className="px-0.5">▌</span>
+                              </div>
+                            </div>
+                          </div>
                         </div>
                       </div>
-                      <div className="flex justify-end gap-3 px-6 py-4 border-t border-white/[0.06]">
+
+                      {/* Footer */}
+                      <div className="flex justify-end gap-3 px-6 py-4 border-t border-white/[0.06] bg-black/20">
                         <button
                           onClick={() => setShowThemeCreator(false)}
-                          className="px-4 py-2 rounded-lg text-sm text-gray-400 hover:text-white hover:bg-white/5 transition-colors"
+                          className="px-5 py-2.5 rounded-xl text-sm text-gray-400 hover:text-white hover:bg-white/[0.06] transition-colors"
                         >
                           Cancel
                         </button>
                         <button
                           onClick={handleSaveCustomTheme}
-                          className="px-4 py-2 rounded-lg text-sm bg-[#cc785c] text-white hover:bg-[#cc785c]/90 transition-colors"
+                          className="px-5 py-2.5 rounded-xl text-sm bg-[#cc785c] text-white hover:bg-[#b86a50] transition-colors flex items-center gap-2"
                         >
+                          <Save size={14} />
                           Save Theme
                         </button>
                       </div>

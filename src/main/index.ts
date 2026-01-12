@@ -1,4 +1,4 @@
-import { app, BrowserWindow, shell, protocol, net } from 'electron'
+import { app, BrowserWindow, shell, protocol, net, dialog, ipcMain } from 'electron'
 import { join } from 'path'
 import { pathToFileURL } from 'url'
 import { electronApp, optimizer, is } from '@electron-toolkit/utils'
@@ -20,6 +20,13 @@ protocol.registerSchemesAsPrivileged([
 ])
 
 let mainWindow: BrowserWindow | null = null
+let hasActiveTerminal = false
+let forceQuit = false
+
+// Track terminal session state from renderer
+ipcMain.on('terminal-session-active', (_, active: boolean) => {
+  hasActiveTerminal = active
+})
 
 function createWindow(): void {
   mainWindow = new BrowserWindow({
@@ -43,6 +50,29 @@ function createWindow(): void {
 
   mainWindow.on('ready-to-show', () => {
     mainWindow?.show()
+  })
+
+  // Confirm before closing if terminal is active
+  mainWindow.on('close', (e) => {
+    if (forceQuit || !hasActiveTerminal) {
+      return // Allow close
+    }
+
+    e.preventDefault()
+    dialog.showMessageBox(mainWindow!, {
+      type: 'question',
+      buttons: ['Cancel', 'Close Anyway'],
+      defaultId: 0,
+      cancelId: 0,
+      title: 'Active Terminal Session',
+      message: 'You have an active terminal session.',
+      detail: 'Closing will end your Claude session. Are you sure you want to close?'
+    }).then(({ response }) => {
+      if (response === 1) {
+        forceQuit = true
+        mainWindow?.close()
+      }
+    })
   })
 
   mainWindow.webContents.setWindowOpenHandler((details) => {

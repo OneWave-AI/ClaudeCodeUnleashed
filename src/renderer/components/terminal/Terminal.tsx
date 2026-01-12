@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, useCallback, forwardRef, useImperativeHandle } from 'react'
+import { useEffect, useRef, useState, useCallback, forwardRef, useImperativeHandle, useMemo } from 'react'
 import { Terminal as XTerm } from '@xterm/xterm'
 import { FitAddon } from '@xterm/addon-fit'
 import { SearchAddon } from '@xterm/addon-search'
@@ -173,7 +173,30 @@ const Terminal = forwardRef<TerminalRef, TerminalProps>(({ onResize, scanLinesEn
   const terminalIdRef = useRef<string | null>(null)
   const lastDetectedUrlRef = useRef<string | null>(null)
 
-  const { theme, fontSize, fontFamily, setActiveTerminalId } = useAppStore()
+  const { theme, fontSize, fontFamily, setActiveTerminalId, customThemes } = useAppStore()
+
+  // Merge built-in themes with custom themes
+  const allThemes = useMemo(() => {
+    const themes: Record<string, Record<string, string>> = { ...THEMES }
+    for (const ct of customThemes) {
+      themes[ct.id] = {
+        background: ct.background,
+        foreground: ct.foreground,
+        cursor: ct.cursor,
+        cursorAccent: ct.background,
+        selectionBackground: ct.selection.startsWith('rgba') ? ct.selection : `${ct.selection}4d`,
+        black: ct.black,
+        red: ct.red,
+        green: ct.green,
+        yellow: ct.yellow,
+        blue: ct.blue,
+        magenta: ct.magenta,
+        cyan: ct.cyan,
+        white: ct.white
+      }
+    }
+    return themes
+  }, [customThemes])
 
   // Search state
   const [isSearchOpen, setIsSearchOpen] = useState(false)
@@ -402,7 +425,7 @@ const Terminal = forwardRef<TerminalRef, TerminalProps>(({ onResize, scanLinesEn
   useEffect(() => {
     if (!containerRef.current) return
 
-    const themeConfig = THEMES[theme] || THEMES.default
+    const themeConfig = allThemes[theme] || allThemes.default
     const fontFamilyWithFallback = `${fontFamily}, Menlo, Monaco, monospace`
 
     const terminal = new XTerm({
@@ -438,8 +461,8 @@ const Terminal = forwardRef<TerminalRef, TerminalProps>(({ onResize, scanLinesEn
     // Update scroll state on scroll
     terminal.onScroll(() => updateScrollState())
 
-    // Register terminal data handler ONCE before creating terminal
-    window.api.onTerminalData((data: string, id: string) => {
+    // Register terminal data handler - returns cleanup function
+    const cleanupDataHandler = window.api.onTerminalData((data: string, id: string) => {
       if (id === terminalIdRef.current) {
         // Apply pattern highlighting if enabled
         const processedData = applyHighlighting(data, highlightPatterns)
@@ -524,6 +547,8 @@ const Terminal = forwardRef<TerminalRef, TerminalProps>(({ onResize, scanLinesEn
     resizeObserver.observe(containerRef.current)
 
     return () => {
+      // Clean up the data handler first
+      cleanupDataHandler?.()
       resizeObserver.disconnect()
       terminal.dispose()
       if (terminalIdRef.current) {
@@ -536,7 +561,7 @@ const Terminal = forwardRef<TerminalRef, TerminalProps>(({ onResize, scanLinesEn
   useEffect(() => {
     const terminal = terminalRef.current
     if (terminal) {
-      const themeConfig = THEMES[theme] || THEMES.default
+      const themeConfig = allThemes[theme] || allThemes.default
       terminal.options.theme = themeConfig
     }
   }, [theme])
@@ -561,7 +586,7 @@ const Terminal = forwardRef<TerminalRef, TerminalProps>(({ onResize, scanLinesEn
     }
   }, [fontFamily])
 
-  const themeConfig = THEMES[theme] || THEMES.default
+  const themeConfig = allThemes[theme] || allThemes.default
 
   return (
     <div
@@ -676,39 +701,85 @@ const Terminal = forwardRef<TerminalRef, TerminalProps>(({ onResize, scanLinesEn
         </div>
       )}
 
-      {/* Scroll Buttons */}
+      {/* Dynamic Scroll Control */}
       {isHovering && (canScrollUp || canScrollDown) && (
         <div
-          className="absolute right-4 top-1/2 -translate-y-1/2 z-10 flex flex-col gap-2"
+          className="absolute right-3 top-1/2 -translate-y-1/2 z-10 flex flex-col items-center gap-1"
+          style={{
+            height: '200px',
+          }}
         >
-          {canScrollUp && (
-            <button
-              onClick={scrollToTop}
-              className="p-2 rounded-lg border backdrop-blur-sm transition-all hover:scale-105"
+          {/* Scroll to Top Button */}
+          <button
+            onClick={scrollToTop}
+            disabled={!canScrollUp}
+            className="p-1.5 rounded-lg border backdrop-blur-sm transition-all hover:scale-110 disabled:opacity-30 disabled:cursor-not-allowed"
+            style={{
+              backgroundColor: `${themeConfig.background}cc`,
+              borderColor: canScrollUp ? themeConfig.cursor + '40' : 'rgba(255,255,255,0.05)',
+              color: canScrollUp ? themeConfig.cursor : 'rgba(255,255,255,0.3)'
+            }}
+            title="Scroll to top"
+          >
+            <ChevronUp size={14} />
+          </button>
+
+          {/* Scroll Track */}
+          <div
+            className="flex-1 w-2 rounded-full relative cursor-pointer group"
+            style={{
+              backgroundColor: 'rgba(255,255,255,0.05)',
+              minHeight: '100px'
+            }}
+            onClick={(e) => {
+              const terminal = terminalRef.current
+              if (!terminal) return
+              const rect = e.currentTarget.getBoundingClientRect()
+              const clickY = e.clientY - rect.top
+              const percentage = clickY / rect.height
+              const viewport = terminal.buffer.active
+              const totalLines = viewport.baseY
+              const targetLine = Math.floor(totalLines * percentage)
+              terminal.scrollToLine(targetLine)
+              updateScrollState()
+            }}
+          >
+            {/* Scroll Thumb */}
+            <div
+              className="absolute left-0 right-0 rounded-full transition-all group-hover:w-3 group-hover:-left-0.5"
               style={{
-                backgroundColor: `${themeConfig.background}cc`,
-                borderColor: 'rgba(255,255,255,0.1)',
-                color: themeConfig.cursor
+                backgroundColor: themeConfig.cursor,
+                opacity: 0.6,
+                height: '30%',
+                minHeight: '20px',
+                top: `${(() => {
+                  const terminal = terminalRef.current
+                  if (!terminal) return 0
+                  const viewport = terminal.buffer.active
+                  const totalLines = viewport.baseY
+                  if (totalLines === 0) return 0
+                  const currentLine = viewport.viewportY
+                  const percentage = (currentLine / totalLines) * 70
+                  return Math.min(70, Math.max(0, percentage))
+                })()}%`,
               }}
-              title="Scroll to top"
-            >
-              <ChevronUp size={16} />
-            </button>
-          )}
-          {canScrollDown && (
-            <button
-              onClick={scrollToBottom}
-              className="p-2 rounded-lg border backdrop-blur-sm transition-all hover:scale-105"
-              style={{
-                backgroundColor: `${themeConfig.background}cc`,
-                borderColor: 'rgba(255,255,255,0.1)',
-                color: themeConfig.cursor
-              }}
-              title="Scroll to bottom"
-            >
-              <ChevronDown size={16} />
-            </button>
-          )}
+            />
+          </div>
+
+          {/* Scroll to Bottom Button */}
+          <button
+            onClick={scrollToBottom}
+            disabled={!canScrollDown}
+            className="p-1.5 rounded-lg border backdrop-blur-sm transition-all hover:scale-110 disabled:opacity-30 disabled:cursor-not-allowed"
+            style={{
+              backgroundColor: `${themeConfig.background}cc`,
+              borderColor: canScrollDown ? themeConfig.cursor + '40' : 'rgba(255,255,255,0.05)',
+              color: canScrollDown ? themeConfig.cursor : 'rgba(255,255,255,0.3)'
+            }}
+            title="Scroll to bottom"
+          >
+            <ChevronDown size={14} />
+          </button>
         </div>
       )}
 

@@ -11,13 +11,16 @@ const api: IpcApi = {
   getTerminals: () => ipcRenderer.invoke('get-terminals'),
   terminalSendText: (text, terminalId) => ipcRenderer.invoke('terminal-send-text', text, terminalId),
   onTerminalData: (callback) => {
-    // Remove any existing listeners first
-    ipcRenderer.removeAllListeners('terminal-data')
-    ipcRenderer.on('terminal-data', (_, data, terminalId) => callback(data, terminalId))
+    // Support multiple listeners - each terminal can register its own
+    const handler = (_: Electron.IpcRendererEvent, data: string, terminalId: string) => callback(data, terminalId)
+    ipcRenderer.on('terminal-data', handler)
+    // Return cleanup function
+    return () => ipcRenderer.removeListener('terminal-data', handler)
   },
   onTerminalExit: (callback) => {
-    ipcRenderer.removeAllListeners('terminal-exit')
-    ipcRenderer.on('terminal-exit', (_, code, terminalId) => callback(code, terminalId))
+    const handler = (_: Electron.IpcRendererEvent, code: number, terminalId: string) => callback(code, terminalId)
+    ipcRenderer.on('terminal-exit', handler)
+    return () => ipcRenderer.removeListener('terminal-exit', handler)
   },
 
   // Files
@@ -139,7 +142,10 @@ const api: IpcApi = {
   // Window Controls
   windowClose: () => ipcRenderer.invoke('window-close'),
   windowMinimize: () => ipcRenderer.invoke('window-minimize'),
-  windowMaximize: () => ipcRenderer.invoke('window-maximize')
+  windowMaximize: () => ipcRenderer.invoke('window-maximize'),
+
+  // Terminal Session State
+  setTerminalSessionActive: (active: boolean) => ipcRenderer.send('terminal-session-active', active)
 }
 
 contextBridge.exposeInMainWorld('api', api)

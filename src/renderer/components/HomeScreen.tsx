@@ -16,7 +16,19 @@ import {
   AlertCircle,
   Loader2,
   Plug,
-  Settings
+  Settings,
+  TrendingUp,
+  DollarSign,
+  Timer,
+  Activity,
+  BarChart3,
+  Cpu,
+  Wrench,
+  GitBranch,
+  Terminal,
+  Globe,
+  FileEdit,
+  Search
 } from 'lucide-react'
 import Particles, { initParticlesEngine } from '@tsparticles/react'
 import { loadSlim } from '@tsparticles/slim'
@@ -31,6 +43,7 @@ interface HomeScreenProps {
   onOpenHistory: () => void
   onOpenSettings?: () => void
   onOpenSuperAgent?: () => void
+  onOpenAnalytics?: () => void
 }
 
 interface RecentProject {
@@ -46,6 +59,20 @@ interface Stats {
   mcpServers: number
 }
 
+interface DetailedStats {
+  totalSessions: number
+  totalTokens: number
+  totalTimeMinutes: number
+  avgSessionLength: number
+  sessions7Days: number
+  sessions30Days: number
+  time7Days: number
+  time30Days: number
+  recentActivity: { date: string; sessions: number; minutes: number }[]
+  topProjects: { name: string; folder: string; sessions: number; timeMinutes: number }[]
+  totalProjects: number
+}
+
 type LoadingState = 'idle' | 'loading' | 'loaded' | 'error'
 
 export default function HomeScreen({
@@ -56,10 +83,24 @@ export default function HomeScreen({
   onOpenSkills,
   onOpenHistory,
   onOpenSettings,
-  onOpenSuperAgent
+  onOpenSuperAgent,
+  onOpenAnalytics
 }: HomeScreenProps) {
   const [recentProjects, setRecentProjects] = useState<RecentProject[]>([])
   const [stats, setStats] = useState<Stats>({ conversations: 0, skills: 0, agents: 0, mcpServers: 0 })
+  const [detailedStats, setDetailedStats] = useState<DetailedStats>({
+    totalSessions: 0,
+    totalTokens: 0,
+    totalTimeMinutes: 0,
+    avgSessionLength: 0,
+    sessions7Days: 0,
+    sessions30Days: 0,
+    time7Days: 0,
+    time30Days: 0,
+    recentActivity: [],
+    topProjects: [],
+    totalProjects: 0
+  })
   const [loadingState, setLoadingState] = useState<LoadingState>('idle')
   const [isStarting, setIsStarting] = useState(false)
   const [dataError, setDataError] = useState<string | null>(null)
@@ -153,6 +194,104 @@ export default function HomeScreen({
           agents: Array.isArray(agents) ? agents.length : 0,
           mcpServers: Array.isArray(mcpServers) ? mcpServers.filter((s: { enabled: boolean }) => s.enabled).length : 0
         })
+
+        // Calculate detailed stats from conversations using REAL duration data
+        const now = new Date()
+        const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000)
+        const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000)
+
+        let sessions7Days = 0
+        let sessions30Days = 0
+        let time7Days = 0
+        let time30Days = 0
+        let totalTokens = 0
+        let totalMinutes = 0
+
+        // Group sessions by date for activity chart (last 7 days)
+        const activityMap = new Map<string, { sessions: number; minutes: number }>()
+        for (let i = 6; i >= 0; i--) {
+          const date = new Date(now)
+          date.setDate(date.getDate() - i)
+          const dateStr = date.toISOString().split('T')[0]
+          activityMap.set(dateStr, { sessions: 0, minutes: 0 })
+        }
+
+        // Track projects with time
+        const projectCounts = new Map<string, { name: string; folder: string; count: number; timeMinutes: number }>()
+
+        for (const conv of conversations) {
+          const convDate = new Date(conv.timestamp)
+          const convDateStr = convDate.toISOString().split('T')[0]
+
+          // Get REAL duration from stats (in milliseconds), convert to minutes
+          const durationMinutes = conv.stats?.duration
+            ? Math.round(conv.stats.duration / 1000 / 60)
+            : 10 // Default 10 min if no duration data
+
+          // Get REAL token count from stats
+          const tokens = conv.stats?.estimatedTokens || 2500
+
+          // Count by time period
+          if (convDate >= sevenDaysAgo) {
+            sessions7Days++
+            time7Days += durationMinutes
+          }
+          if (convDate >= thirtyDaysAgo) {
+            sessions30Days++
+            time30Days += durationMinutes
+          }
+
+          // Track activity by date with time
+          const dayData = activityMap.get(convDateStr)
+          if (dayData) {
+            dayData.sessions++
+            dayData.minutes += durationMinutes
+          }
+
+          // Track projects with time
+          if (conv.projectFolder) {
+            const existing = projectCounts.get(conv.projectFolder)
+            if (existing) {
+              existing.count++
+              existing.timeMinutes += durationMinutes
+            } else {
+              projectCounts.set(conv.projectFolder, {
+                name: conv.projectFolder.split('/').pop() || 'Unknown',
+                folder: conv.projectFolder,
+                count: 1,
+                timeMinutes: durationMinutes
+              })
+            }
+          }
+
+          totalTokens += tokens
+          totalMinutes += durationMinutes
+        }
+
+        // Sort projects by TIME spent (for developer billing)
+        const topProjects = Array.from(projectCounts.values())
+          .sort((a, b) => b.timeMinutes - a.timeMinutes)
+          .slice(0, 5)
+          .map(p => ({ name: p.name, folder: p.folder, sessions: p.count, timeMinutes: p.timeMinutes }))
+
+        // Convert activity map to array
+        const recentActivity = Array.from(activityMap.entries())
+          .map(([date, data]) => ({ date, sessions: data.sessions, minutes: data.minutes }))
+
+        setDetailedStats({
+          totalSessions: conversations.length,
+          totalTokens,
+          totalTimeMinutes: totalMinutes,
+          avgSessionLength: conversations.length > 0 ? Math.round(totalMinutes / conversations.length) : 0,
+          sessions7Days,
+          sessions30Days,
+          time7Days,
+          time30Days,
+          recentActivity,
+          topProjects,
+          totalProjects: projectCounts.size
+        })
+
         setLoadingState('loaded')
       } catch {
         if (!cancelled) setLoadingState('error')
@@ -219,24 +358,63 @@ export default function HomeScreen({
       <div className={`relative z-10 max-w-3xl mx-auto px-6 py-12 transition-all duration-700 ${mounted ? 'opacity-100' : 'opacity-0 translate-y-4'}`}>
         {/* Compact Hero */}
         <div className="text-center mb-10">
-          <div className="inline-flex items-center justify-center w-20 h-20 rounded-2xl bg-gradient-to-br from-purple-900/40 to-[#1a0a2e] border border-purple-500/20 mb-5 floating-card shadow-lg shadow-purple-500/10">
-            <svg width="48" height="48" viewBox="0 0 48 48" fill="none">
-              <defs>
-                <linearGradient id="arenaGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-                  <stop offset="0%" stopColor="#cc785c"/>
-                  <stop offset="100%" stopColor="#e8956e"/>
-                </linearGradient>
-              </defs>
-              {/* Hexagon arena */}
-              <polygon points="24,6 42,15 42,33 24,42 6,33 6,15" fill="none" stroke="url(#arenaGrad)" strokeWidth="2" opacity="0.6"/>
-              {/* Inner hexagon */}
-              <polygon points="24,12 36,18 36,30 24,36 12,30 12,18" fill="none" stroke="url(#arenaGrad)" strokeWidth="1.5" opacity="0.4"/>
-              {/* Code brackets */}
-              <path d="M18,18 Q14,24 18,30" fill="none" stroke="url(#arenaGrad)" strokeWidth="3" strokeLinecap="round"/>
-              <path d="M30,18 Q34,24 30,30" fill="none" stroke="url(#arenaGrad)" strokeWidth="3" strokeLinecap="round"/>
-              {/* Center cursor */}
-              <rect x="22" y="20" width="4" height="8" rx="1" fill="url(#arenaGrad)"/>
-            </svg>
+          {/* Modern Arena Logo */}
+          <div className="relative inline-flex items-center justify-center w-24 h-24 mb-5">
+            {/* Outer glow rings */}
+            <div className="absolute inset-0 rounded-2xl bg-gradient-to-br from-[#cc785c]/20 via-purple-500/10 to-transparent blur-xl animate-pulse-slow" />
+            <div className="absolute inset-2 rounded-xl bg-gradient-to-br from-purple-500/10 to-transparent blur-lg" />
+
+            {/* Main container */}
+            <div className="relative w-20 h-20 rounded-2xl bg-gradient-to-br from-[#0d0d0d] via-[#161618] to-[#0d0d0d] border border-white/[0.08] shadow-2xl shadow-[#cc785c]/20 floating-card overflow-hidden">
+              {/* Inner gradient accent */}
+              <div className="absolute inset-0 bg-gradient-to-br from-[#cc785c]/10 via-transparent to-purple-500/10" />
+
+              {/* Logo SVG */}
+              <svg width="80" height="80" viewBox="0 0 80 80" fill="none" className="relative z-10">
+                <defs>
+                  <linearGradient id="arenaGradNew" x1="0%" y1="0%" x2="100%" y2="100%">
+                    <stop offset="0%" stopColor="#cc785c"/>
+                    <stop offset="50%" stopColor="#e8956e"/>
+                    <stop offset="100%" stopColor="#cc785c"/>
+                  </linearGradient>
+                  <linearGradient id="purpleGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                    <stop offset="0%" stopColor="#a78bfa"/>
+                    <stop offset="100%" stopColor="#7c3aed"/>
+                  </linearGradient>
+                  <filter id="glow">
+                    <feGaussianBlur stdDeviation="2" result="coloredBlur"/>
+                    <feMerge>
+                      <feMergeNode in="coloredBlur"/>
+                      <feMergeNode in="SourceGraphic"/>
+                    </feMerge>
+                  </filter>
+                </defs>
+
+                {/* Outer hexagon - subtle */}
+                <polygon points="40,10 66,22 66,58 40,70 14,58 14,22" fill="none" stroke="url(#purpleGrad)" strokeWidth="1" opacity="0.3"/>
+
+                {/* Inner hexagon - more visible */}
+                <polygon points="40,18 58,27 58,53 40,62 22,53 22,27" fill="none" stroke="url(#arenaGradNew)" strokeWidth="1.5" opacity="0.5"/>
+
+                {/* Code brackets - main element */}
+                <g filter="url(#glow)">
+                  <path d="M30,30 L24,40 L30,50" fill="none" stroke="url(#arenaGradNew)" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round"/>
+                  <path d="M50,30 L56,40 L50,50" fill="none" stroke="url(#arenaGradNew)" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round"/>
+                </g>
+
+                {/* Center cursor */}
+                <rect x="37" y="33" width="6" height="14" rx="2" fill="url(#arenaGradNew)" opacity="0.9"/>
+
+                {/* Sparkle accents */}
+                <circle cx="28" cy="24" r="1.5" fill="#cc785c" opacity="0.6"/>
+                <circle cx="52" cy="56" r="1" fill="#a78bfa" opacity="0.5"/>
+                <circle cx="58" cy="32" r="1.5" fill="#e8956e" opacity="0.4"/>
+              </svg>
+
+              {/* Corner accents */}
+              <div className="absolute top-0 left-0 w-3 h-3 border-t border-l border-[#cc785c]/30 rounded-tl-lg" />
+              <div className="absolute bottom-0 right-0 w-3 h-3 border-b border-r border-purple-500/30 rounded-br-lg" />
+            </div>
           </div>
           <h1 className="text-4xl font-bold mb-3 tracking-tight">
             <span className="text-white">Claude</span>
@@ -247,7 +425,7 @@ export default function HomeScreen({
             Your autonomous AI coding companion. Let Claude build, debug, and ship while you focus on what matters.
           </p>
 
-          {/* Stats inline */}
+          {/* Stats summary - always shown */}
           {loadingState === 'loaded' && (
             <div className="flex items-center justify-center gap-4 mt-4 text-xs">
               <span className="text-gray-500"><span className="text-white font-medium">{stats.conversations}</span> chats</span>
@@ -258,6 +436,211 @@ export default function HomeScreen({
             </div>
           )}
         </div>
+
+        {/* Analytics Dashboard - Skeleton Loader */}
+        {loadingState === 'loading' && (
+          <div className="mb-6 animate-pulse">
+            <div className="floating-card bg-white/[0.03] backdrop-blur-sm rounded-2xl border border-white/[0.08] p-5">
+              {/* Header skeleton */}
+              <div className="flex items-center justify-between mb-5">
+                <div className="flex items-center gap-2">
+                  <div className="w-8 h-8 rounded-lg bg-white/[0.06]" />
+                  <div className="w-24 h-4 rounded bg-white/[0.06]" />
+                </div>
+                <div className="w-20 h-3 rounded bg-white/[0.06]" />
+              </div>
+
+              {/* Stats Cards skeleton */}
+              <div className="grid grid-cols-4 gap-3 mb-5">
+                {[1, 2, 3, 4].map((i) => (
+                  <div key={i} className="bg-black/30 rounded-xl p-3 border border-white/[0.04]">
+                    <div className="flex items-center gap-2 mb-2">
+                      <div className="w-5 h-5 rounded bg-white/[0.06]" />
+                      <div className="w-12 h-2 rounded bg-white/[0.06]" />
+                    </div>
+                    <div className="w-16 h-6 rounded bg-white/[0.08]" />
+                  </div>
+                ))}
+              </div>
+
+              {/* Two columns skeleton */}
+              <div className="grid grid-cols-2 gap-4">
+                <div className="bg-black/30 rounded-xl p-4 border border-white/[0.04]">
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="w-20 h-2 rounded bg-white/[0.06]" />
+                    <div className="w-3 h-3 rounded bg-white/[0.06]" />
+                  </div>
+                  <div className="flex items-end gap-1 h-16">
+                    {[1, 2, 3, 4, 5, 6, 7].map((i) => (
+                      <div key={i} className="flex-1 flex flex-col items-center gap-1">
+                        <div
+                          className="w-full rounded-sm bg-white/[0.06]"
+                          style={{ height: `${Math.random() * 60 + 20}%` }}
+                        />
+                        <div className="w-2 h-2 rounded bg-white/[0.04]" />
+                      </div>
+                    ))}
+                  </div>
+                </div>
+                <div className="bg-black/30 rounded-xl p-4 border border-white/[0.04]">
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="w-20 h-2 rounded bg-white/[0.06]" />
+                    <div className="w-3 h-3 rounded bg-white/[0.06]" />
+                  </div>
+                  <div className="space-y-2">
+                    {[1, 2, 3, 4].map((i) => (
+                      <div key={i} className="flex items-center gap-2">
+                        <div className="w-2.5 h-2.5 rounded bg-white/[0.06]" />
+                        <div className="flex-1 h-2 rounded bg-white/[0.06]" />
+                        <div className="w-16 h-1.5 rounded bg-white/[0.06]" />
+                        <div className="w-8 h-2 rounded bg-white/[0.06]" />
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+
+              {/* Footer skeleton */}
+              <div className="mt-4 pt-4 border-t border-white/[0.04] flex items-center justify-between">
+                <div className="flex items-center gap-4">
+                  <div className="w-24 h-2 rounded bg-white/[0.06]" />
+                  <div className="w-28 h-2 rounded bg-white/[0.06]" />
+                </div>
+                <div className="w-16 h-2 rounded bg-white/[0.04]" />
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Analytics Dashboard - Actual Content */}
+        {loadingState === 'loaded' && (
+          <div className="mb-6 animate-in fade-in duration-500">
+            <div className="floating-card bg-white/[0.03] backdrop-blur-sm rounded-2xl border border-white/[0.08] p-5">
+              {/* Dashboard Header with View Details link */}
+              <div className="flex items-center justify-between mb-5">
+                <div className="flex items-center gap-2">
+                  <div className="p-1.5 rounded-lg bg-[#cc785c]/10">
+                    <BarChart3 size={14} className="text-[#cc785c]" />
+                  </div>
+                  <h3 className="text-sm font-semibold text-white">Your Activity</h3>
+                </div>
+                {onOpenAnalytics && (
+                  <button
+                    onClick={onOpenAnalytics}
+                    className="flex items-center gap-1 text-xs text-[#cc785c] hover:text-[#e8956e] transition-colors"
+                  >
+                    View Details <ArrowRight size={12} />
+                  </button>
+                )}
+              </div>
+
+              {/* Stats Cards Grid - 4 columns */}
+              <div className="grid grid-cols-4 gap-3 mb-5">
+                <StatCard
+                  icon={MessageSquare}
+                  label="This Week"
+                  value={detailedStats.sessions7Days}
+                  color="orange"
+                />
+                <StatCard
+                  icon={Timer}
+                  label="Time Coded"
+                  value={formatMinutes(detailedStats.time7Days)}
+                  color="purple"
+                />
+                <StatCard
+                  icon={Activity}
+                  label="Projects"
+                  value={detailedStats.totalProjects}
+                  color="blue"
+                />
+                <StatCard
+                  icon={TrendingUp}
+                  label="Tokens"
+                  value={formatNumber(detailedStats.totalTokens)}
+                  color="green"
+                />
+              </div>
+
+              {/* Two columns: Activity Chart + Top Projects */}
+              <div className="grid grid-cols-2 gap-4">
+                {/* Activity Chart */}
+                <div className="bg-black/30 rounded-xl p-4 border border-white/[0.04]">
+                  <div className="flex items-center justify-between mb-3">
+                    <span className="text-[10px] uppercase tracking-wider text-gray-500 font-medium">7-Day Activity</span>
+                    <TrendingUp size={12} className="text-green-400" />
+                  </div>
+                  <div className="flex items-end gap-1 h-16">
+                    {detailedStats.recentActivity.map((day, i) => {
+                      const maxSessions = Math.max(...detailedStats.recentActivity.map(d => d.sessions), 1)
+                      const height = day.sessions > 0 ? Math.max((day.sessions / maxSessions) * 100, 15) : 8
+                      const isToday = i === detailedStats.recentActivity.length - 1
+                      return (
+                        <div key={day.date} className="flex-1 flex flex-col items-center gap-1" title={`${day.date}: ${day.sessions} sessions, ${day.minutes}m`}>
+                          <div
+                            className={`w-full rounded-sm transition-all ${
+                              isToday ? 'bg-gradient-to-t from-[#cc785c] to-[#e8956e]' :
+                              day.sessions > 0 ? 'bg-[#cc785c]/40' : 'bg-white/[0.06]'
+                            }`}
+                            style={{ height: `${height}%` }}
+                          />
+                          <span className="text-[8px] text-gray-600">
+                            {new Date(day.date).toLocaleDateString('en-US', { weekday: 'short' }).charAt(0)}
+                          </span>
+                        </div>
+                      )
+                    })}
+                  </div>
+                </div>
+
+                {/* Top Projects by TIME */}
+                <div className="bg-black/30 rounded-xl p-4 border border-white/[0.04]">
+                  <div className="flex items-center justify-between mb-3">
+                    <span className="text-[10px] uppercase tracking-wider text-gray-500 font-medium">Top Projects</span>
+                    <Clock size={12} className="text-purple-400" />
+                  </div>
+                  <div className="space-y-2">
+                    {detailedStats.topProjects.slice(0, 4).map((project) => {
+                      const maxTime = detailedStats.topProjects[0]?.timeMinutes || 1
+                      const percent = (project.timeMinutes / maxTime) * 100
+                      return (
+                        <div key={project.folder} className="flex items-center gap-2">
+                          <Code2 size={10} className="text-gray-500 flex-shrink-0" />
+                          <span className="text-[10px] text-gray-400 truncate flex-1">{project.name}</span>
+                          <div className="w-16 h-1.5 rounded-full bg-white/[0.06] overflow-hidden flex-shrink-0">
+                            <div
+                              className="h-full rounded-full bg-gradient-to-r from-purple-500 to-purple-400 transition-all"
+                              style={{ width: `${percent}%` }}
+                            />
+                          </div>
+                          <span className="text-[9px] text-gray-500 w-10 text-right flex-shrink-0">{formatMinutes(project.timeMinutes)}</span>
+                        </div>
+                      )
+                    })}
+                    {detailedStats.topProjects.length === 0 && (
+                      <p className="text-[10px] text-gray-600 text-center py-2">No project data yet</p>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              {/* Footer Insights */}
+              <div className="mt-4 pt-4 border-t border-white/[0.04] flex items-center justify-between">
+                <div className="flex items-center gap-4 text-[10px] text-gray-500">
+                  <span className="flex items-center gap-1">
+                    <Cpu size={10} className="text-[#cc785c]" />
+                    Avg session: <span className="text-gray-400">{detailedStats.avgSessionLength}m</span>
+                  </span>
+                  <span className="flex items-center gap-1">
+                    <Plug size={10} className="text-purple-400" />
+                    30-day: <span className="text-gray-400">{detailedStats.sessions30Days} sessions</span>
+                  </span>
+                </div>
+                <span className="text-[9px] text-gray-700">Updated just now</span>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Main Card */}
         <div className="floating-card bg-white/[0.04] backdrop-blur-sm rounded-2xl border border-white/[0.08] p-6 mb-6">
@@ -648,6 +1031,79 @@ export default function HomeScreen({
           .floating-card, .nebula, .animate-gradient-x, .animate-pulse-slow { animation: none; }
         }
       `}</style>
+    </div>
+  )
+}
+
+// Helper functions
+function formatNumber(num: number): string {
+  if (num >= 1000000) return `${(num / 1000000).toFixed(1)}M`
+  if (num >= 1000) return `${(num / 1000).toFixed(1)}K`
+  return num.toString()
+}
+
+function formatMinutes(mins: number): string {
+  if (mins >= 60) {
+    const hours = Math.floor(mins / 60)
+    const remaining = mins % 60
+    return remaining > 0 ? `${hours}h ${remaining}m` : `${hours}h`
+  }
+  return `${mins}m`
+}
+
+function getToolIcon(name: string): typeof Terminal {
+  const icons: Record<string, typeof Terminal> = {
+    Read: FileEdit,
+    Write: FileEdit,
+    Edit: FileEdit,
+    Bash: Terminal,
+    Grep: Search,
+    Glob: Search,
+    Git: GitBranch,
+    Browser: Globe
+  }
+  return icons[name] || Wrench
+}
+
+// Stat Card Component
+function StatCard({ icon: Icon, label, value, color }: {
+  icon: React.ComponentType<{ className?: string; size?: number }>
+  label: string
+  value: string | number
+  color: 'orange' | 'blue' | 'green' | 'purple'
+}) {
+  const colors = {
+    orange: {
+      bg: 'bg-[#cc785c]/10',
+      icon: 'text-[#cc785c]',
+      glow: 'shadow-[#cc785c]/10'
+    },
+    blue: {
+      bg: 'bg-blue-500/10',
+      icon: 'text-blue-400',
+      glow: 'shadow-blue-500/10'
+    },
+    green: {
+      bg: 'bg-emerald-500/10',
+      icon: 'text-emerald-400',
+      glow: 'shadow-emerald-500/10'
+    },
+    purple: {
+      bg: 'bg-purple-500/10',
+      icon: 'text-purple-400',
+      glow: 'shadow-purple-500/10'
+    }
+  }
+
+  return (
+    <div className={`relative bg-black/30 rounded-xl p-3 border border-white/[0.04] hover:border-white/[0.08] transition-all hover:shadow-lg ${colors[color].glow}`}>
+      <div className="flex items-center gap-2 mb-2">
+        <div className={`p-1.5 rounded-lg ${colors[color].bg}`}>
+          <Icon size={12} className={colors[color].icon} />
+        </div>
+        <span className="text-[9px] uppercase tracking-wider text-gray-500 font-medium">{label}</span>
+      </div>
+      <p className="text-xl font-bold text-white">{value}</p>
     </div>
   )
 }

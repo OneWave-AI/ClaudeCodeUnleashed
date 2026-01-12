@@ -1,0 +1,825 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ClaudeCode Arena - The Ultimate GUI for Claude Code</title>
+  <meta name="description" content="ClaudeCode Arena transforms the Claude Code CLI into a beautiful, powerful desktop experience. Track your coding time, manage multiple sessions, and let AI build while you focus.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    :root {
+      --accent: #cc785c;
+      --accent-light: #e8956e;
+      --purple: #a78bfa;
+      --bg-dark: #030305;
+      --bg-card: rgba(255, 255, 255, 0.03);
+      --border: rgba(255, 255, 255, 0.08);
+      --text: #e0e0e0;
+      --text-muted: #888;
+    }
+
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      background: var(--bg-dark);
+      color: var(--text);
+      line-height: 1.6;
+      overflow-x: hidden;
+    }
+
+    /* Background effects */
+    .bg-effects {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: -1;
+    }
+
+    .bg-effects::before {
+      content: '';
+      position: absolute;
+      top: -20%;
+      left: -10%;
+      width: 500px;
+      height: 500px;
+      background: radial-gradient(ellipse, rgba(204, 120, 92, 0.15) 0%, transparent 70%);
+      filter: blur(80px);
+      animation: float 20s ease-in-out infinite;
+    }
+
+    .bg-effects::after {
+      content: '';
+      position: absolute;
+      bottom: -10%;
+      right: -10%;
+      width: 400px;
+      height: 400px;
+      background: radial-gradient(ellipse, rgba(167, 139, 250, 0.1) 0%, transparent 70%);
+      filter: blur(80px);
+      animation: float 25s ease-in-out infinite reverse;
+    }
+
+    @keyframes float {
+      0%, 100% { transform: translate(0, 0); }
+      50% { transform: translate(30px, -30px); }
+    }
+
+    /* Container */
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 0 24px;
+    }
+
+    /* Navigation */
+    nav {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      z-index: 100;
+      padding: 16px 0;
+      background: rgba(3, 3, 5, 0.8);
+      backdrop-filter: blur(20px);
+      border-bottom: 1px solid var(--border);
+    }
+
+    nav .container {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .logo {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      font-weight: 700;
+      font-size: 1.25rem;
+      text-decoration: none;
+      color: white;
+    }
+
+    .logo-icon {
+      width: 36px;
+      height: 36px;
+      background: linear-gradient(135deg, var(--accent), var(--accent-light));
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .logo span:last-child {
+      background: linear-gradient(90deg, var(--accent), var(--purple));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .nav-links {
+      display: flex;
+      gap: 32px;
+      align-items: center;
+    }
+
+    .nav-links a {
+      color: var(--text-muted);
+      text-decoration: none;
+      font-size: 0.9rem;
+      transition: color 0.2s;
+    }
+
+    .nav-links a:hover {
+      color: white;
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 12px 24px;
+      border-radius: 12px;
+      font-weight: 600;
+      font-size: 0.95rem;
+      text-decoration: none;
+      transition: all 0.3s;
+      cursor: pointer;
+      border: none;
+    }
+
+    .btn-primary {
+      background: linear-gradient(135deg, var(--accent), var(--accent-light));
+      color: white;
+      box-shadow: 0 4px 20px rgba(204, 120, 92, 0.3);
+    }
+
+    .btn-primary:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 30px rgba(204, 120, 92, 0.4);
+    }
+
+    .btn-secondary {
+      background: var(--bg-card);
+      color: white;
+      border: 1px solid var(--border);
+    }
+
+    .btn-secondary:hover {
+      background: rgba(255, 255, 255, 0.08);
+      border-color: rgba(255, 255, 255, 0.15);
+    }
+
+    /* Hero Section */
+    .hero {
+      padding: 160px 0 100px;
+      text-align: center;
+    }
+
+    .hero-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 16px;
+      background: rgba(167, 139, 250, 0.1);
+      border: 1px solid rgba(167, 139, 250, 0.2);
+      border-radius: 100px;
+      font-size: 0.85rem;
+      color: var(--purple);
+      margin-bottom: 24px;
+    }
+
+    .hero h1 {
+      font-size: clamp(2.5rem, 6vw, 4rem);
+      font-weight: 800;
+      line-height: 1.1;
+      margin-bottom: 24px;
+      letter-spacing: -0.02em;
+    }
+
+    .hero h1 .gradient {
+      background: linear-gradient(135deg, var(--accent), var(--accent-light), var(--purple));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .hero p {
+      font-size: 1.25rem;
+      color: var(--text-muted);
+      max-width: 600px;
+      margin: 0 auto 40px;
+    }
+
+    .hero-buttons {
+      display: flex;
+      gap: 16px;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+
+    .hero-image {
+      margin-top: 60px;
+      border-radius: 16px;
+      overflow: hidden;
+      border: 1px solid var(--border);
+      box-shadow: 0 40px 80px rgba(0, 0, 0, 0.5);
+    }
+
+    .hero-image img {
+      width: 100%;
+      height: auto;
+      display: block;
+    }
+
+    /* Features Section */
+    .section {
+      padding: 100px 0;
+    }
+
+    .section-header {
+      text-align: center;
+      margin-bottom: 60px;
+    }
+
+    .section-header h2 {
+      font-size: 2.5rem;
+      font-weight: 700;
+      margin-bottom: 16px;
+    }
+
+    .section-header p {
+      color: var(--text-muted);
+      font-size: 1.1rem;
+      max-width: 600px;
+      margin: 0 auto;
+    }
+
+    .features-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+      gap: 24px;
+    }
+
+    .feature-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 32px;
+      transition: all 0.3s;
+    }
+
+    .feature-card:hover {
+      border-color: rgba(204, 120, 92, 0.3);
+      transform: translateY(-4px);
+    }
+
+    .feature-icon {
+      width: 48px;
+      height: 48px;
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 20px;
+      font-size: 1.5rem;
+    }
+
+    .feature-icon.orange { background: rgba(204, 120, 92, 0.15); }
+    .feature-icon.purple { background: rgba(167, 139, 250, 0.15); }
+    .feature-icon.blue { background: rgba(96, 165, 250, 0.15); }
+    .feature-icon.green { background: rgba(52, 211, 153, 0.15); }
+
+    .feature-card h3 {
+      font-size: 1.25rem;
+      font-weight: 600;
+      margin-bottom: 12px;
+    }
+
+    .feature-card p {
+      color: var(--text-muted);
+      font-size: 0.95rem;
+    }
+
+    /* Comparison Section */
+    .comparison {
+      background: var(--bg-card);
+      border-radius: 24px;
+      border: 1px solid var(--border);
+      padding: 60px;
+      margin-top: 40px;
+    }
+
+    .comparison-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 60px;
+    }
+
+    .comparison-col h3 {
+      font-size: 1.5rem;
+      margin-bottom: 24px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .comparison-col.arena h3 {
+      color: var(--accent);
+    }
+
+    .comparison-list {
+      list-style: none;
+    }
+
+    .comparison-list li {
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+      padding: 12px 0;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .comparison-list li:last-child {
+      border-bottom: none;
+    }
+
+    .check {
+      color: #34d399;
+      font-size: 1.2rem;
+    }
+
+    .x {
+      color: #f87171;
+      font-size: 1.2rem;
+    }
+
+    /* Analytics Section */
+    .analytics-preview {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 40px;
+      align-items: center;
+      margin-top: 60px;
+    }
+
+    .analytics-content h3 {
+      font-size: 1.75rem;
+      margin-bottom: 16px;
+    }
+
+    .analytics-content p {
+      color: var(--text-muted);
+      margin-bottom: 24px;
+    }
+
+    .analytics-features {
+      list-style: none;
+    }
+
+    .analytics-features li {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 8px 0;
+      color: var(--text-muted);
+    }
+
+    .analytics-features li span {
+      color: var(--accent);
+    }
+
+    /* Download Section */
+    .download {
+      text-align: center;
+      padding: 120px 0;
+    }
+
+    .download h2 {
+      font-size: 2.5rem;
+      margin-bottom: 16px;
+    }
+
+    .download p {
+      color: var(--text-muted);
+      margin-bottom: 40px;
+      font-size: 1.1rem;
+    }
+
+    .download-cards {
+      display: flex;
+      gap: 24px;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+
+    .download-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 32px 40px;
+      text-align: center;
+      min-width: 280px;
+      transition: all 0.3s;
+    }
+
+    .download-card:hover {
+      border-color: var(--accent);
+      transform: translateY(-4px);
+    }
+
+    .download-card .icon {
+      font-size: 3rem;
+      margin-bottom: 16px;
+    }
+
+    .download-card h4 {
+      font-size: 1.25rem;
+      margin-bottom: 8px;
+    }
+
+    .download-card p {
+      color: var(--text-muted);
+      font-size: 0.9rem;
+      margin-bottom: 20px;
+    }
+
+    /* Requirements */
+    .requirements {
+      background: var(--bg-card);
+      border-radius: 16px;
+      border: 1px solid var(--border);
+      padding: 40px;
+      margin-top: 60px;
+      text-align: left;
+      max-width: 600px;
+      margin-left: auto;
+      margin-right: auto;
+    }
+
+    .requirements h4 {
+      margin-bottom: 16px;
+    }
+
+    .requirements ul {
+      list-style: none;
+      color: var(--text-muted);
+    }
+
+    .requirements li {
+      padding: 8px 0;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    /* Footer */
+    footer {
+      padding: 40px 0;
+      border-top: 1px solid var(--border);
+      text-align: center;
+      color: var(--text-muted);
+      font-size: 0.9rem;
+    }
+
+    footer a {
+      color: var(--accent);
+      text-decoration: none;
+    }
+
+    /* Responsive */
+    @media (max-width: 768px) {
+      .nav-links {
+        display: none;
+      }
+
+      .comparison-grid {
+        grid-template-columns: 1fr;
+        gap: 40px;
+      }
+
+      .analytics-preview {
+        grid-template-columns: 1fr;
+      }
+
+      .comparison {
+        padding: 40px 24px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="bg-effects"></div>
+
+  <!-- Navigation -->
+  <nav>
+    <div class="container">
+      <a href="#" class="logo">
+        <div class="logo-icon">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="16 18 22 12 16 6"></polyline>
+            <polyline points="8 6 2 12 8 18"></polyline>
+          </svg>
+        </div>
+        <span>ClaudeCode</span>
+        <span>Arena</span>
+      </a>
+      <div class="nav-links">
+        <a href="#features">Features</a>
+        <a href="#comparison">Why Arena?</a>
+        <a href="#analytics">Analytics</a>
+        <a href="#download" class="btn btn-primary">Download</a>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Hero Section -->
+  <section class="hero">
+    <div class="container">
+      <div class="hero-badge">
+        <span>✨</span>
+        <span>Built for developers who ship fast</span>
+      </div>
+      <h1>
+        The Ultimate GUI for<br>
+        <span class="gradient">Claude Code</span>
+      </h1>
+      <p>
+        Transform the powerful Claude Code CLI into a beautiful desktop experience.
+        Track your coding time, manage multiple sessions, and let AI build while you focus on what matters.
+      </p>
+      <div class="hero-buttons">
+        <a href="#download" class="btn btn-primary">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+            <polyline points="7 10 12 15 17 10"></polyline>
+            <line x1="12" y1="15" x2="12" y2="3"></line>
+          </svg>
+          Download for Mac
+        </a>
+        <a href="https://github.com" class="btn btn-secondary">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/>
+          </svg>
+          View on GitHub
+        </a>
+      </div>
+    </div>
+  </section>
+
+  <!-- Features Section -->
+  <section id="features" class="section">
+    <div class="container">
+      <div class="section-header">
+        <h2>Everything you need to code with AI</h2>
+        <p>ClaudeCode Arena enhances the Claude Code CLI with powerful features designed for professional developers.</p>
+      </div>
+
+      <div class="features-grid">
+        <div class="feature-card">
+          <div class="feature-icon orange">🖥️</div>
+          <h3>Beautiful Terminal Experience</h3>
+          <p>A polished, native Mac app with custom themes, syntax highlighting, and smooth animations. No more plain terminal windows.</p>
+        </div>
+
+        <div class="feature-card">
+          <div class="feature-icon purple">📊</div>
+          <h3>Developer Analytics</h3>
+          <p>Track time spent on each project for billing and productivity. See 7-day and 30-day trends, session history, and usage patterns.</p>
+        </div>
+
+        <div class="feature-card">
+          <div class="feature-icon blue">🔀</div>
+          <h3>Split Panel View</h3>
+          <p>Run multiple Claude sessions side-by-side. Work on different tasks simultaneously without switching windows.</p>
+        </div>
+
+        <div class="feature-card">
+          <div class="feature-icon green">🤖</div>
+          <h3>Super Agent Mode</h3>
+          <p>Let an LLM supervisor auto-approve Claude's actions. Set safety levels and time limits for fully autonomous coding.</p>
+        </div>
+
+        <div class="feature-card">
+          <div class="feature-icon orange">📁</div>
+          <h3>File Browser Sidebar</h3>
+          <p>Navigate your project structure visually. Drag and drop files directly into chat. Quick folder switching.</p>
+        </div>
+
+        <div class="feature-card">
+          <div class="feature-icon purple">🔧</div>
+          <h3>Skills & Agents Manager</h3>
+          <p>Create, edit, and organize custom skills and agents. Import community tools with one click.</p>
+        </div>
+
+        <div class="feature-card">
+          <div class="feature-icon blue">🌐</div>
+          <h3>Live Preview</h3>
+          <p>Automatically detect localhost URLs and preview your app in a built-in browser. See changes instantly.</p>
+        </div>
+
+        <div class="feature-card">
+          <div class="feature-icon green">⚡</div>
+          <h3>Model Switcher</h3>
+          <p>Instantly switch between Opus, Sonnet, and Haiku models. Choose the right balance of capability and speed.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Comparison Section -->
+  <section id="comparison" class="section">
+    <div class="container">
+      <div class="section-header">
+        <h2>Why ClaudeCode Arena?</h2>
+        <p>See how Arena enhances your Claude Code workflow compared to the standard CLI.</p>
+      </div>
+
+      <div class="comparison">
+        <div class="comparison-grid">
+          <div class="comparison-col arena">
+            <h3>
+              <span class="logo-icon" style="width:32px;height:32px;">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5">
+                  <polyline points="16 18 22 12 16 6"></polyline>
+                  <polyline points="8 6 2 12 8 18"></polyline>
+                </svg>
+              </span>
+              ClaudeCode Arena
+            </h3>
+            <ul class="comparison-list">
+              <li><span class="check">✓</span> Beautiful native Mac app with custom themes</li>
+              <li><span class="check">✓</span> Track coding time per project for billing</li>
+              <li><span class="check">✓</span> Split panels for multiple sessions</li>
+              <li><span class="check">✓</span> Visual file browser with drag & drop</li>
+              <li><span class="check">✓</span> Super Agent for autonomous execution</li>
+              <li><span class="check">✓</span> Built-in localhost preview</li>
+              <li><span class="check">✓</span> Session history with search</li>
+              <li><span class="check">✓</span> One-click model switching</li>
+              <li><span class="check">✓</span> MCP server configuration UI</li>
+              <li><span class="check">✓</span> Skills & Agents visual editor</li>
+            </ul>
+          </div>
+
+          <div class="comparison-col">
+            <h3>
+              <span style="font-size:1.5rem;">⬛</span>
+              Standard Claude Code CLI
+            </h3>
+            <ul class="comparison-list">
+              <li><span class="x">✗</span> Plain terminal interface</li>
+              <li><span class="x">✗</span> No time tracking or analytics</li>
+              <li><span class="x">✗</span> One session per terminal window</li>
+              <li><span class="x">✗</span> Manual file path typing</li>
+              <li><span class="x">✗</span> Manual approval for each action</li>
+              <li><span class="x">✗</span> Open preview URLs manually</li>
+              <li><span class="x">✗</span> History via terminal scrollback</li>
+              <li><span class="x">✗</span> Type /model command each time</li>
+              <li><span class="x">✗</span> Edit JSON config files manually</li>
+              <li><span class="x">✗</span> Create markdown files manually</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Analytics Section -->
+  <section id="analytics" class="section">
+    <div class="container">
+      <div class="section-header">
+        <h2>Track Every Minute</h2>
+        <p>Know exactly how much time you spend on each project. Perfect for freelancers, consultants, and teams.</p>
+      </div>
+
+      <div class="analytics-preview">
+        <div class="analytics-content">
+          <h3>Developer Time Tracking Built-In</h3>
+          <p>
+            ClaudeCode Arena automatically tracks your coding sessions with real timestamps.
+            See which projects take the most time, identify your most productive days, and generate reports for clients.
+          </p>
+          <ul class="analytics-features">
+            <li><span>📈</span> 7-day and 30-day activity charts</li>
+            <li><span>⏱️</span> Accurate time tracking per project</li>
+            <li><span>📊</span> Session count and token usage</li>
+            <li><span>🗂️</span> Projects sorted by time spent</li>
+            <li><span>📅</span> Peak productivity hours analysis</li>
+            <li><span>🔍</span> Detailed session history browser</li>
+          </ul>
+        </div>
+        <div style="background: var(--bg-card); border: 1px solid var(--border); border-radius: 16px; padding: 24px;">
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 20px;">
+            <div style="background: rgba(204,120,92,0.1); padding: 16px; border-radius: 12px;">
+              <div style="font-size: 0.75rem; color: var(--text-muted); margin-bottom: 4px;">This Week</div>
+              <div style="font-size: 1.75rem; font-weight: 700; color: var(--accent);">47</div>
+              <div style="font-size: 0.8rem; color: var(--text-muted);">sessions</div>
+            </div>
+            <div style="background: rgba(167,139,250,0.1); padding: 16px; border-radius: 12px;">
+              <div style="font-size: 0.75rem; color: var(--text-muted); margin-bottom: 4px;">Time Coded</div>
+              <div style="font-size: 1.75rem; font-weight: 700; color: var(--purple);">12h 30m</div>
+              <div style="font-size: 0.8rem; color: var(--text-muted);">this week</div>
+            </div>
+          </div>
+          <div style="font-size: 0.75rem; color: var(--text-muted); margin-bottom: 12px; text-transform: uppercase; letter-spacing: 0.05em;">Top Projects</div>
+          <div style="space-y: 8px;">
+            <div style="display: flex; align-items: center; gap: 12px; padding: 8px 0; border-bottom: 1px solid var(--border);">
+              <span style="color: var(--text-muted);">1.</span>
+              <span style="flex: 1;">claude-ui</span>
+              <span style="color: var(--accent); font-weight: 600;">4h 20m</span>
+            </div>
+            <div style="display: flex; align-items: center; gap: 12px; padding: 8px 0; border-bottom: 1px solid var(--border);">
+              <span style="color: var(--text-muted);">2.</span>
+              <span style="flex: 1;">api-server</span>
+              <span style="color: var(--accent); font-weight: 600;">2h 15m</span>
+            </div>
+            <div style="display: flex; align-items: center; gap: 12px; padding: 8px 0;">
+              <span style="color: var(--text-muted);">3.</span>
+              <span style="flex: 1;">docs</span>
+              <span style="color: var(--accent); font-weight: 600;">1h 45m</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Download Section -->
+  <section id="download" class="download">
+    <div class="container">
+      <h2>Ready to level up your AI coding?</h2>
+      <p>Download ClaudeCode Arena for free and transform your development workflow.</p>
+
+      <div class="download-cards">
+        <div class="download-card">
+          <div class="icon">🍎</div>
+          <h4>macOS (Apple Silicon)</h4>
+          <p>For M1, M2, M3 Macs</p>
+          <a href="ClaudeCodeArena-2.0.0-arm64.dmg" class="btn btn-primary" download>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+              <polyline points="7 10 12 15 17 10"></polyline>
+              <line x1="12" y1="15" x2="12" y2="3"></line>
+            </svg>
+            Download DMG
+          </a>
+        </div>
+
+        <div class="download-card">
+          <div class="icon">💻</div>
+          <h4>macOS (Intel)</h4>
+          <p>For Intel-based Macs</p>
+          <a href="#" class="btn btn-secondary">Coming Soon</a>
+        </div>
+
+        <div class="download-card">
+          <div class="icon">🪟</div>
+          <h4>Windows</h4>
+          <p>Windows 10/11</p>
+          <a href="#" class="btn btn-secondary">Coming Soon</a>
+        </div>
+      </div>
+
+      <div class="requirements">
+        <h4>Requirements</h4>
+        <ul>
+          <li>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2">
+              <polyline points="20 6 9 17 4 12"></polyline>
+            </svg>
+            macOS 12.0 or later
+          </li>
+          <li>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2">
+              <polyline points="20 6 9 17 4 12"></polyline>
+            </svg>
+            Claude Code CLI installed (<code style="background: var(--bg-card); padding: 2px 6px; border-radius: 4px;">npm i -g @anthropic-ai/claude-code</code>)
+          </li>
+          <li>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2">
+              <polyline points="20 6 9 17 4 12"></polyline>
+            </svg>
+            Anthropic API key configured
+          </li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer>
+    <div class="container">
+      <p>
+        ClaudeCode Arena is an open-source project.
+        <a href="https://github.com">View on GitHub</a> ·
+        Built with ❤️ using Electron, React, and Claude
+      </p>
+    </div>
+  </footer>
+</body>
+</html>
