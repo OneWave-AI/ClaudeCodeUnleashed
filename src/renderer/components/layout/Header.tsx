@@ -349,16 +349,41 @@ Begin by analyzing what needs action and selecting your agents now.`
     setShowSwarmMenu(false)
     setSwarmRunning(true)
     setSwarmAgents([
-      { id: '1', name: 'Design Analysis', role: 'Analyzing visual design', status: 'pending' },
-      { id: '2', name: 'Style Improvements', role: 'Improving styles', status: 'pending' },
-      { id: '3', name: 'Polish Agent', role: 'Final polish', status: 'pending' },
+      { id: '1', name: 'Analyzing...', role: 'Claude is selecting agents', status: 'pending' },
+      { id: '2', name: 'Analyzing...', role: 'Claude is selecting agents', status: 'pending' },
+      { id: '3', name: 'Analyzing...', role: 'Claude is selecting agents', status: 'pending' },
     ])
-    const prompt = `🎨 **SWARM DESIGN POLISH MODE**\n\nAnalyze the UI/UX and visual design of the current codebase. Focus on:\n1. Color consistency and palette\n2. Spacing and alignment\n3. Typography hierarchy\n4. Visual polish and micro-interactions\n5. Accessibility (contrast, focus states)\n\nLaunch 3 specialized design agents to improve the visual quality. Show specific CSS/style changes with file:line references.`
-    window.api.terminalSendText(prompt, activeTerminalId)
+
+    const designPrompt = `🎨 **SWARM DESIGN POLISH MODE ACTIVATED**
+
+Analyze the UI/UX and visual design of the current codebase. You need to launch a coordinated agent swarm (minimum 3 agents) to polish the design.
+
+**YOUR TASK:**
+1. First, analyze the current visual design and identify areas for improvement
+2. Then CHOOSE 3-5 specialized design agents that can best address these issues
+3. For each agent you spawn, clearly announce: "🐝 Spawning Agent: [Name] - [Role]"
+4. Have each agent make specific improvements
+
+**FOCUS AREAS:**
+- Color consistency and palette
+- Spacing and alignment
+- Typography hierarchy
+- Visual polish and micro-interactions
+- Accessibility (contrast, focus states)
+
+**OUTPUT FORMAT:**
+For each agent, provide:
+- Agent name and role
+- Specific changes (with file:line references)
+- Before/after description
+
+Begin by analyzing the design and selecting your agents now.`
+
+    window.api.terminalSendText(designPrompt, activeTerminalId)
     showToast('info', 'Design Swarm', 'Polishing visual design')
-    setTimeout(() => setSwarmAgents(prev => prev.map((a, i) => i === 0 ? { ...a, status: 'running' } : a)), 2000)
-    setTimeout(() => setSwarmAgents(prev => prev.map((a, i) => i === 1 ? { ...a, status: 'running' } : a)), 5000)
-    setTimeout(() => setSwarmAgents(prev => prev.map((a, i) => i === 2 ? { ...a, status: 'running' } : a)), 8000)
+    setTimeout(() => setSwarmAgents(prev => prev.map((a, i) => i === 0 ? { ...a, name: 'Agent 1', status: 'running' } : a)), 2000)
+    setTimeout(() => setSwarmAgents(prev => prev.map((a, i) => i === 1 ? { ...a, name: 'Agent 2', status: 'running' } : a)), 5000)
+    setTimeout(() => setSwarmAgents(prev => prev.map((a, i) => i === 2 ? { ...a, name: 'Agent 3', status: 'running' } : a)), 8000)
     setTimeout(() => { setSwarmAgents(prev => prev.map(a => ({ ...a, status: 'complete' }))); setSwarmRunning(false) }, 30000)
   }, [activeTerminalId, swarmRunning, showToast])
 
@@ -368,16 +393,43 @@ Begin by analyzing what needs action and selecting your agents now.`
     setShowSwarmMenu(false)
     setSwarmRunning(true)
     setSwarmAgents([
-      { id: '1', name: 'Bug Scanner', role: 'Finding UI bugs', status: 'pending' },
-      { id: '2', name: 'Layout Fixer', role: 'Fixing layouts', status: 'pending' },
-      { id: '3', name: 'Render Optimizer', role: 'Optimizing renders', status: 'pending' },
+      { id: '1', name: 'Analyzing...', role: 'Claude is selecting agents', status: 'pending' },
+      { id: '2', name: 'Analyzing...', role: 'Claude is selecting agents', status: 'pending' },
+      { id: '3', name: 'Analyzing...', role: 'Claude is selecting agents', status: 'pending' },
     ])
-    const prompt = `🔧 **SWARM UI FIX MODE**\n\nScan for and fix UI bugs and layout issues:\n1. Overflow and clipping problems\n2. Z-index and stacking issues\n3. Responsive breakpoint bugs\n4. Hover/focus state issues\n5. Animation glitches\n6. Missing error boundaries\n\nLaunch 3 specialized agents to identify and fix UI bugs. Provide specific fixes with file:line references.`
-    window.api.terminalSendText(prompt, activeTerminalId)
+
+    const uiFixPrompt = `🔧 **SWARM UI FIX MODE ACTIVATED**
+
+Scan for and fix UI bugs and layout issues. You need to launch a coordinated agent swarm (minimum 3 agents) to fix UI problems.
+
+**YOUR TASK:**
+1. First, scan the codebase for UI bugs and layout issues
+2. Then CHOOSE 3-5 specialized agents that can best fix these issues
+3. For each agent you spawn, clearly announce: "🐝 Spawning Agent: [Name] - [Mission]"
+4. Have each agent fix their assigned issues
+
+**FOCUS AREAS:**
+- Overflow and clipping problems
+- Z-index and stacking issues
+- Responsive breakpoint bugs
+- Hover/focus state issues
+- Animation glitches
+- Missing error boundaries
+
+**OUTPUT FORMAT:**
+For each agent, provide:
+- Agent name and mission
+- Issues found (with file:line references)
+- Fixes applied
+- Severity: 🔴 Critical | 🟠 Warning | 🟡 Info
+
+Begin scanning for UI bugs and selecting your agents now.`
+
+    window.api.terminalSendText(uiFixPrompt, activeTerminalId)
     showToast('info', 'UI Fix Swarm', 'Finding and fixing UI bugs')
-    setTimeout(() => setSwarmAgents(prev => prev.map((a, i) => i === 0 ? { ...a, status: 'running' } : a)), 2000)
-    setTimeout(() => setSwarmAgents(prev => prev.map((a, i) => i === 1 ? { ...a, status: 'running' } : a)), 5000)
-    setTimeout(() => setSwarmAgents(prev => prev.map((a, i) => i === 2 ? { ...a, status: 'running' } : a)), 8000)
+    setTimeout(() => setSwarmAgents(prev => prev.map((a, i) => i === 0 ? { ...a, name: 'Agent 1', status: 'running' } : a)), 2000)
+    setTimeout(() => setSwarmAgents(prev => prev.map((a, i) => i === 1 ? { ...a, name: 'Agent 2', status: 'running' } : a)), 5000)
+    setTimeout(() => setSwarmAgents(prev => prev.map((a, i) => i === 2 ? { ...a, name: 'Agent 3', status: 'running' } : a)), 8000)
     setTimeout(() => { setSwarmAgents(prev => prev.map(a => ({ ...a, status: 'complete' }))); setSwarmRunning(false) }, 30000)
   }, [activeTerminalId, swarmRunning, showToast])
 
@@ -387,16 +439,43 @@ Begin by analyzing what needs action and selecting your agents now.`
     setShowSwarmMenu(false)
     setSwarmRunning(true)
     setSwarmAgents([
-      { id: '1', name: 'Route Analyzer', role: 'Analyzing routes', status: 'pending' },
-      { id: '2', name: 'Nav Optimizer', role: 'Improving navigation', status: 'pending' },
-      { id: '3', name: 'Flow Agent', role: 'Optimizing user flow', status: 'pending' },
+      { id: '1', name: 'Analyzing...', role: 'Claude is selecting agents', status: 'pending' },
+      { id: '2', name: 'Analyzing...', role: 'Claude is selecting agents', status: 'pending' },
+      { id: '3', name: 'Analyzing...', role: 'Claude is selecting agents', status: 'pending' },
     ])
-    const prompt = `🗺️ **SWARM ROUTE MODE**\n\nAnalyze and improve routing and navigation:\n1. Route structure and organization\n2. Navigation patterns and UX\n3. Deep linking and URL structure\n4. Route guards and auth flow\n5. Loading states and transitions\n6. Back/forward navigation\n\nLaunch 3 specialized agents to improve the routing architecture. Show specific improvements with file:line references.`
-    window.api.terminalSendText(prompt, activeTerminalId)
+
+    const routePrompt = `🗺️ **SWARM ROUTE MODE ACTIVATED**
+
+Analyze and improve routing and navigation. You need to launch a coordinated agent swarm (minimum 3 agents) to improve the routing architecture.
+
+**YOUR TASK:**
+1. First, analyze the current routing and navigation patterns
+2. Then CHOOSE 3-5 specialized agents that can best improve these areas
+3. For each agent you spawn, clearly announce: "🐝 Spawning Agent: [Name] - [Role]"
+4. Have each agent implement their improvements
+
+**FOCUS AREAS:**
+- Route structure and organization
+- Navigation patterns and UX
+- Deep linking and URL structure
+- Route guards and auth flow
+- Loading states and transitions
+- Back/forward navigation
+
+**OUTPUT FORMAT:**
+For each agent, provide:
+- Agent name and role
+- Current issue analysis
+- Improvements made (with file:line references)
+- Impact on user experience
+
+Begin analyzing the routing and selecting your agents now.`
+
+    window.api.terminalSendText(routePrompt, activeTerminalId)
     showToast('info', 'Route Swarm', 'Improving navigation')
-    setTimeout(() => setSwarmAgents(prev => prev.map((a, i) => i === 0 ? { ...a, status: 'running' } : a)), 2000)
-    setTimeout(() => setSwarmAgents(prev => prev.map((a, i) => i === 1 ? { ...a, status: 'running' } : a)), 5000)
-    setTimeout(() => setSwarmAgents(prev => prev.map((a, i) => i === 2 ? { ...a, status: 'running' } : a)), 8000)
+    setTimeout(() => setSwarmAgents(prev => prev.map((a, i) => i === 0 ? { ...a, name: 'Agent 1', status: 'running' } : a)), 2000)
+    setTimeout(() => setSwarmAgents(prev => prev.map((a, i) => i === 1 ? { ...a, name: 'Agent 2', status: 'running' } : a)), 5000)
+    setTimeout(() => setSwarmAgents(prev => prev.map((a, i) => i === 2 ? { ...a, name: 'Agent 3', status: 'running' } : a)), 8000)
     setTimeout(() => { setSwarmAgents(prev => prev.map(a => ({ ...a, status: 'complete' }))); setSwarmRunning(false) }, 30000)
   }, [activeTerminalId, swarmRunning, showToast])
 
@@ -406,16 +485,43 @@ Begin by analyzing what needs action and selecting your agents now.`
     setShowSwarmMenu(false)
     setSwarmRunning(true)
     setSwarmAgents([
-      { id: '1', name: 'API Auditor', role: 'Auditing API layer', status: 'pending' },
-      { id: '2', name: 'Data Optimizer', role: 'Optimizing data flow', status: 'pending' },
-      { id: '3', name: 'IPC Agent', role: 'Improving IPC handlers', status: 'pending' },
+      { id: '1', name: 'Analyzing...', role: 'Claude is selecting agents', status: 'pending' },
+      { id: '2', name: 'Analyzing...', role: 'Claude is selecting agents', status: 'pending' },
+      { id: '3', name: 'Analyzing...', role: 'Claude is selecting agents', status: 'pending' },
     ])
-    const prompt = `⚡ **SWARM API MODE**\n\nAnalyze and improve the API layer:\n1. API endpoint structure and naming\n2. Error handling and responses\n3. Data validation and types\n4. IPC handlers (Electron)\n5. Caching and optimization\n6. Loading and error states\n\nLaunch 3 specialized agents to improve the API architecture. Show specific improvements with file:line references.`
-    window.api.terminalSendText(prompt, activeTerminalId)
+
+    const apiPrompt = `⚡ **SWARM API MODE ACTIVATED**
+
+Analyze and improve the API layer. You need to launch a coordinated agent swarm (minimum 3 agents) to improve the API architecture.
+
+**YOUR TASK:**
+1. First, analyze the current API layer and data fetching patterns
+2. Then CHOOSE 3-5 specialized agents that can best improve these areas
+3. For each agent you spawn, clearly announce: "🐝 Spawning Agent: [Name] - [Role]"
+4. Have each agent implement their improvements
+
+**FOCUS AREAS:**
+- API endpoint structure and naming
+- Error handling and responses
+- Data validation and types
+- IPC handlers (Electron)
+- Caching and optimization
+- Loading and error states
+
+**OUTPUT FORMAT:**
+For each agent, provide:
+- Agent name and role
+- Issues identified
+- Improvements made (with file:line references)
+- Performance impact
+
+Begin analyzing the API layer and selecting your agents now.`
+
+    window.api.terminalSendText(apiPrompt, activeTerminalId)
     showToast('info', 'API Swarm', 'Improving API layer')
-    setTimeout(() => setSwarmAgents(prev => prev.map((a, i) => i === 0 ? { ...a, status: 'running' } : a)), 2000)
-    setTimeout(() => setSwarmAgents(prev => prev.map((a, i) => i === 1 ? { ...a, status: 'running' } : a)), 5000)
-    setTimeout(() => setSwarmAgents(prev => prev.map((a, i) => i === 2 ? { ...a, status: 'running' } : a)), 8000)
+    setTimeout(() => setSwarmAgents(prev => prev.map((a, i) => i === 0 ? { ...a, name: 'Agent 1', status: 'running' } : a)), 2000)
+    setTimeout(() => setSwarmAgents(prev => prev.map((a, i) => i === 1 ? { ...a, name: 'Agent 2', status: 'running' } : a)), 5000)
+    setTimeout(() => setSwarmAgents(prev => prev.map((a, i) => i === 2 ? { ...a, name: 'Agent 3', status: 'running' } : a)), 8000)
     setTimeout(() => { setSwarmAgents(prev => prev.map(a => ({ ...a, status: 'complete' }))); setSwarmRunning(false) }, 30000)
   }, [activeTerminalId, swarmRunning, showToast])
 
@@ -425,16 +531,43 @@ Begin by analyzing what needs action and selecting your agents now.`
     setShowSwarmMenu(false)
     setSwarmRunning(true)
     setSwarmAgents([
-      { id: '1', name: 'Integration Auditor', role: 'Auditing integrations', status: 'pending' },
-      { id: '2', name: 'MCP Agent', role: 'Improving MCP', status: 'pending' },
-      { id: '3', name: 'Git Agent', role: 'Improving Git integration', status: 'pending' },
+      { id: '1', name: 'Analyzing...', role: 'Claude is selecting agents', status: 'pending' },
+      { id: '2', name: 'Analyzing...', role: 'Claude is selecting agents', status: 'pending' },
+      { id: '3', name: 'Analyzing...', role: 'Claude is selecting agents', status: 'pending' },
     ])
-    const prompt = `🔗 **SWARM CONNECTOR MODE**\n\nAnalyze and improve integrations:\n1. MCP server connections\n2. Git integration (commit, push, PR)\n3. File system operations\n4. External service connections\n5. CLI tool integration\n6. Plugin/extension system\n\nLaunch 3 specialized agents to improve integrations. Show specific improvements with file:line references.`
-    window.api.terminalSendText(prompt, activeTerminalId)
+
+    const connectorPrompt = `🔗 **SWARM CONNECTOR MODE ACTIVATED**
+
+Analyze and improve integrations. You need to launch a coordinated agent swarm (minimum 3 agents) to improve the integration architecture.
+
+**YOUR TASK:**
+1. First, analyze the current integrations and connection patterns
+2. Then CHOOSE 3-5 specialized agents that can best improve these areas
+3. For each agent you spawn, clearly announce: "🐝 Spawning Agent: [Name] - [Role]"
+4. Have each agent implement their improvements
+
+**FOCUS AREAS:**
+- MCP server connections
+- Git integration (commit, push, PR)
+- File system operations
+- External service connections
+- CLI tool integration
+- Plugin/extension system
+
+**OUTPUT FORMAT:**
+For each agent, provide:
+- Agent name and role
+- Current integration analysis
+- Improvements made (with file:line references)
+- Reliability improvements
+
+Begin analyzing the integrations and selecting your agents now.`
+
+    window.api.terminalSendText(connectorPrompt, activeTerminalId)
     showToast('info', 'Connector Swarm', 'Improving integrations')
-    setTimeout(() => setSwarmAgents(prev => prev.map((a, i) => i === 0 ? { ...a, status: 'running' } : a)), 2000)
-    setTimeout(() => setSwarmAgents(prev => prev.map((a, i) => i === 1 ? { ...a, status: 'running' } : a)), 5000)
-    setTimeout(() => setSwarmAgents(prev => prev.map((a, i) => i === 2 ? { ...a, status: 'running' } : a)), 8000)
+    setTimeout(() => setSwarmAgents(prev => prev.map((a, i) => i === 0 ? { ...a, name: 'Agent 1', status: 'running' } : a)), 2000)
+    setTimeout(() => setSwarmAgents(prev => prev.map((a, i) => i === 1 ? { ...a, name: 'Agent 2', status: 'running' } : a)), 5000)
+    setTimeout(() => setSwarmAgents(prev => prev.map((a, i) => i === 2 ? { ...a, name: 'Agent 3', status: 'running' } : a)), 8000)
     setTimeout(() => { setSwarmAgents(prev => prev.map(a => ({ ...a, status: 'complete' }))); setSwarmRunning(false) }, 30000)
   }, [activeTerminalId, swarmRunning, showToast])
 
@@ -444,19 +577,26 @@ Begin by analyzing what needs action and selecting your agents now.`
     setShowSwarmMenu(false)
     setSwarmRunning(true)
     setSwarmAgents([
-      { id: '1', name: 'Web Researcher', role: 'Searching the web', status: 'pending' },
-      { id: '2', name: 'GitHub Agent', role: 'Searching repos/issues', status: 'pending' },
-      { id: '3', name: 'Reddit Agent', role: 'Finding discussions', status: 'pending' },
+      { id: '1', name: 'Analyzing...', role: 'Claude is selecting agents', status: 'pending' },
+      { id: '2', name: 'Analyzing...', role: 'Claude is selecting agents', status: 'pending' },
+      { id: '3', name: 'Analyzing...', role: 'Claude is selecting agents', status: 'pending' },
     ])
-    const prompt = `🔍 **SWARM RESEARCH MODE**
+
+    const researchPrompt = `🔍 **SWARM RESEARCH MODE ACTIVATED**
 
 You are now in DEEP RESEARCH MODE. Your task is to conduct comprehensive research using all available tools.
 
+**YOUR TASK:**
+1. First, identify what needs to be researched based on our conversation
+2. Then CHOOSE 3-5 specialized research agents
+3. For each agent you spawn, clearly announce: "🐝 Spawning Agent: [Name] - [Research Focus]"
+4. Have each agent conduct their research and report findings
+
 **RESEARCH STRATEGY:**
-1. **Web Search**: Use WebSearch tool to find relevant documentation, tutorials, blog posts
-2. **GitHub Search**: Search for related repositories, issues, pull requests, code examples
-3. **Reddit/Forums**: Look for community discussions, solutions, experiences
-4. **Documentation**: Find official docs, API references, guides
+- **Web Search**: Use WebSearch tool to find relevant documentation, tutorials, blog posts
+- **GitHub Search**: Search for related repositories, issues, pull requests, code examples
+- **Reddit/Forums**: Look for community discussions, solutions, experiences
+- **Documentation**: Find official docs, API references, guides
 
 **TOOLS TO USE:**
 - Use the WebSearch tool extensively
@@ -472,12 +612,13 @@ For each finding, provide:
 - Relevance to current task
 - Code examples if applicable
 
-**Begin researching now.** Start with a WebSearch for the most relevant query based on our conversation context.`
-    window.api.terminalSendText(prompt, activeTerminalId)
+Begin researching now. Start with a WebSearch for the most relevant query based on our conversation context.`
+
+    window.api.terminalSendText(researchPrompt, activeTerminalId)
     showToast('info', 'Research Swarm', 'Starting deep web research')
-    setTimeout(() => setSwarmAgents(prev => prev.map((a, i) => i === 0 ? { ...a, status: 'running' } : a)), 2000)
-    setTimeout(() => setSwarmAgents(prev => prev.map((a, i) => i === 1 ? { ...a, status: 'running' } : a)), 6000)
-    setTimeout(() => setSwarmAgents(prev => prev.map((a, i) => i === 2 ? { ...a, status: 'running' } : a)), 10000)
+    setTimeout(() => setSwarmAgents(prev => prev.map((a, i) => i === 0 ? { ...a, name: 'Agent 1', status: 'running' } : a)), 2000)
+    setTimeout(() => setSwarmAgents(prev => prev.map((a, i) => i === 1 ? { ...a, name: 'Agent 2', status: 'running' } : a)), 6000)
+    setTimeout(() => setSwarmAgents(prev => prev.map((a, i) => i === 2 ? { ...a, name: 'Agent 3', status: 'running' } : a)), 10000)
     setTimeout(() => { setSwarmAgents(prev => prev.map(a => ({ ...a, status: 'complete' }))); setSwarmRunning(false) }, 60000)
   }, [activeTerminalId, swarmRunning, showToast])
 
