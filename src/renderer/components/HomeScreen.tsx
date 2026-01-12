@@ -28,11 +28,36 @@ import {
   Terminal,
   Globe,
   FileEdit,
-  Search
+  Search,
+  Hexagon
 } from 'lucide-react'
+
+// Custom Bee Icon component
+const BeeIcon = ({ className, size = 24 }: { className?: string; size?: number }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" className={className} stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    {/* Body */}
+    <ellipse cx="12" cy="14" rx="5" ry="6" fill="currentColor" opacity="0.2"/>
+    <ellipse cx="12" cy="14" rx="5" ry="6"/>
+    {/* Stripes */}
+    <path d="M7.5 12h9" strokeWidth="1.5"/>
+    <path d="M7.5 15h9" strokeWidth="1.5"/>
+    {/* Head */}
+    <circle cx="12" cy="7" r="3" fill="currentColor" opacity="0.3"/>
+    <circle cx="12" cy="7" r="3"/>
+    {/* Wings */}
+    <ellipse cx="7" cy="11" rx="3" ry="2" fill="currentColor" opacity="0.15" transform="rotate(-30 7 11)"/>
+    <ellipse cx="17" cy="11" rx="3" ry="2" fill="currentColor" opacity="0.15" transform="rotate(30 17 11)"/>
+    {/* Antennae */}
+    <path d="M10 5 L8 2"/>
+    <path d="M14 5 L16 2"/>
+    {/* Stinger */}
+    <path d="M12 20 L12 22"/>
+  </svg>
+)
 import Particles, { initParticlesEngine } from '@tsparticles/react'
 import { loadSlim } from '@tsparticles/slim'
 import type { ISourceOptions, Engine } from '@tsparticles/engine'
+import { useAppStore } from '../store'
 
 interface HomeScreenProps {
   cwd: string
@@ -44,6 +69,7 @@ interface HomeScreenProps {
   onOpenSettings?: () => void
   onOpenSuperAgent?: () => void
   onOpenAnalytics?: () => void
+  onOpenHive?: () => void
 }
 
 interface RecentProject {
@@ -90,10 +116,15 @@ export default function HomeScreen({
   onOpenHistory,
   onOpenSettings,
   onOpenSuperAgent,
-  onOpenAnalytics
+  onOpenAnalytics,
+  onOpenHive
 }: HomeScreenProps) {
+  // Get setCwd from store to keep it in sync when clicking projects
+  const setCwd = useAppStore((state) => state.setCwd)
+
   const [recentProjects, setRecentProjects] = useState<RecentProject[]>([])
   const [stats, setStats] = useState<Stats>({ conversations: 0, skills: 0, agents: 0, mcpServers: 0 })
+  const [dockHoverIndex, setDockHoverIndex] = useState<number | null>(null)
   const [detailedStats, setDetailedStats] = useState<DetailedStats>({
     totalSessions: 0,
     totalTokens: 0,
@@ -353,9 +384,11 @@ export default function HomeScreen({
   }, [cwd, claudeInstalled, isStarting, onStartSession])
 
   const handleProjectClick = useCallback((folder: string) => {
+    // Update both the store and the main process cwd
+    setCwd(folder)
     window.api.setCwd(folder)
     onStartSession()
-  }, [onStartSession])
+  }, [setCwd, onStartSession])
 
   const canStart = Boolean(cwd) && claudeInstalled !== false
 
@@ -403,64 +436,6 @@ export default function HomeScreen({
       <div className={`relative z-10 max-w-3xl mx-auto px-6 py-12 transition-all duration-700 ${mounted ? 'opacity-100' : 'opacity-0 translate-y-4'}`}>
         {/* Compact Hero */}
         <div className="text-center mb-10">
-          {/* Modern Arena Logo */}
-          <div className="relative inline-flex items-center justify-center w-24 h-24 mb-5">
-            {/* Outer glow rings */}
-            <div className="absolute inset-0 rounded-2xl bg-gradient-to-br from-[#cc785c]/20 via-purple-500/10 to-transparent blur-xl animate-pulse-slow" />
-            <div className="absolute inset-2 rounded-xl bg-gradient-to-br from-purple-500/10 to-transparent blur-lg" />
-
-            {/* Main container */}
-            <div className="relative w-20 h-20 rounded-2xl bg-gradient-to-br from-[#0d0d0d] via-[#161618] to-[#0d0d0d] border border-white/[0.08] shadow-2xl shadow-[#cc785c]/20 floating-card overflow-hidden">
-              {/* Inner gradient accent */}
-              <div className="absolute inset-0 bg-gradient-to-br from-[#cc785c]/10 via-transparent to-purple-500/10" />
-
-              {/* Logo SVG */}
-              <svg width="80" height="80" viewBox="0 0 80 80" fill="none" className="relative z-10">
-                <defs>
-                  <linearGradient id="arenaGradNew" x1="0%" y1="0%" x2="100%" y2="100%">
-                    <stop offset="0%" stopColor="#cc785c"/>
-                    <stop offset="50%" stopColor="#e8956e"/>
-                    <stop offset="100%" stopColor="#cc785c"/>
-                  </linearGradient>
-                  <linearGradient id="purpleGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-                    <stop offset="0%" stopColor="#a78bfa"/>
-                    <stop offset="100%" stopColor="#7c3aed"/>
-                  </linearGradient>
-                  <filter id="glow">
-                    <feGaussianBlur stdDeviation="2" result="coloredBlur"/>
-                    <feMerge>
-                      <feMergeNode in="coloredBlur"/>
-                      <feMergeNode in="SourceGraphic"/>
-                    </feMerge>
-                  </filter>
-                </defs>
-
-                {/* Outer hexagon - subtle */}
-                <polygon points="40,10 66,22 66,58 40,70 14,58 14,22" fill="none" stroke="url(#purpleGrad)" strokeWidth="1" opacity="0.3"/>
-
-                {/* Inner hexagon - more visible */}
-                <polygon points="40,18 58,27 58,53 40,62 22,53 22,27" fill="none" stroke="url(#arenaGradNew)" strokeWidth="1.5" opacity="0.5"/>
-
-                {/* Code brackets - main element */}
-                <g filter="url(#glow)">
-                  <path d="M30,30 L24,40 L30,50" fill="none" stroke="url(#arenaGradNew)" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round"/>
-                  <path d="M50,30 L56,40 L50,50" fill="none" stroke="url(#arenaGradNew)" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round"/>
-                </g>
-
-                {/* Center cursor */}
-                <rect x="37" y="33" width="6" height="14" rx="2" fill="url(#arenaGradNew)" opacity="0.9"/>
-
-                {/* Sparkle accents */}
-                <circle cx="28" cy="24" r="1.5" fill="#cc785c" opacity="0.6"/>
-                <circle cx="52" cy="56" r="1" fill="#a78bfa" opacity="0.5"/>
-                <circle cx="58" cy="32" r="1.5" fill="#e8956e" opacity="0.4"/>
-              </svg>
-
-              {/* Corner accents */}
-              <div className="absolute top-0 left-0 w-3 h-3 border-t border-l border-[#cc785c]/30 rounded-tl-lg" />
-              <div className="absolute bottom-0 right-0 w-3 h-3 border-b border-r border-purple-500/30 rounded-br-lg" />
-            </div>
-          </div>
           <h1 className="text-4xl font-bold mb-3 tracking-tight">
             <span className="text-white">Claude</span>
             <span className="bg-gradient-to-r from-[#cc785c] to-[#e8956e] bg-clip-text text-transparent">Code</span>
@@ -520,7 +495,7 @@ export default function HomeScreen({
                       <div key={i} className="flex-1 flex flex-col items-center gap-1">
                         <div
                           className="w-full rounded-sm bg-white/[0.06]"
-                          style={{ height: `${Math.random() * 60 + 20}%` }}
+                          style={{ height: `${20 + i * 10}%` }}
                         />
                         <div className="w-2 h-2 rounded bg-white/[0.04]" />
                       </div>
@@ -540,6 +515,40 @@ export default function HomeScreen({
                         <div className="w-16 h-1.5 rounded bg-white/[0.06]" />
                         <div className="w-8 h-2 rounded bg-white/[0.06]" />
                       </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+
+              {/* Time Analysis Section skeleton */}
+              <div className="mt-4 bg-black/30 rounded-xl p-4 border border-white/[0.04]">
+                <div className="flex items-center justify-between mb-3">
+                  <div className="w-24 h-2 rounded bg-white/[0.06]" />
+                  <div className="w-3 h-3 rounded bg-white/[0.06]" />
+                </div>
+                <div className="grid grid-cols-3 gap-4 mb-4">
+                  {[1, 2, 3].map((i) => (
+                    <div key={i} className="text-center">
+                      <div className="w-12 h-8 rounded bg-white/[0.08] mx-auto mb-1" />
+                      <div className="w-16 h-2 rounded bg-white/[0.04] mx-auto" />
+                    </div>
+                  ))}
+                </div>
+                {/* 24h Activity skeleton */}
+                <div className="mt-4">
+                  <div className="w-16 h-2 rounded bg-white/[0.04] mb-2" />
+                  <div className="flex items-end gap-0.5 h-8">
+                    {Array.from({ length: 24 }).map((_, i) => (
+                      <div
+                        key={i}
+                        className="flex-1 rounded-t-sm bg-white/[0.04]"
+                        style={{ height: `${10 + (i % 5) * 15}%` }}
+                      />
+                    ))}
+                  </div>
+                  <div className="flex justify-between mt-1">
+                    {['12am', '6am', '12pm', '6pm', '12am'].map((t) => (
+                      <div key={t} className="w-6 h-1.5 rounded bg-white/[0.03]" />
                     ))}
                   </div>
                 </div>
@@ -616,10 +625,17 @@ export default function HomeScreen({
                     <TrendingUp size={12} className="text-green-400" />
                   </div>
                   <div className="flex items-end gap-1 h-16">
-                    {detailedStats.recentActivity.map((day, i) => {
-                      const maxSessions = Math.max(...detailedStats.recentActivity.map(d => d.sessions), 1)
+                    {(detailedStats.recentActivity.length > 0 ? detailedStats.recentActivity :
+                      // Fallback: generate 7 empty days if no data
+                      Array.from({ length: 7 }, (_, i) => {
+                        const date = new Date()
+                        date.setDate(date.getDate() - (6 - i))
+                        return { date: date.toISOString().split('T')[0], sessions: 0, minutes: 0 }
+                      })
+                    ).map((day, i, arr) => {
+                      const maxSessions = Math.max(...arr.map(d => d.sessions), 1)
                       const height = day.sessions > 0 ? Math.max((day.sessions / maxSessions) * 100, 15) : 8
-                      const isToday = i === detailedStats.recentActivity.length - 1
+                      const isToday = i === arr.length - 1
                       return (
                         <div key={day.date} className="flex-1 flex flex-col items-center gap-1" title={`${day.date}: ${day.sessions} sessions, ${day.minutes}m`}>
                           <div
@@ -829,12 +845,71 @@ export default function HomeScreen({
           </p>
         </div>
 
-        {/* Quick Actions Row */}
-        <div className="grid grid-cols-4 gap-3 mb-6">
-          <QuickAction icon={FolderOpen} label="Open" onClick={onSelectFolder} color="blue" />
-          <QuickAction icon={Sparkles} label="Tools" onClick={onOpenSkills} color="orange" badge={stats.skills + stats.agents || undefined} />
-          <QuickAction icon={History} label="History" onClick={onOpenHistory} color="purple" badge={stats.conversations || undefined} />
-          <QuickAction icon={Settings} label="Settings" onClick={onOpenSettings || (() => {})} color="gray" />
+        {/* Arena Command Bar - Unique Design */}
+        <div className="flex justify-center mb-10">
+          <div
+            className="command-bar relative flex items-center gap-4 px-6 py-4"
+            onMouseLeave={() => setDockHoverIndex(null)}
+            style={{
+              background: 'linear-gradient(135deg, rgba(20,20,25,0.9) 0%, rgba(10,10,12,0.95) 100%)',
+              borderRadius: '20px',
+              border: '1px solid rgba(255,255,255,0.06)',
+              boxShadow: '0 20px 60px -15px rgba(0,0,0,0.7), inset 0 0 30px rgba(204,120,92,0.03)',
+            }}
+          >
+            {/* Animated border glow */}
+            <div className="absolute -inset-[1px] rounded-[21px] opacity-40 pointer-events-none" style={{
+              background: 'linear-gradient(90deg, rgba(204,120,92,0.3), rgba(168,85,247,0.3), rgba(6,182,212,0.3), rgba(204,120,92,0.3))',
+              backgroundSize: '300% 100%',
+              animation: 'borderGlow 8s linear infinite'
+            }} />
+
+            {/* Inner container */}
+            <div className="relative flex items-center gap-3">
+              {[
+                { id: 'folder', label: 'Projects', onClick: onSelectFolder, gradient: ['#3b82f6', '#1d4ed8'], icon: 'folder' },
+                { id: 'tools', label: 'Tools', onClick: onOpenSkills, gradient: ['#f97316', '#dc2626'], icon: 'sparkle', badge: stats.skills + stats.agents || undefined },
+                { id: 'hive', label: 'Hive', onClick: onOpenHive || onOpenSuperAgent || (() => {}), gradient: ['#fbbf24', '#f59e0b'], icon: 'bee' },
+                { id: 'history', label: 'History', onClick: onOpenHistory, gradient: ['#a855f7', '#7c3aed'], icon: 'clock', badge: stats.conversations || undefined },
+                { id: 'analytics', label: 'Stats', onClick: onOpenAnalytics || (() => {}), gradient: ['#06b6d4', '#0891b2'], icon: 'chart' },
+                { id: 'settings', label: 'Config', onClick: onOpenSettings || (() => {}), gradient: ['#6b7280', '#4b5563'], icon: 'gear' },
+              ].map((item, index) => {
+                const isHovered = dockHoverIndex === index
+                // Unique wave animation - items rise and glow
+                let lift = 0
+                let glow = 0
+                if (dockHoverIndex !== null) {
+                  const distance = Math.abs(index - dockHoverIndex)
+                  if (distance === 0) {
+                    lift = -16
+                    glow = 1
+                  } else if (distance === 1) {
+                    lift = -8
+                    glow = 0.5
+                  } else if (distance === 2) {
+                    lift = -3
+                    glow = 0.2
+                  }
+                }
+
+                return (
+                  <CommandBarItem
+                    key={item.id}
+                    id={item.id}
+                    label={item.label}
+                    onClick={item.onClick}
+                    gradient={item.gradient}
+                    icon={item.icon}
+                    badge={item.badge}
+                    lift={lift}
+                    glow={glow}
+                    onHover={() => setDockHoverIndex(index)}
+                    isHovered={isHovered}
+                  />
+                )
+              })}
+            </div>
+          </div>
         </div>
 
         {/* Super Agent Button - Premium Design */}
@@ -1128,8 +1203,27 @@ export default function HomeScreen({
           animation: pulse-slow 3s ease-in-out infinite;
         }
 
+        @keyframes shine {
+          0% { transform: skewX(-20deg) translateX(-150%); }
+          100% { transform: skewX(-20deg) translateX(250%); }
+        }
+
+        .animate-shine {
+          animation: shine 0.8s ease-out forwards;
+        }
+
+        @keyframes borderGlow {
+          0% { background-position: 0% 50%; }
+          100% { background-position: 300% 50%; }
+        }
+
+        /* Command bar hover transition smoothing */
+        .command-bar button {
+          transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
         @media (prefers-reduced-motion: reduce) {
-          .floating-card, .nebula, .animate-gradient-x, .animate-pulse-slow { animation: none; }
+          .floating-card, .nebula, .animate-gradient-x, .animate-pulse-slow, .animate-shine { animation: none; }
         }
       `}</style>
     </div>
@@ -1205,6 +1299,207 @@ function StatCard({ icon: Icon, label, value, color }: {
         <span className="text-[9px] uppercase tracking-wider text-gray-500 font-medium">{label}</span>
       </div>
       <p className="text-xl font-bold text-white">{value}</p>
+    </div>
+  )
+}
+
+// Custom Icon Components for Command Bar
+const CommandIcons = {
+  folder: ({ color }: { color: string }) => (
+    <svg width="28" height="28" viewBox="0 0 28 28" fill="none">
+      {/* Folder back */}
+      <path d="M3 8C3 6.34315 4.34315 5 6 5H10L13 8H22C23.6569 8 25 9.34315 25 11V20C25 21.6569 23.6569 23 22 23H6C4.34315 23 3 21.6569 3 20V8Z" fill={color} fillOpacity="0.3"/>
+      {/* Folder front */}
+      <path d="M3 11C3 9.89543 3.89543 9 5 9H23C24.1046 9 25 9.89543 25 11V21C25 22.1046 24.1046 23 23 23H5C3.89543 23 3 22.1046 3 21V11Z" fill={color}/>
+      {/* Shine */}
+      <path d="M5 11H23V13H5V11Z" fill="white" fillOpacity="0.3"/>
+      {/* Dot accent */}
+      <circle cx="14" cy="16" r="2" fill="white" fillOpacity="0.5"/>
+    </svg>
+  ),
+  sparkle: ({ color }: { color: string }) => (
+    <svg width="28" height="28" viewBox="0 0 28 28" fill="none">
+      {/* Main star */}
+      <path d="M14 2L16.5 10.5L25 14L16.5 17.5L14 26L11.5 17.5L3 14L11.5 10.5L14 2Z" fill={color}/>
+      {/* Inner glow */}
+      <path d="M14 6L15.5 11.5L21 14L15.5 16.5L14 22L12.5 16.5L7 14L12.5 11.5L14 6Z" fill="white" fillOpacity="0.4"/>
+      {/* Small sparkles */}
+      <circle cx="21" cy="7" r="1.5" fill={color} fillOpacity="0.6"/>
+      <circle cx="7" cy="21" r="1" fill={color} fillOpacity="0.4"/>
+      <circle cx="23" cy="21" r="1" fill={color} fillOpacity="0.5"/>
+    </svg>
+  ),
+  bee: ({ color }: { color: string }) => (
+    <svg width="28" height="28" viewBox="0 0 28 28" fill="none">
+      {/* Wings */}
+      <ellipse cx="8" cy="12" rx="4" ry="3" fill="white" fillOpacity="0.3" transform="rotate(-20 8 12)"/>
+      <ellipse cx="20" cy="12" rx="4" ry="3" fill="white" fillOpacity="0.3" transform="rotate(20 20 12)"/>
+      {/* Body */}
+      <ellipse cx="14" cy="16" rx="6" ry="7" fill={color}/>
+      {/* Stripes */}
+      <path d="M8.5 14H19.5" stroke="#000" strokeWidth="2" strokeOpacity="0.3"/>
+      <path d="M8.5 18H19.5" stroke="#000" strokeWidth="2" strokeOpacity="0.3"/>
+      {/* Head */}
+      <circle cx="14" cy="8" r="4" fill={color}/>
+      {/* Eyes */}
+      <circle cx="12" cy="7" r="1.5" fill="#000" fillOpacity="0.5"/>
+      <circle cx="16" cy="7" r="1.5" fill="#000" fillOpacity="0.5"/>
+      {/* Antennae */}
+      <path d="M11 5L9 2" stroke={color} strokeWidth="1.5" strokeLinecap="round"/>
+      <path d="M17 5L19 2" stroke={color} strokeWidth="1.5" strokeLinecap="round"/>
+      {/* Antenna tips */}
+      <circle cx="9" cy="2" r="1" fill={color}/>
+      <circle cx="19" cy="2" r="1" fill={color}/>
+    </svg>
+  ),
+  clock: ({ color }: { color: string }) => (
+    <svg width="28" height="28" viewBox="0 0 28 28" fill="none">
+      {/* Outer ring */}
+      <circle cx="14" cy="14" r="11" fill={color} fillOpacity="0.2"/>
+      <circle cx="14" cy="14" r="10" stroke={color} strokeWidth="2"/>
+      {/* Inner circle */}
+      <circle cx="14" cy="14" r="7" fill={color} fillOpacity="0.3"/>
+      {/* Clock hands */}
+      <path d="M14 8V14L18 17" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+      {/* Center dot */}
+      <circle cx="14" cy="14" r="1.5" fill="white"/>
+      {/* Hour markers */}
+      <circle cx="14" cy="5" r="1" fill={color}/>
+      <circle cx="23" cy="14" r="1" fill={color}/>
+      <circle cx="14" cy="23" r="1" fill={color}/>
+      <circle cx="5" cy="14" r="1" fill={color}/>
+    </svg>
+  ),
+  chart: ({ color }: { color: string }) => (
+    <svg width="28" height="28" viewBox="0 0 28 28" fill="none">
+      {/* Background */}
+      <rect x="3" y="3" width="22" height="22" rx="4" fill={color} fillOpacity="0.15"/>
+      {/* Bars */}
+      <rect x="6" y="15" width="4" height="8" rx="1" fill={color} fillOpacity="0.5"/>
+      <rect x="12" y="10" width="4" height="13" rx="1" fill={color}/>
+      <rect x="18" y="6" width="4" height="17" rx="1" fill={color} fillOpacity="0.7"/>
+      {/* Trend line */}
+      <path d="M6 18L12 13L18 8L24 5" stroke="white" strokeWidth="2" strokeLinecap="round" strokeOpacity="0.6"/>
+      {/* Dots on line */}
+      <circle cx="12" cy="13" r="2" fill="white"/>
+      <circle cx="18" cy="8" r="2" fill="white"/>
+    </svg>
+  ),
+  gear: ({ color }: { color: string }) => (
+    <svg width="28" height="28" viewBox="0 0 28 28" fill="none">
+      {/* Gear teeth */}
+      <path d="M14 2L16 5H12L14 2Z" fill={color}/>
+      <path d="M14 26L12 23H16L14 26Z" fill={color}/>
+      <path d="M2 14L5 12V16L2 14Z" fill={color}/>
+      <path d="M26 14L23 16V12L26 14Z" fill={color}/>
+      <path d="M5.5 5.5L8 7L6 9L5.5 5.5Z" fill={color}/>
+      <path d="M22.5 22.5L20 21L22 19L22.5 22.5Z" fill={color}/>
+      <path d="M22.5 5.5L19 8L21 6L22.5 5.5Z" fill={color}/>
+      <path d="M5.5 22.5L8 20L6 22L5.5 22.5Z" fill={color}/>
+      {/* Main gear body */}
+      <circle cx="14" cy="14" r="8" fill={color}/>
+      {/* Inner circle */}
+      <circle cx="14" cy="14" r="5" fill={color} fillOpacity="0.5"/>
+      {/* Center hole */}
+      <circle cx="14" cy="14" r="2.5" fill="#1a1a1a"/>
+      {/* Shine */}
+      <path d="M10 10C11 9 13 8 16 10" stroke="white" strokeWidth="1.5" strokeOpacity="0.4" strokeLinecap="round"/>
+    </svg>
+  )
+}
+
+// Arena Command Bar Item - Completely Unique Design
+function CommandBarItem({ id, label, onClick, gradient, icon, badge, lift, glow, onHover, isHovered }: {
+  id: string
+  label: string
+  onClick: () => void
+  gradient: string[]
+  icon: string
+  badge?: number
+  lift: number
+  glow: number
+  onHover: () => void
+  isHovered: boolean
+}) {
+  const IconComponent = CommandIcons[icon as keyof typeof CommandIcons]
+  const gradientBg = `linear-gradient(145deg, ${gradient[0]}, ${gradient[1]})`
+
+  return (
+    <div className="relative">
+      <button
+        onClick={onClick}
+        onMouseEnter={onHover}
+        className="group relative flex flex-col items-center transition-all duration-200 ease-out"
+        style={{ transform: `translateY(${lift}px)` }}
+      >
+        {/* Glow aura */}
+        <div
+          className="absolute -inset-3 rounded-2xl blur-xl transition-opacity duration-300"
+          style={{
+            background: gradient[0],
+            opacity: glow * 0.4
+          }}
+        />
+
+        {/* Badge */}
+        {badge !== undefined && badge > 0 && (
+          <div
+            className="absolute -top-2 -right-2 min-w-[18px] h-[18px] px-1 rounded-full text-[9px] font-bold flex items-center justify-center z-20 border border-white/20"
+            style={{
+              background: 'linear-gradient(135deg, #ef4444, #dc2626)',
+              color: 'white',
+              boxShadow: '0 2px 8px rgba(239,68,68,0.5)'
+            }}
+          >
+            {badge > 99 ? '99+' : badge}
+          </div>
+        )}
+
+        {/* Main button container - Hexagonal inspired shape */}
+        <div
+          className="relative w-14 h-14 flex items-center justify-center transition-all duration-200"
+          style={{
+            background: gradientBg,
+            borderRadius: isHovered ? '16px' : '12px',
+            boxShadow: isHovered
+              ? `0 0 30px ${gradient[0]}60, 0 8px 25px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.2)`
+              : '0 4px 15px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.15)',
+            transform: isHovered ? 'scale(1.1)' : 'scale(1)'
+          }}
+        >
+          {/* Frosted glass overlay */}
+          <div className="absolute inset-0 rounded-[inherit] overflow-hidden">
+            <div className="absolute inset-x-0 top-0 h-1/2 bg-gradient-to-b from-white/30 to-transparent" />
+          </div>
+
+          {/* Ring accent when hovered */}
+          {isHovered && (
+            <div
+              className="absolute -inset-1 rounded-[18px] border-2 animate-pulse"
+              style={{ borderColor: `${gradient[0]}60` }}
+            />
+          )}
+
+          {/* Custom Icon */}
+          <div className="relative z-10">
+            {IconComponent && <IconComponent color="white" />}
+          </div>
+        </div>
+
+        {/* Label - appears on hover */}
+        <div
+          className={`absolute -bottom-7 whitespace-nowrap px-2.5 py-1 rounded-md text-[10px] font-medium transition-all duration-200 ${
+            isHovered ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-1 pointer-events-none'
+          }`}
+          style={{
+            background: 'rgba(20,20,22,0.95)',
+            color: 'white',
+            border: '1px solid rgba(255,255,255,0.1)'
+          }}
+        >
+          {label}
+        </div>
+      </button>
     </div>
   )
 }

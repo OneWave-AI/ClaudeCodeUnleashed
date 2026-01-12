@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react'
-import { Wrench, ChevronDown, AlertCircle, Search, Bot, Zap, X, Command, ArrowRight } from 'lucide-react'
+import { Wrench, ChevronDown, AlertCircle, Search, Bot, Zap, X, Command, ArrowRight, Sparkles } from 'lucide-react'
 import { useToast } from './Toast'
 import type { Agent, Skill } from '../../../shared/types'
 
@@ -159,6 +159,35 @@ export default function Toolbelt({ activeTerminalId }: ToolbeltProps) {
     }
   }
 
+  // Find Me a Skill - asks Claude to analyze work and recommend skills
+  const handleFindSkill = async () => {
+    if (!activeTerminalId) {
+      showToast('warning', 'No Active Session', 'Open a terminal session first')
+      return
+    }
+
+    setIsOpen(false)
+    const prompt = `🔍 **Skill Recommendation Request**
+
+Analyze our current work session and conversation context. Based on what we're working on, recommend the most relevant skills (slash commands) that could help.
+
+**Instructions:**
+1. Review our recent conversation and any code/files we've been working with
+2. Identify the current task or challenge
+3. List up to 5 skills that would be most useful right now
+4. For each skill, explain briefly how it would help with our specific current task
+
+Format your response as a numbered list with skill name and use case.`
+
+    try {
+      await window.api.terminalSendText(prompt, activeTerminalId)
+      showToast('info', 'Analyzing...', 'Claude is finding relevant skills')
+    } catch (error) {
+      console.error('Failed to send find skill prompt:', error)
+      showToast('error', 'Failed', 'Could not send prompt')
+    }
+  }
+
   const hasItems = agents.length > 0 || skills.length > 0
   const totalCount = agents.length + skills.length
 
@@ -242,6 +271,38 @@ export default function Toolbelt({ activeTerminalId }: ToolbeltProps) {
                 </button>
               ))}
             </div>
+          </div>
+
+          {/* Find Me a Skill - Featured Action */}
+          <div className="px-3 py-2 border-b border-white/[0.06]">
+            <button
+              onClick={handleFindSkill}
+              disabled={!activeTerminalId}
+              className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all disabled:opacity-40 disabled:cursor-not-allowed group ${
+                activeTerminalId
+                  ? 'bg-gradient-to-r from-purple-500/15 to-pink-500/15 border border-purple-500/25 hover:from-purple-500/25 hover:to-pink-500/25 hover:border-purple-500/40'
+                  : 'bg-white/[0.02] border border-white/[0.04]'
+              }`}
+            >
+              <div className={`flex items-center justify-center w-9 h-9 rounded-lg bg-gradient-to-br transition-all ${
+                activeTerminalId
+                  ? 'from-purple-500/30 to-pink-500/30 group-hover:from-purple-500/40 group-hover:to-pink-500/40'
+                  : 'from-white/[0.04] to-white/[0.02]'
+              }`}>
+                <Sparkles size={16} className={activeTerminalId ? 'text-purple-300' : 'text-gray-600'} />
+              </div>
+              <div className="flex-1 text-left">
+                <span className={`text-sm font-semibold ${activeTerminalId ? 'text-purple-200' : 'text-gray-500'}`}>
+                  Find Me a Skill
+                </span>
+                <p className="text-[10px] text-gray-500 mt-0.5">
+                  Claude analyzes your work & suggests skills
+                </p>
+              </div>
+              <ArrowRight size={14} className={`transition-all ${
+                activeTerminalId ? 'text-purple-400 group-hover:translate-x-1' : 'text-gray-600'
+              }`} />
+            </button>
           </div>
 
           {/* Loading state */}

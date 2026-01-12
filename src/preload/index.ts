@@ -87,6 +87,8 @@ const api: IpcApi = {
   pinConversation: (id, projectFolder, pinned) =>
     ipcRenderer.invoke('pin-conversation', id, projectFolder, pinned),
   searchConversations: (query) => ipcRenderer.invoke('search-conversations', query),
+  getCurrentSessionTodos: (projectFolder: string) =>
+    ipcRenderer.invoke('get-current-session-todos', projectFolder),
 
   // Claude CLI
   checkClaudeInstalled: () => ipcRenderer.invoke('check-claude-installed'),

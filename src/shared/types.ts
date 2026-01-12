@@ -296,6 +296,7 @@ export interface IpcApi {
   exportConversation: (id: string, projectFolder: string, options?: ConversationExportOptions) => Promise<{ success: boolean; path?: string; error?: string }>
   pinConversation: (id: string, projectFolder: string, pinned: boolean) => Promise<{ success: boolean; error?: string }>
   searchConversations: (query: string) => Promise<Conversation[]>
+  getCurrentSessionTodos: (projectFolder: string) => Promise<Array<{ id: string; content: string; status: string; activeForm?: string; createdAt: Date }>>
 
   // Claude CLI
   checkClaudeInstalled: () => Promise<boolean>

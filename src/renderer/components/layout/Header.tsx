@@ -19,11 +19,9 @@ import {
   Copy,
   Check,
   Zap,
-  ClipboardList,
   Play,
   Loader2,
   CheckCircle,
-  History,
   Paintbrush,
   Layers,
   Route,
@@ -83,10 +81,6 @@ interface HeaderProps {
   onNavigate?: (screen: string) => void
   onOpenPreview?: (url: string) => void
   onOpenSuperAgent?: () => void
-  // Plan props
-  planCount?: number
-  showPlan?: boolean
-  onTogglePlan?: () => void
 }
 
 export default function Header({
@@ -98,10 +92,7 @@ export default function Header({
   screen,
   onNavigate,
   onOpenPreview,
-  onOpenSuperAgent,
-  planCount = 0,
-  showPlan = false,
-  onTogglePlan
+  onOpenSuperAgent
 }: HeaderProps) {
   const folderName = cwd ? cwd.split('/').pop() : 'No folder'
   const [mcpCount, setMcpCount] = useState(0)
@@ -501,8 +492,8 @@ For each finding, provide:
   }, [activeTerminalId, showToast])
 
   return (
-    <header className="titlebar-drag h-12 flex items-center justify-between px-3 bg-[#1a1a1c] border-b border-white/[0.06]">
-      {/* Left: Traffic light space + Logo + Folder */}
+    <header className="titlebar-drag h-12 flex items-center justify-between px-3 bg-[#1a1a1c] border-b border-white/[0.06] relative z-40">
+      {/* Left: Traffic light space + Logo + Folder + Plan/Hive/SuperAgent */}
       <div className="flex items-center gap-2">
         {/* Spacer for macOS native traffic lights */}
         <div className="w-16" />
@@ -528,43 +519,19 @@ For each finding, provide:
           <span className="text-sm text-gray-300 max-w-[140px] truncate">{folderName}</span>
           <ChevronDown size={12} className="text-gray-500" />
         </button>
-      </div>
 
-      {/* Center: Screen indicator */}
-      <div className="absolute left-1/2 -translate-x-1/2 flex items-center gap-2">
-        <span className="text-xs text-gray-500 capitalize">{screen}</span>
-      </div>
-
-      {/* Right: Actions */}
-      <div className="titlebar-no-drag flex items-center gap-0.5">
-        {/* Plan Button - Only on terminal */}
+        {/* Divider */}
         {screen === 'terminal' && (
-          <button
-            onClick={onTogglePlan}
-            className={`relative flex items-center gap-1.5 px-3 py-2 rounded-xl text-sm font-medium transition-all duration-200 ${
-              showPlan
-                ? 'bg-gradient-to-r from-orange-500/25 to-amber-500/25 text-orange-300 shadow-[0_0_15px_rgba(249,115,22,0.3)] border border-orange-500/30'
-                : planCount > 0
-                ? 'bg-gradient-to-r from-orange-500/20 to-amber-500/20 text-orange-400 shadow-[0_0_10px_rgba(249,115,22,0.2)] border border-orange-500/25'
-                : 'bg-orange-500/10 text-orange-400 hover:bg-gradient-to-r hover:from-orange-500/15 hover:to-amber-500/15 hover:shadow-[0_0_12px_rgba(249,115,22,0.15)] border border-orange-500/20 hover:border-orange-500/30'
-            }`}
-            title="View current plan"
-          >
-            <ClipboardList size={16} />
-            <span>Plan</span>
-            {planCount > 0 && (
-              <span className="absolute -top-1 -right-1 w-5 h-5 flex items-center justify-center rounded-full bg-orange-500 text-[10px] text-white font-bold shadow-[0_0_8px_rgba(249,115,22,0.6)]">{planCount}</span>
-            )}
-          </button>
+          <div className="w-px h-5 bg-white/[0.08] mx-1" />
         )}
 
-        {/* Swarm/Hive Button - Only on terminal */}
+        {/* Swarm/Hive Button - Only on terminal - NOW ON LEFT */}
         {screen === 'terminal' && (
-          <div className="relative" ref={swarmMenuRef}>
+          <div className="relative titlebar-no-drag" ref={swarmMenuRef}>
             <button
               onClick={() => setShowSwarmMenu(!showSwarmMenu)}
               disabled={!activeTerminalId}
-              className={`relative flex items-center gap-1.5 px-3 py-2 rounded-xl text-sm font-medium transition-all duration-200 ${
+              className={`relative flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all duration-200 ${
                 swarmRunning
                   ? 'bg-gradient-to-r from-amber-500/25 to-yellow-500/25 text-amber-300 shadow-[0_0_15px_rgba(251,191,36,0.3)] border border-amber-500/30'
                   : showSwarmMenu
@@ -574,13 +541,13 @@ For each finding, provide:
               title="Agent Swarm"
             >
               {swarmRunning ? (
-                <BeeIcon size={16} className="animate-bounce" />
+                <BeeIcon size={14} className="animate-bounce" />
               ) : (
-                <BeeIcon size={16} />
+                <BeeIcon size={14} />
               )}
               <span>Hive</span>
               {swarmRunning && (
-                <span className="absolute -top-1 -right-1 w-2.5 h-2.5 rounded-full bg-amber-400 animate-pulse shadow-[0_0_8px_rgba(251,191,36,0.6)]" />
+                <span className="absolute -top-1 -right-1 w-2 h-2 rounded-full bg-amber-400 animate-pulse shadow-[0_0_8px_rgba(251,191,36,0.6)]" />
               )}
             </button>
 
@@ -771,19 +738,27 @@ For each finding, provide:
           </div>
         )}
 
-        {/* Super Agent - Only on terminal */}
+        {/* Super Agent - Only on terminal - NOW ON LEFT */}
         {screen === 'terminal' && (
           <button
             onClick={onOpenSuperAgent}
             disabled={!activeTerminalId}
-            className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-all bg-gradient-to-r from-[#cc785c]/20 to-[#a55d45]/20 hover:from-[#cc785c]/30 hover:to-[#a55d45]/30 border border-[#cc785c]/30 text-[#cc785c] disabled:opacity-40 disabled:cursor-not-allowed"
+            className="titlebar-no-drag flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all bg-gradient-to-r from-[#cc785c]/20 to-[#a55d45]/20 hover:from-[#cc785c]/30 hover:to-[#a55d45]/30 border border-[#cc785c]/30 text-[#cc785c] disabled:opacity-40 disabled:cursor-not-allowed"
             title="Launch Super Agent"
           >
             <Zap size={12} />
-            <span>Super Agent</span>
+            <span>Agent</span>
           </button>
         )}
+      </div>
 
+      {/* Center: Screen indicator */}
+      <div className="absolute left-1/2 -translate-x-1/2 flex items-center gap-2">
+        <span className="text-xs text-gray-500 capitalize">{screen}</span>
+      </div>
+
+      {/* Right: Actions */}
+      <div className="titlebar-no-drag flex items-center gap-0.5">
         {/* Git Menu - Only on terminal */}
         {screen === 'terminal' && (
           <div className="relative" ref={gitMenuRef}>
@@ -917,15 +892,6 @@ For each finding, provide:
         )}
 
         <div className="w-px h-4 bg-white/[0.08] mx-0.5" />
-
-        {/* History - Quick access */}
-        <button
-          onClick={() => onNavigate?.('history')}
-          className="flex items-center px-2 py-1.5 rounded-lg hover:bg-white/[0.06] text-gray-400 hover:text-white transition-colors"
-          title="Session History"
-        >
-          <History size={14} />
-        </button>
 
         {/* MCP Status */}
         <button

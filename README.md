@@ -4,6 +4,20 @@ A premium native desktop GUI for [Claude Code CLI](https://github.com/anthropics
 
 ![ClaudeCodeUI](https://img.shields.io/badge/version-2.0.0-red)
 
+## Screenshots
+
+<p align="center">
+  <img src="assets/screenshots/dashboard.png" alt="Dashboard - Analytics and Activity Tracking" width="800"/>
+  <br/>
+  <em>Dashboard with analytics, activity tracking, and project insights</em>
+</p>
+
+<p align="center">
+  <img src="assets/screenshots/home-screen.png" alt="Home Screen" width="600"/>
+  <br/>
+  <em>Home screen with project selection, Super Agent, and recent projects</em>
+</p>
+
 ## What's New in V2
 
 - **Complete Rebuild**: Modern React + TypeScript architecture

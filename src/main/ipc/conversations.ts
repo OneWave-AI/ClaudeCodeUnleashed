@@ -517,6 +517,108 @@ export function registerConversationHandlers(): void {
       return conversations
     }
   )
+
+  // Cache for todo polling optimization
+  let lastTodoFileCheck: { path: string; mtime: number; todos: Array<{ id: string; content: string; status: string; activeForm?: string; createdAt: Date }> } | null = null
+
+  // Get current session's todos from JSONL file
+  ipcMain.handle(
+    'get-current-session-todos',
+    async (_, projectFolder: string): Promise<Array<{ id: string; content: string; status: string; activeForm?: string; createdAt: Date }>> => {
+      try {
+        const projectDir = pathToProjectDir(projectFolder)
+        const projectPath = join(CLAUDE_DIR, 'projects', projectDir)
+
+        // Check if project directory exists
+        try {
+          await fs.access(projectPath)
+        } catch {
+          return []
+        }
+
+        // Find the most recently modified JSONL file (excluding agent files)
+        const files = await fs.readdir(projectPath).catch(() => [])
+        const jsonlFiles = files.filter(f => f.endsWith('.jsonl') && !f.startsWith('agent-'))
+
+        if (jsonlFiles.length === 0) return []
+
+        // Get file stats and find most recent
+        const fileStats = await Promise.all(
+          jsonlFiles.map(async (file) => {
+            const filePath = join(projectPath, file)
+            const stat = await fs.stat(filePath).catch(() => null)
+            return { file, filePath, mtime: stat?.mtimeMs || 0 }
+          })
+        )
+
+        const mostRecent = fileStats.sort((a, b) => b.mtime - a.mtime)[0]
+        if (!mostRecent || mostRecent.mtime === 0) return []
+
+        // Skip reading if file hasn't changed since last check
+        if (lastTodoFileCheck &&
+            lastTodoFileCheck.path === mostRecent.filePath &&
+            lastTodoFileCheck.mtime === mostRecent.mtime) {
+          return lastTodoFileCheck.todos
+        }
+
+        // For large files, only read the last 100KB (where recent todos likely are)
+        const stat = await fs.stat(mostRecent.filePath)
+        const fileSize = stat.size
+        const readSize = Math.min(fileSize, 100 * 1024) // 100KB max
+        const startPosition = Math.max(0, fileSize - readSize)
+
+        // Read the tail of the file
+        const fileHandle = await fs.open(mostRecent.filePath, 'r')
+        const buffer = Buffer.alloc(readSize)
+        await fileHandle.read(buffer, 0, readSize, startPosition)
+        await fileHandle.close()
+
+        const content = buffer.toString('utf-8')
+        // If we started mid-file, skip the first partial line
+        const lines = startPosition > 0
+          ? content.split('\n').slice(1).filter(line => line.trim())
+          : content.split('\n').filter(line => line.trim())
+
+        // Search from the end for the most recent toolUseResult with newTodos
+        let latestTodos: Array<{ content: string; status: string; activeForm?: string }> | null = null
+
+        for (let i = lines.length - 1; i >= 0; i--) {
+          try {
+            const parsed = JSON.parse(lines[i])
+            if (parsed.toolUseResult?.newTodos && Array.isArray(parsed.toolUseResult.newTodos)) {
+              latestTodos = parsed.toolUseResult.newTodos
+              break
+            }
+          } catch {
+            // Skip invalid JSON
+          }
+        }
+
+        if (!latestTodos) {
+          // Cache empty result too
+          lastTodoFileCheck = { path: mostRecent.filePath, mtime: mostRecent.mtime, todos: [] }
+          return []
+        }
+
+        // Format for the Plan panel - use stable IDs based on content
+        const result = latestTodos.map((todo, index) => ({
+          id: `todo-${index}-${(todo.content || '').slice(0, 20).replace(/\W/g, '')}`,
+          content: todo.content || 'Unknown task',
+          status: todo.status || 'pending',
+          activeForm: todo.activeForm,
+          createdAt: new Date()
+        }))
+
+        // Cache the result
+        lastTodoFileCheck = { path: mostRecent.filePath, mtime: mostRecent.mtime, todos: result }
+
+        return result
+      } catch (err) {
+        console.error('Failed to get current session todos:', err)
+        return []
+      }
+    }
+  )
 }
 
 function formatDuration(ms: number): string {

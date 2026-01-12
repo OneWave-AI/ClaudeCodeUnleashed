@@ -309,7 +309,7 @@ export default function DocumentViewer({ isOpen, onClose, filePath, fileName }: 
   // Load PDF
   const loadPDF = async (path: string) => {
     try {
-      const loadingTask = pdfjsLib.getDocument(`file://${path}`)
+      const loadingTask = pdfjsLib.getDocument(`local-file://${path}`)
       const pdf = await loadingTask.promise
       const pages: string[] = []
 
@@ -442,7 +442,7 @@ export default function DocumentViewer({ isOpen, onClose, filePath, fileName }: 
         return (
           <div className="flex items-center justify-center h-full p-8 overflow-auto">
             <img
-              src={`file://${content}`}
+              src={`local-file://${content}`}
               alt={fileName}
               style={{
                 transform: `scale(${zoom / 100}) rotate(${imageRotation}deg)`,

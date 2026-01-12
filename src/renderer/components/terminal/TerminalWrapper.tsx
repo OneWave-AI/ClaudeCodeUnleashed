@@ -29,13 +29,15 @@ import {
   Hash,
   Loader2,
   Brain,
-  Hammer
+  Hammer,
+  Database
 } from 'lucide-react'
 
 import Terminal, { TerminalRef } from './Terminal'
 import PreviewBar from './PreviewBar'
 import TaskTimeline, { TimelineAction, ActionType, ActionStatus } from './TaskTimeline'
 import PlanPanel, { PlanItem } from './PlanPanel'
+import { useAppStore } from '../../store'
 
 interface Tab {
   id: string
@@ -129,6 +131,9 @@ export default function TerminalWrapper({
   // Plan/Work mode toggle
   const [claudeMode, setClaudeMode] = useState<'plan' | 'work'>('work')
 
+  // Context usage tracking (for Claude CLI context window)
+  const [contextUsage, setContextUsage] = useState<{ current: number; max: number; percent: number } | null>(null)
+
   // Detected localhost URL for preview
   const [detectedLocalhostUrl, setDetectedLocalhostUrl] = useState<string | null>(null)
 
@@ -156,6 +161,59 @@ export default function TerminalWrapper({
 
   // Plan items state (showPlanPanel comes from props)
   const [planItems, setPlanItems] = useState<PlanItem[]>([])
+
+  // Get cwd from store for todo polling
+  const cwd = useAppStore((state) => state.cwd)
+
+  // Poll for todos from JSONL file when plan panel is open
+  const lastTodosRef = useRef<string>('')
+  useEffect(() => {
+    if (!showPlanPanel || !cwd) return
+
+    let isActive = true
+
+    const pollTodos = async () => {
+      if (!isActive) return
+
+      try {
+        const todos = await window.api.getCurrentSessionTodos(cwd)
+
+        // Create a fingerprint for comparison (includes activeForm for real-time updates)
+        const newFingerprint = JSON.stringify(todos.map(t => ({
+          content: t.content,
+          status: t.status,
+          activeForm: t.activeForm
+        })))
+
+        // Only update if something actually changed
+        if (newFingerprint !== lastTodosRef.current) {
+          lastTodosRef.current = newFingerprint
+
+          if (todos && todos.length > 0) {
+            setPlanItems(todos.map(t => ({
+              id: t.id,
+              content: t.content,
+              status: t.status as 'pending' | 'in_progress' | 'completed',
+              activeForm: t.activeForm,
+              createdAt: new Date(t.createdAt)
+            })))
+          }
+          // Note: Don't clear plan items if empty - keep showing until new session starts
+        }
+      } catch (err) {
+        // Silently ignore errors - JSONL might not exist yet
+      }
+    }
+
+    // Poll immediately and then every 2 seconds
+    pollTodos()
+    const interval = setInterval(pollTodos, 2000)
+
+    return () => {
+      isActive = false
+      clearInterval(interval)
+    }
+  }, [showPlanPanel, cwd])
 
   // Terminal refs - keyed by tab id
   const terminalRefs = useRef<Map<string, TerminalRef>>(new Map())
@@ -296,15 +354,31 @@ export default function TerminalWrapper({
 
   // Select tab
   const selectTab = useCallback((panelId: string, tabId: string) => {
-    setPanels(prev => prev.map(panel => {
-      if (panel.id !== panelId) return panel
-      return {
-        ...panel,
-        tabs: panel.tabs.map(t => ({ ...t, active: t.id === tabId })),
-        activeTabId: tabId
+    setPanels(prev => {
+      const newPanels = prev.map(panel => {
+        if (panel.id !== panelId) return panel
+        return {
+          ...panel,
+          tabs: panel.tabs.map(t => ({ ...t, active: t.id === tabId })),
+          activeTabId: tabId
+        }
+      })
+
+      // Notify parent of terminal ID change when switching to a terminal tab in the left panel
+      if (panelId === 'left') {
+        const panel = newPanels.find(p => p.id === 'left')
+        const tab = panel?.tabs.find(t => t.id === tabId)
+        if (tab?.type === 'terminal') {
+          const terminalRef = terminalRefs.current.get(tabId)
+          const terminalId = terminalRef?.getTerminalId() || null
+          // Use setTimeout to ensure state update completes first
+          setTimeout(() => onTerminalIdChange?.(terminalId), 0)
+        }
       }
-    }))
-  }, [])
+
+      return newPanels
+    })
+  }, [onTerminalIdChange])
 
   // Drag handlers for tabs between panels
   const handleTabDragStart = useCallback((e: React.DragEvent, tabId: string, panelId: string) => {
@@ -531,6 +605,59 @@ export default function TerminalWrapper({
     }
   }, [currentModel])
 
+  // Detect context usage from Claude CLI output
+  // Claude CLI shows context like: "45K / 128K tokens" or "35% context" or similar patterns
+  const detectContextUsage = useCallback((data: string) => {
+    const cleanData = data.replace(/\x1b\[[0-9;]*[a-zA-Z]/g, '')
+
+    // Pattern 1: "XK / YK tokens" or "X,XXX / Y,XXX tokens"
+    const tokenRatioMatch = cleanData.match(/(\d+[,.]?\d*)\s*[Kk]?\s*\/\s*(\d+[,.]?\d*)\s*[Kk]?\s*(?:tokens?|tok)/i)
+    if (tokenRatioMatch) {
+      let current = parseFloat(tokenRatioMatch[1].replace(/,/g, ''))
+      let max = parseFloat(tokenRatioMatch[2].replace(/,/g, ''))
+
+      // Check if values have K suffix (thousands)
+      if (tokenRatioMatch[1].toLowerCase().includes('k') || current < 500) {
+        current = current * 1000
+      }
+      if (tokenRatioMatch[2].toLowerCase().includes('k') || max < 500) {
+        max = max * 1000
+      }
+
+      const percent = Math.round((current / max) * 100)
+      setContextUsage({ current, max, percent })
+      return
+    }
+
+    // Pattern 2: "X% context" or "context: X%" or "X% used"
+    const percentMatch = cleanData.match(/(\d+)\s*%\s*(?:context|used|usage)/i) ||
+                         cleanData.match(/context[:\s]+(\d+)\s*%/i)
+    if (percentMatch) {
+      const percent = parseInt(percentMatch[1])
+      // Estimate tokens based on typical 200K context window
+      const max = 200000
+      const current = Math.round((percent / 100) * max)
+      setContextUsage({ current, max, percent })
+      return
+    }
+
+    // Pattern 3: Claude Code status line patterns like "[context: 45K/128K]" or "Context window: 45000/128000"
+    const statusLineMatch = cleanData.match(/context[:\s]*(\d+[,.]?\d*)\s*[Kk]?\s*[\/|of]\s*(\d+[,.]?\d*)\s*[Kk]?/i)
+    if (statusLineMatch) {
+      let current = parseFloat(statusLineMatch[1].replace(/,/g, ''))
+      let max = parseFloat(statusLineMatch[2].replace(/,/g, ''))
+
+      // Handle K notation
+      if (current < 1000 && max < 1000) {
+        current = current * 1000
+        max = max * 1000
+      }
+
+      const percent = Math.round((current / max) * 100)
+      setContextUsage({ current, max, percent })
+    }
+  }, [])
+
   // Parse plan items from Claude's TodoWrite output
   const parsePlanItems = useCallback((data: string) => {
     const cleanData = data.replace(/\x1b\[[0-9;]*[a-zA-Z]/g, '')
@@ -709,24 +836,51 @@ export default function TerminalWrapper({
     }
   }, [])
 
-  // Claude status detection
+  // Claude status detection - accumulate buffer for better detection
+  const statusBufferRef = useRef<string>('')
   const detectClaudeStatus = useCallback((data: string) => {
     if (statusTimeoutRef.current) clearTimeout(statusTimeoutRef.current)
 
-    const cleanData = data.replace(/\x1b\[[0-9;]*[a-zA-Z]/g, '')
-    const lastLines = cleanData.split('\n').slice(-10).join('\n')
+    // Accumulate data in buffer (keep last 5000 chars)
+    statusBufferRef.current = (statusBufferRef.current + data).slice(-5000)
+    const cleanData = statusBufferRef.current.replace(/\x1b\[[0-9;]*[a-zA-Z]/g, '')
+    const lastLines = cleanData.split('\n').slice(-15).join('\n')
 
-    const workingPatterns = [/\.\.\.\s*$/m, /⠋|⠙|⠹|⠸|⠼|⠴|⠦|⠧|⠇|⠏/m, /thinking|analyzing|searching|reading|writing|running|executing|loading|processing|building|compiling|installing|fetching|creating|updating/i, /Tool:|Read\(|Write\(|Edit\(|Bash\(/i]
-    const waitingPatterns = [/❯\s*$/m, />\s*$/m, /\(y\/n\)\s*$/im, /\[Y\/n\]\s*$/im, /What would you like|How can I help|anything else|Do you want to/i]
+    // Extended working patterns including agent mode tools
+    const workingPatterns = [
+      /\.\.\.\s*$/m,                                    // Progress dots
+      /⠋|⠙|⠹|⠸|⠼|⠴|⠦|⠧|⠇|⠏/m,                        // Spinner characters
+      /thinking|analyzing|searching|reading|writing|running|executing|loading|processing|building|compiling|installing|fetching|creating|updating|downloading/i,
+      /Tool:|Read\(|Write\(|Edit\(|Bash\(|Task\(|Glob\(|Grep\(|WebFetch\(|WebSearch\(/i,  // All tool calls
+      /\[running\]|\[executing\]|\[working\]/i,        // Status indicators
+      /npm|yarn|pnpm|pip|cargo|go build|make/i,        // Build commands running
+      /✓.*modules? transformed/i,                      // Vite/build progress
+      /Compiling|Bundling|Generating/i                 // Build processes
+    ]
 
+    // Waiting patterns - Claude is ready for input
+    const waitingPatterns = [
+      /❯\s*$/m,                                        // Claude prompt
+      />\s*$/m,                                        // Generic prompt
+      /\(y\/n\)\s*$/im,                                // Yes/no prompt
+      /\[Y\/n\]\s*$/im,                                // Yes/no with default
+      /\[y\/N\]\s*$/im,                                // Yes/no with default
+      /What would you like|How can I help|anything else|Do you want to/i,
+      /Press Enter to continue/i,
+      /✓ built in \d+/i                               // Build completed
+    ]
+
+    // Check working patterns first (higher priority)
     for (const pattern of workingPatterns) {
       if (pattern.test(lastLines)) {
         setClaudeStatus('working')
-        statusTimeoutRef.current = setTimeout(() => setClaudeStatus('waiting'), 3000)
+        // Longer timeout - give Claude time to work
+        statusTimeoutRef.current = setTimeout(() => setClaudeStatus('waiting'), 5000)
         return
       }
     }
 
+    // Check waiting patterns
     for (const pattern of waitingPatterns) {
       if (pattern.test(lastLines)) {
         setClaudeStatus('waiting')
@@ -734,8 +888,12 @@ export default function TerminalWrapper({
       }
     }
 
-    setClaudeStatus('working')
-    statusTimeoutRef.current = setTimeout(() => setClaudeStatus('waiting'), 3000)
+    // If we have recent output but no clear pattern, assume working
+    // Only switch to waiting after a longer timeout
+    if (data.trim().length > 0) {
+      setClaudeStatus('working')
+      statusTimeoutRef.current = setTimeout(() => setClaudeStatus('waiting'), 5000)
+    }
   }, [])
 
   // HTML file detection
@@ -1169,26 +1327,37 @@ export default function TerminalWrapper({
 
         {/* Panel Content */}
         <div className="flex-1 relative overflow-hidden">
-          {currentTab?.type === 'terminal' ? (
-            <Terminal
-              ref={(ref) => {
-                if (ref) terminalRefs.current.set(currentTab.id, ref)
-              }}
-              onResize={(cols, rows) => setTerminalSize({ cols, rows })}
-              onLocalhostDetected={handleLocalhostDetected}
-              onTerminalIdReady={(terminalId) => {
-                if (panel.id === 'left') onTerminalIdChange?.(terminalId)
-              }}
-              onTerminalData={(data, terminalId) => {
-                detectClaudeStatus(data)
-                detectHtmlFile(data)
-                parseClaudeAction(data)
-                trackTokensAndCost(data)
-                parsePlanItems(data)
-                onTerminalData?.(data, terminalId)
-              }}
-            />
-          ) : currentTab?.type === 'browser' ? (
+          {/* Render ALL terminal tabs to preserve state - show/hide based on active */}
+          {panel.tabs.filter(tab => tab.type === 'terminal').map(tab => (
+            <div
+              key={tab.id}
+              className={`absolute inset-0 ${tab.id === panel.activeTabId ? 'z-10' : 'z-0 invisible'}`}
+            >
+              <Terminal
+                ref={(ref) => {
+                  if (ref) terminalRefs.current.set(tab.id, ref)
+                }}
+                onResize={(cols, rows) => setTerminalSize({ cols, rows })}
+                onLocalhostDetected={handleLocalhostDetected}
+                onTerminalIdReady={(terminalId) => {
+                  if (panel.id === 'left' && tab.id === panel.activeTabId) onTerminalIdChange?.(terminalId)
+                }}
+                onTerminalData={(data, terminalId) => {
+                  if (tab.id === panel.activeTabId) {
+                    detectClaudeStatus(data)
+                    detectHtmlFile(data)
+                    parseClaudeAction(data)
+                    trackTokensAndCost(data)
+                    parsePlanItems(data)
+                    detectContextUsage(data)
+                    onTerminalData?.(data, terminalId)
+                  }
+                }}
+              />
+            </div>
+          ))}
+          {/* Browser tabs - only render when active */}
+          {currentTab?.type === 'browser' ? (
             <div className="h-full flex flex-col">
               {/* URL Bar */}
               <div className="flex items-center gap-2 px-3 py-2 bg-[#141414] border-b border-white/[0.06]">
@@ -1407,8 +1576,10 @@ export default function TerminalWrapper({
               <div className="flex-1 bg-white overflow-hidden">
                 <webview
                   id="preview-iframe"
-                  src={previewUrl.startsWith('http') ? previewUrl : `file://${previewUrl.replace('file://', '')}`}
+                  src={previewUrl.startsWith('http') ? previewUrl : `local-file://${previewUrl.replace(/^file:\/\//, '')}`}
                   className="w-full h-full"
+                  // @ts-ignore - webPreferences is valid for webview
+                  webpreferences="allowRunningInsecureContent=no"
                 />
               </div>
             </div>
@@ -1567,6 +1738,37 @@ export default function TerminalWrapper({
             <Hash size={11} className="text-gray-500" />
             <span className="text-[11px] text-gray-300 font-medium">{tokenCount > 1000 ? `${(tokenCount / 1000).toFixed(1)}K` : tokenCount} tokens</span>
           </div>
+
+          {/* Context Usage Bar */}
+          {contextUsage && (
+            <div
+              className={`flex items-center gap-2 px-2.5 py-1.5 rounded-lg border transition-all ${
+                contextUsage.percent >= 90
+                  ? 'bg-red-500/15 border-red-500/30 text-red-400'
+                  : contextUsage.percent >= 70
+                  ? 'bg-amber-500/15 border-amber-500/30 text-amber-400'
+                  : 'bg-cyan-500/10 border-cyan-500/20 text-cyan-400'
+              }`}
+              title={`Context: ${Math.round(contextUsage.current / 1000)}K / ${Math.round(contextUsage.max / 1000)}K tokens (${contextUsage.percent}%)`}
+            >
+              <Database size={11} />
+              <div className="flex items-center gap-1.5">
+                <div className="w-20 h-1.5 rounded-full bg-white/[0.1] overflow-hidden">
+                  <div
+                    className={`h-full rounded-full transition-all duration-300 ${
+                      contextUsage.percent >= 90
+                        ? 'bg-gradient-to-r from-red-500 to-red-400'
+                        : contextUsage.percent >= 70
+                        ? 'bg-gradient-to-r from-amber-500 to-yellow-400'
+                        : 'bg-gradient-to-r from-cyan-500 to-cyan-400'
+                    }`}
+                    style={{ width: `${Math.min(100, contextUsage.percent)}%` }}
+                  />
+                </div>
+                <span className="text-[10px] font-medium min-w-[28px]">{contextUsage.percent}%</span>
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Center: Key Actions */}

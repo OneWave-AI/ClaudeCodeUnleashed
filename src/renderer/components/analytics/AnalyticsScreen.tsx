@@ -137,9 +137,11 @@ export default function AnalyticsScreen({ onBack }: AnalyticsScreenProps) {
           const weekday = convDate.getDay()
 
           // Get REAL stats from conversation
-          const durationMinutes = conv.stats?.duration
+          // Cap duration at 8 hours (480 min) per session - prevents inflated stats from idle conversations
+          const rawDurationMinutes = conv.stats?.duration
             ? Math.round(conv.stats.duration / 1000 / 60)
             : 10
+          const durationMinutes = Math.min(rawDurationMinutes, 480) // Max 8 hours per session
           const tokens = conv.stats?.estimatedTokens || 2500
           const messages = conv.stats?.messageCount || 0
 
@@ -470,6 +472,7 @@ export default function AnalyticsScreen({ onBack }: AnalyticsScreenProps) {
                 filteredStats={filteredStats}
                 period={period}
                 onProjectClick={setSelectedProject}
+                onViewAllProjects={() => setActiveTab('projects')}
               />
             )}
             {activeTab === 'projects' && (
@@ -610,11 +613,12 @@ function ProjectDetailModal({ project, onClose }: { project: ProjectDetail; onCl
 }
 
 // Overview Tab
-function OverviewTab({ analytics, filteredStats, period, onProjectClick }: {
+function OverviewTab({ analytics, filteredStats, period, onProjectClick, onViewAllProjects }: {
   analytics: AnalyticsData
   filteredStats: { sessions: number; time: number; tokens: number; trend: number; projects: ProjectDetail[] }
   period: Period
   onProjectClick: (p: ProjectDetail) => void
+  onViewAllProjects: () => void
 }) {
   return (
     <div className="space-y-6">
@@ -664,16 +668,23 @@ function OverviewTab({ analytics, filteredStats, period, onProjectClick }: {
             <span className="text-xs text-gray-500">Last 30 days</span>
           </div>
           <div className="flex items-end gap-1 h-32">
-            {analytics.dailyActivity.map((day, i) => {
-              const maxSessions = Math.max(...analytics.dailyActivity.map(d => d.sessions), 1)
+            {(analytics.dailyActivity.length > 0 ? analytics.dailyActivity :
+              // Fallback: generate 30 empty days if no data
+              Array.from({ length: 30 }, (_, i) => {
+                const date = new Date()
+                date.setDate(date.getDate() - (29 - i))
+                return { date: date.toISOString().split('T')[0], sessions: 0, minutes: 0, tokens: 0 }
+              })
+            ).map((day, i, arr) => {
+              const maxSessions = Math.max(...arr.map(d => d.sessions), 1)
               const height = day.sessions > 0 ? Math.max((day.sessions / maxSessions) * 100, 5) : 3
-              const isToday = i === analytics.dailyActivity.length - 1
+              const isToday = i === arr.length - 1
 
               return (
                 <div
                   key={day.date}
                   className="flex-1 group cursor-pointer"
-                  title={`${day.date}\n${day.sessions} sessions\n${day.minutes}m\n${formatNumber(day.tokens)} tokens`}
+                  title={`${day.date}\n${day.sessions} sessions\n${day.minutes}m\n${formatNumber(day.tokens || 0)} tokens`}
                 >
                   <div
                     className={`w-full rounded-sm transition-all group-hover:opacity-80 ${
@@ -697,7 +708,7 @@ function OverviewTab({ analytics, filteredStats, period, onProjectClick }: {
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-sm font-semibold text-white">Top Projects by Time</h3>
             <button
-              onClick={() => {}}
+              onClick={onViewAllProjects}
               className="text-xs text-[#cc785c] hover:underline"
             >
               View All

@@ -20,7 +20,14 @@ const BUILT_IN_THEMES = [
   { id: 'dracula', name: 'Dracula', bg: '#282a36', accent: '#ff79c6' },
   { id: 'neon', name: 'Neon', bg: '#0a0a0f', accent: '#00ffff' },
   { id: 'aurora', name: 'Aurora', bg: '#0d0d0d', accent: '#ff9500' },
-  { id: 'solarized', name: 'Solarized', bg: '#002b36', accent: '#b58900' }
+  { id: 'solarized', name: 'Solarized', bg: '#002b36', accent: '#b58900' },
+  // New premium themes
+  { id: 'midnight', name: 'Midnight', bg: '#0d1117', accent: '#58a6ff' },
+  { id: 'ember', name: 'Ember', bg: '#1a1210', accent: '#ff6b35' },
+  { id: 'matrix', name: 'Matrix', bg: '#0c0c0c', accent: '#00ff41' },
+  { id: 'frost', name: 'Frost', bg: '#1e2a38', accent: '#a3c9f1' },
+  { id: 'synthwave', name: 'Synthwave', bg: '#1a1a2e', accent: '#ff6bcb' },
+  { id: 'tokyonight', name: 'Tokyo Night', bg: '#1a1b26', accent: '#7aa2f7' }
 ]
 
 // Full theme presets for the theme creator
@@ -52,6 +59,31 @@ const THEME_PRESETS: Record<string, Omit<CustomTheme, 'id' | 'name'>> = {
   solarized: {
     background: '#002b36', foreground: '#839496', accent: '#b58900', cursor: '#b58900', selection: '#073642',
     black: '#073642', red: '#dc322f', green: '#859900', yellow: '#b58900', blue: '#268bd2', magenta: '#d33682', cyan: '#2aa198', white: '#eee8d5'
+  },
+  // New premium themes
+  midnight: {
+    background: '#0d1117', foreground: '#c9d1d9', accent: '#58a6ff', cursor: '#58a6ff', selection: '#388bfd33',
+    black: '#0d1117', red: '#ff7b72', green: '#7ee787', yellow: '#d29922', blue: '#58a6ff', magenta: '#bc8cff', cyan: '#76e3ea', white: '#f0f6fc'
+  },
+  ember: {
+    background: '#1a1210', foreground: '#e8d5c4', accent: '#ff6b35', cursor: '#ff6b35', selection: '#ff6b3533',
+    black: '#1a1210', red: '#ff5252', green: '#9ccc65', yellow: '#ffb74d', blue: '#64b5f6', magenta: '#f48fb1', cyan: '#4dd0e1', white: '#fafafa'
+  },
+  matrix: {
+    background: '#0c0c0c', foreground: '#00ff41', accent: '#00ff41', cursor: '#00ff41', selection: '#00ff4133',
+    black: '#0c0c0c', red: '#ff0044', green: '#00ff41', yellow: '#fffc00', blue: '#00ccff', magenta: '#ff00ff', cyan: '#00ffff', white: '#f0fff0'
+  },
+  frost: {
+    background: '#1e2a38', foreground: '#ecf0f1', accent: '#a3c9f1', cursor: '#a3c9f1', selection: '#a3c9f133',
+    black: '#1e2a38', red: '#e74c3c', green: '#27ae60', yellow: '#f39c12', blue: '#3498db', magenta: '#9b59b6', cyan: '#1abc9c', white: '#ecf0f1'
+  },
+  synthwave: {
+    background: '#1a1a2e', foreground: '#eee8ff', accent: '#ff6bcb', cursor: '#ff6bcb', selection: '#ff6bcb33',
+    black: '#1a1a2e', red: '#ff5555', green: '#72f1b8', yellow: '#fede5d', blue: '#6fc3df', magenta: '#ff6bcb', cyan: '#72f1b8', white: '#f0f0f0'
+  },
+  tokyonight: {
+    background: '#1a1b26', foreground: '#c0caf5', accent: '#7aa2f7', cursor: '#c0caf5', selection: '#33467c',
+    black: '#15161e', red: '#f7768e', green: '#9ece6a', yellow: '#e0af68', blue: '#7aa2f7', magenta: '#bb9af7', cyan: '#7dcfff', white: '#c0caf5'
   }
 }
 

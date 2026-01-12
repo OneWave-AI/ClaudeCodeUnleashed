@@ -112,6 +112,49 @@ const THEMES: Record<string, Record<string, string>> = {
     cursor: '#b58900',
     cursorAccent: '#002b36',
     selectionBackground: 'rgba(181, 137, 0, 0.3)'
+  },
+  // New premium themes
+  midnight: {
+    background: '#0d1117',
+    foreground: '#c9d1d9',
+    cursor: '#58a6ff',
+    cursorAccent: '#0d1117',
+    selectionBackground: 'rgba(56, 139, 253, 0.3)'
+  },
+  ember: {
+    background: '#1a1210',
+    foreground: '#e8d5c4',
+    cursor: '#ff6b35',
+    cursorAccent: '#1a1210',
+    selectionBackground: 'rgba(255, 107, 53, 0.3)'
+  },
+  matrix: {
+    background: '#0c0c0c',
+    foreground: '#00ff41',
+    cursor: '#00ff41',
+    cursorAccent: '#0c0c0c',
+    selectionBackground: 'rgba(0, 255, 65, 0.3)'
+  },
+  frost: {
+    background: '#1e2a38',
+    foreground: '#ecf0f1',
+    cursor: '#a3c9f1',
+    cursorAccent: '#1e2a38',
+    selectionBackground: 'rgba(163, 201, 241, 0.3)'
+  },
+  synthwave: {
+    background: '#1a1a2e',
+    foreground: '#eee8ff',
+    cursor: '#ff6bcb',
+    cursorAccent: '#1a1a2e',
+    selectionBackground: 'rgba(255, 107, 203, 0.3)'
+  },
+  tokyonight: {
+    background: '#1a1b26',
+    foreground: '#c0caf5',
+    cursor: '#c0caf5',
+    cursorAccent: '#1a1b26',
+    selectionBackground: 'rgba(51, 70, 124, 0.5)'
   }
 }
 

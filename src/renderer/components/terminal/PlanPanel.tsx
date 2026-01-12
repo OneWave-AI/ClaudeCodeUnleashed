@@ -45,7 +45,7 @@ export default function PlanPanel({ items, onClose, onClear }: PlanPanelProps) {
   })
 
   return (
-    <div className="w-72 h-full flex flex-col bg-[#0d0d0d] border-l border-white/[0.06] relative animate-in slide-in-from-right-4 duration-200">
+    <div className="absolute top-0 right-0 bottom-0 w-80 flex flex-col bg-[#0d0d0d]/95 backdrop-blur-sm border-l border-white/[0.08] z-30 shadow-2xl shadow-black/50 animate-in slide-in-from-right-4 duration-200">
       {/* Subtle gradient accent */}
       <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-radial from-[#cc785c]/5 to-transparent pointer-events-none" />
 

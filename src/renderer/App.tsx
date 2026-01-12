@@ -13,7 +13,6 @@ import { ToastProvider } from './components/common/Toast'
 import { useAppStore } from './store'
 import { SuperAgentModal, SuperAgentStatusBar } from './components/superagent'
 import { useSuperAgent } from './hooks/useSuperAgent'
-import type { PlanItem } from './components/terminal/PlanPanel'
 
 type Screen = 'home' | 'terminal' | 'skills' | 'history' | 'analytics'
 
@@ -27,8 +26,6 @@ function App() {
   const [superAgentModalOpen, setSuperAgentModalOpen] = useState(false)
   const [activeTerminalId, setActiveTerminalId] = useState<string | null>(null)
   const [previewUrl, setPreviewUrl] = useState<string | null>(null)
-  const [planItems, setPlanItems] = useState<PlanItem[]>([])
-  const [showPlan, setShowPlan] = useState(false)
   const pendingSuperAgentOpen = useRef(false) // Flag to open modal when terminal is ready
   const { cwd, setCwd } = useAppStore()
   const { isRunning: superAgentRunning, stopSuperAgent, processOutput } = useSuperAgent()
@@ -93,9 +90,6 @@ function App() {
           onNavigate={handleNavigate}
           onOpenPreview={(url) => setPreviewUrl(url)}
           onOpenSuperAgent={() => setSuperAgentModalOpen(true)}
-          planCount={planItems.length}
-          showPlan={showPlan}
-          onTogglePlan={() => setShowPlan(!showPlan)}
         />
 
         <div className="flex flex-1 overflow-hidden">
@@ -127,6 +121,15 @@ function App() {
                     pendingSuperAgentOpen.current = true
                   }
                 }}
+                onOpenHive={() => {
+                  // Hive opens super agent modal with swarm management
+                  navigateTo('terminal')
+                  if (activeTerminalId) {
+                    setSuperAgentModalOpen(true)
+                  } else {
+                    pendingSuperAgentOpen.current = true
+                  }
+                }}
               />
             )}
 
@@ -146,9 +149,6 @@ function App() {
                   previewUrl={previewUrl}
                   onClosePreview={() => setPreviewUrl(null)}
                   onOpenPreview={(url) => setPreviewUrl(url)}
-                  showPlanPanel={showPlan}
-                  onClosePlanPanel={() => setShowPlan(false)}
-                  onPlanItemsChange={(items) => setPlanItems(items)}
                 />
               </div>
             )}
