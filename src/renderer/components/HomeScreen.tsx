@@ -71,6 +71,12 @@ interface DetailedStats {
   recentActivity: { date: string; sessions: number; minutes: number }[]
   topProjects: { name: string; folder: string; sessions: number; timeMinutes: number }[]
   totalProjects: number
+  // Time analysis
+  peakHour: number
+  peakDay: string
+  hourlyDistribution: number[] // 24 hours, sessions per hour
+  dailyDistribution: number[] // 7 days (Sun-Sat), sessions per day
+  productivityScore: number // 0-100 based on consistency
 }
 
 type LoadingState = 'idle' | 'loading' | 'loaded' | 'error'
@@ -99,7 +105,12 @@ export default function HomeScreen({
     time30Days: 0,
     recentActivity: [],
     topProjects: [],
-    totalProjects: 0
+    totalProjects: 0,
+    peakHour: 0,
+    peakDay: 'N/A',
+    hourlyDistribution: Array(24).fill(0),
+    dailyDistribution: Array(7).fill(0),
+    productivityScore: 0
   })
   const [loadingState, setLoadingState] = useState<LoadingState>('idle')
   const [isStarting, setIsStarting] = useState(false)
@@ -208,20 +219,32 @@ export default function HomeScreen({
         let totalMinutes = 0
 
         // Group sessions by date for activity chart (last 7 days)
+        // Use local date strings to avoid timezone issues
+        const getLocalDateStr = (d: Date) => {
+          const year = d.getFullYear()
+          const month = String(d.getMonth() + 1).padStart(2, '0')
+          const day = String(d.getDate()).padStart(2, '0')
+          return `${year}-${month}-${day}`
+        }
         const activityMap = new Map<string, { sessions: number; minutes: number }>()
         for (let i = 6; i >= 0; i--) {
           const date = new Date(now)
           date.setDate(date.getDate() - i)
-          const dateStr = date.toISOString().split('T')[0]
+          const dateStr = getLocalDateStr(date)
           activityMap.set(dateStr, { sessions: 0, minutes: 0 })
         }
 
         // Track projects with time
         const projectCounts = new Map<string, { name: string; folder: string; count: number; timeMinutes: number }>()
 
+        // Time analysis tracking
+        const hourlyDistribution = Array(24).fill(0)
+        const dailyDistribution = Array(7).fill(0)
+        const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
+
         for (const conv of conversations) {
           const convDate = new Date(conv.timestamp)
-          const convDateStr = convDate.toISOString().split('T')[0]
+          const convDateStr = getLocalDateStr(convDate)
 
           // Get REAL duration from stats (in milliseconds), convert to minutes
           const durationMinutes = conv.stats?.duration
@@ -230,6 +253,12 @@ export default function HomeScreen({
 
           // Get REAL token count from stats
           const tokens = conv.stats?.estimatedTokens || 2500
+
+          // Track hourly and daily distribution
+          const hour = convDate.getHours()
+          const dayOfWeek = convDate.getDay()
+          hourlyDistribution[hour]++
+          dailyDistribution[dayOfWeek]++
 
           // Count by time period
           if (convDate >= sevenDaysAgo) {
@@ -278,6 +307,17 @@ export default function HomeScreen({
         const recentActivity = Array.from(activityMap.entries())
           .map(([date, data]) => ({ date, sessions: data.sessions, minutes: data.minutes }))
 
+        // Calculate peak hour and day
+        const peakHour = hourlyDistribution.indexOf(Math.max(...hourlyDistribution))
+        const peakDayIndex = dailyDistribution.indexOf(Math.max(...dailyDistribution))
+        const peakDay = dayNames[peakDayIndex] || 'N/A'
+
+        // Calculate productivity score (based on consistency - how spread out sessions are)
+        const avgSessionsPerDay = conversations.length / 7
+        const variance = dailyDistribution.reduce((sum, count) => sum + Math.pow(count - avgSessionsPerDay, 2), 0) / 7
+        const consistency = Math.max(0, 100 - Math.sqrt(variance) * 10)
+        const productivityScore = Math.round(Math.min(100, consistency + (sessions7Days > 0 ? 20 : 0)))
+
         setDetailedStats({
           totalSessions: conversations.length,
           totalTokens,
@@ -289,7 +329,12 @@ export default function HomeScreen({
           time30Days,
           recentActivity,
           topProjects,
-          totalProjects: projectCounts.size
+          totalProjects: projectCounts.size,
+          peakHour,
+          peakDay,
+          hourlyDistribution,
+          dailyDistribution,
+          productivityScore
         })
 
         setLoadingState('loaded')
@@ -620,6 +665,62 @@ export default function HomeScreen({
                     {detailedStats.topProjects.length === 0 && (
                       <p className="text-[10px] text-gray-600 text-center py-2">No project data yet</p>
                     )}
+                  </div>
+                </div>
+              </div>
+
+              {/* Time Analysis Section */}
+              <div className="mt-4 bg-black/30 rounded-xl p-4 border border-white/[0.04]">
+                <div className="flex items-center justify-between mb-3">
+                  <span className="text-[10px] uppercase tracking-wider text-gray-500 font-medium">Work Patterns</span>
+                  <Clock size={12} className="text-cyan-400" />
+                </div>
+                <div className="grid grid-cols-3 gap-4">
+                  {/* Peak Hour */}
+                  <div className="text-center">
+                    <div className="text-2xl font-bold text-cyan-400">
+                      {detailedStats.peakHour > 12 ? detailedStats.peakHour - 12 : detailedStats.peakHour || 12}
+                      <span className="text-sm ml-1">{detailedStats.peakHour >= 12 ? 'PM' : 'AM'}</span>
+                    </div>
+                    <p className="text-[9px] text-gray-500 mt-1">Peak Hour</p>
+                  </div>
+                  {/* Peak Day */}
+                  <div className="text-center">
+                    <div className="text-lg font-bold text-purple-400">{detailedStats.peakDay.slice(0, 3)}</div>
+                    <p className="text-[9px] text-gray-500 mt-1">Most Active Day</p>
+                  </div>
+                  {/* Productivity Score */}
+                  <div className="text-center">
+                    <div className="text-2xl font-bold text-green-400">{detailedStats.productivityScore}</div>
+                    <p className="text-[9px] text-gray-500 mt-1">Consistency</p>
+                  </div>
+                </div>
+                {/* Hourly Distribution Mini Chart */}
+                <div className="mt-4">
+                  <p className="text-[8px] text-gray-600 mb-2">24h Activity</p>
+                  <div className="flex items-end gap-0.5 h-8">
+                    {detailedStats.hourlyDistribution.map((count, hour) => {
+                      const max = Math.max(...detailedStats.hourlyDistribution, 1)
+                      const height = count > 0 ? Math.max((count / max) * 100, 10) : 4
+                      const isWorkHour = hour >= 9 && hour <= 18
+                      return (
+                        <div
+                          key={hour}
+                          className={`flex-1 rounded-t-sm transition-all ${
+                            count > 0 ? (isWorkHour ? 'bg-cyan-500/60' : 'bg-cyan-500/30') : 'bg-white/[0.04]'
+                          }`}
+                          style={{ height: `${height}%` }}
+                          title={`${hour}:00 - ${count} sessions`}
+                        />
+                      )
+                    })}
+                  </div>
+                  <div className="flex justify-between mt-1">
+                    <span className="text-[7px] text-gray-600">12am</span>
+                    <span className="text-[7px] text-gray-600">6am</span>
+                    <span className="text-[7px] text-gray-600">12pm</span>
+                    <span className="text-[7px] text-gray-600">6pm</span>
+                    <span className="text-[7px] text-gray-600">12am</span>
                   </div>
                 </div>
               </div>

@@ -3,6 +3,8 @@ import {
   Sparkles,
   Bot,
   Plug,
+  Puzzle,
+  Server,
   Search,
   Trash2,
   Edit3,
@@ -54,7 +56,7 @@ interface Plugin {
   enabled: boolean
 }
 
-type Tab = 'skills' | 'agents' | 'plugins'
+type Tab = 'skills' | 'agents' | 'plugins' | 'mcp'
 type ViewMode = 'grid' | 'list'
 type SortOption = 'name' | 'created' | 'lastUsed'
 
@@ -397,7 +399,8 @@ export default function SkillsManager({ onBack }: SkillsManagerProps) {
   const tabs = [
     { id: 'skills' as Tab, label: 'Skills', icon: Sparkles, count: skills.length },
     { id: 'agents' as Tab, label: 'Agents', icon: Bot, count: agents.length },
-    { id: 'plugins' as Tab, label: 'MCP Servers', icon: Plug, count: mcpServers.length }
+    { id: 'plugins' as Tab, label: 'Plugins', icon: Puzzle, count: plugins.length },
+    { id: 'mcp' as Tab, label: 'MCP Servers', icon: Server, count: mcpServers.length }
   ]
 
   const sortOptions = [
@@ -541,7 +544,7 @@ export default function SkillsManager({ onBack }: SkillsManagerProps) {
           </div>
 
           {/* Import Button */}
-          {activeTab !== 'plugins' && (
+          {activeTab !== 'plugins' && activeTab !== 'mcp' && (
             <button
               onClick={handleImport}
               className="flex items-center gap-2 px-3 py-2 rounded-lg bg-white/5 text-gray-400 hover:text-white text-sm transition-colors"
@@ -716,8 +719,35 @@ export default function SkillsManager({ onBack }: SkillsManagerProps) {
                 </div>
               )}
 
-              {/* MCP Servers Tab */}
+              {/* Plugins Tab */}
               {activeTab === 'plugins' && (
+                <div className="flex flex-col items-center justify-center h-64 text-center">
+                  <Puzzle className="w-12 h-12 text-gray-600 mb-4" />
+                  <h3 className="text-lg font-medium text-white mb-2">Plugins</h3>
+                  <p className="text-gray-500 text-sm max-w-md">
+                    Plugins extend Claude Code with additional functionality.
+                    {plugins.length === 0 ? ' No plugins installed yet.' : ` ${plugins.length} plugins installed.`}
+                  </p>
+                  {plugins.length > 0 && (
+                    <div className="mt-4 space-y-2 w-full max-w-md">
+                      {plugins.map((plugin) => (
+                        <div key={plugin.id} className="flex items-center justify-between p-3 rounded-lg bg-white/5 border border-white/10">
+                          <div>
+                            <p className="text-sm font-medium text-white">{plugin.name}</p>
+                            <p className="text-xs text-gray-500">{plugin.description}</p>
+                          </div>
+                          <span className={`px-2 py-1 rounded text-xs ${plugin.enabled ? 'bg-green-500/20 text-green-400' : 'bg-gray-500/20 text-gray-400'}`}>
+                            {plugin.enabled ? 'Enabled' : 'Disabled'}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* MCP Servers Tab */}
+              {activeTab === 'mcp' && (
                 <MCPManager />
               )}
             </>

@@ -27,7 +27,9 @@ import {
   Square,
   Zap,
   Hash,
-  Loader2
+  Loader2,
+  Brain,
+  Hammer
 } from 'lucide-react'
 
 import Terminal, { TerminalRef } from './Terminal'
@@ -123,6 +125,9 @@ export default function TerminalWrapper({
   // Claude status
   const [claudeStatus, setClaudeStatus] = useState<'working' | 'waiting' | 'idle'>('idle')
   const statusTimeoutRef = useRef<NodeJS.Timeout | null>(null)
+
+  // Plan/Work mode toggle
+  const [claudeMode, setClaudeMode] = useState<'plan' | 'work'>('work')
 
   // Detected localhost URL for preview
   const [detectedLocalhostUrl, setDetectedLocalhostUrl] = useState<string | null>(null)
@@ -465,6 +470,16 @@ export default function TerminalWrapper({
     }
   }, [activeTerminalId])
 
+  // Toggle Plan/Work mode - sends shift+tab to Claude CLI
+  const handleModeToggle = useCallback(() => {
+    const newMode = claudeMode === 'plan' ? 'work' : 'plan'
+    setClaudeMode(newMode)
+    // Send shift+tab to toggle plan mode in Claude CLI
+    if (activeTerminalId) {
+      window.api.terminalSendText('\x1b[Z', activeTerminalId) // Shift+Tab escape sequence
+    }
+  }, [activeTerminalId, claudeMode])
+
   // Screenshot terminal - copies terminal content to clipboard
   const handleScreenshot = useCallback(() => {
     const activeRef = terminalRefs.current.get(activeTab?.id || '')
@@ -519,6 +534,53 @@ export default function TerminalWrapper({
   // Parse plan items from Claude's TodoWrite output
   const parsePlanItems = useCallback((data: string) => {
     const cleanData = data.replace(/\x1b\[[0-9;]*[a-zA-Z]/g, '')
+
+    // Check for Claude Code's "Your todo list has changed" format
+    // Format: "Your todo list has changed. ... [{"content":"...", "status":"...", "activeForm":"..."}]"
+    const todoListMatch = cleanData.match(/todo list|TodoWrite|Todos have been modified/i)
+
+    // Look for JSON array after the todo list indicator
+    const jsonMatch = cleanData.match(/\[\s*\{[^[\]]*"content"[^[\]]*\}(?:\s*,\s*\{[^[\]]*"content"[^[\]]*\})*\s*\]/)
+    if (jsonMatch) {
+      try {
+        const parsed = JSON.parse(jsonMatch[0])
+        if (Array.isArray(parsed) && parsed.length > 0 && parsed[0].content) {
+          const newItems: PlanItem[] = parsed.map((item: { content: string; status: string; activeForm?: string }, index: number) => ({
+            id: `plan-json-${Date.now()}-${index}`,
+            content: item.content || 'Unknown task',
+            status: (item.status as 'pending' | 'in_progress' | 'completed') || 'pending',
+            createdAt: new Date(),
+            completedAt: item.status === 'completed' ? new Date() : undefined
+          }))
+          setPlanItems(newItems)
+          return
+        }
+      } catch {
+        // Not valid JSON, try alternative pattern
+      }
+    }
+
+    // Alternative: Match simpler JSON format with curly braces
+    // Pattern: {"content":"...", "status":"..."}
+    const simpleJsonMatch = cleanData.match(/\[\{[^\]]+\}\]/)
+    if (simpleJsonMatch) {
+      try {
+        const parsed = JSON.parse(simpleJsonMatch[0])
+        if (Array.isArray(parsed) && parsed.length > 0 && parsed[0].content) {
+          const newItems: PlanItem[] = parsed.map((item: { content: string; status: string; activeForm?: string }, index: number) => ({
+            id: `plan-json-${Date.now()}-${index}`,
+            content: item.content || 'Unknown task',
+            status: (item.status as 'pending' | 'in_progress' | 'completed') || 'pending',
+            createdAt: new Date(),
+            completedAt: item.status === 'completed' ? new Date() : undefined
+          }))
+          setPlanItems(newItems)
+          return
+        }
+      } catch {
+        // Continue with other patterns
+      }
+    }
 
     // Detect TodoWrite patterns:
     // - "✓ Task completed" or "✔ Task"
@@ -1481,6 +1543,21 @@ export default function TerminalWrapper({
               </div>
             )}
           </div>
+
+          {/* Plan/Work Mode Toggle */}
+          <button
+            onClick={handleModeToggle}
+            disabled={!activeTerminalId}
+            className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border transition-all ${
+              claudeMode === 'plan'
+                ? 'bg-blue-500/20 text-blue-400 border-blue-500/30 hover:bg-blue-500/25'
+                : 'bg-amber-500/15 text-amber-400 border-amber-500/20 hover:bg-amber-500/25'
+            } disabled:opacity-40 disabled:cursor-not-allowed`}
+            title={claudeMode === 'plan' ? 'Currently in Plan mode - click to switch to Work mode' : 'Currently in Work mode - click to switch to Plan mode'}
+          >
+            {claudeMode === 'plan' ? <Brain size={12} /> : <Hammer size={12} />}
+            <span className="text-[11px] font-semibold uppercase tracking-wide">{claudeMode}</span>
+          </button>
 
           <div className="flex items-center gap-2 px-2 py-1 rounded-md bg-white/[0.04]">
             <Clock size={11} className="text-gray-500" />

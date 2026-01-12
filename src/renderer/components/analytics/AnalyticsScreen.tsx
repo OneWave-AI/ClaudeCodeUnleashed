@@ -111,11 +111,18 @@ export default function AnalyticsScreen({ onBack }: AnalyticsScreenProps) {
         const projectMap = new Map<string, ProjectDetail>()
 
         // Track daily activity for chart (last 30 days)
+        // Use local date strings to avoid timezone issues
+        const getLocalDateStr = (d: Date) => {
+          const year = d.getFullYear()
+          const month = String(d.getMonth() + 1).padStart(2, '0')
+          const day = String(d.getDate()).padStart(2, '0')
+          return `${year}-${month}-${day}`
+        }
         const dailyMap = new Map<string, { sessions: number; minutes: number; tokens: number }>()
         for (let i = 29; i >= 0; i--) {
           const date = new Date(now)
           date.setDate(date.getDate() - i)
-          const dateStr = date.toISOString().split('T')[0]
+          const dateStr = getLocalDateStr(date)
           dailyMap.set(dateStr, { sessions: 0, minutes: 0, tokens: 0 })
         }
 
@@ -125,7 +132,7 @@ export default function AnalyticsScreen({ onBack }: AnalyticsScreenProps) {
 
         for (const conv of conversations) {
           const convDate = new Date(conv.timestamp)
-          const convDateStr = convDate.toISOString().split('T')[0]
+          const convDateStr = getLocalDateStr(convDate)
           const hour = convDate.getHours()
           const weekday = convDate.getDay()
 

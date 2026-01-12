@@ -23,7 +23,12 @@ import {
   Play,
   Loader2,
   CheckCircle,
-  History
+  History,
+  Paintbrush,
+  Layers,
+  Route,
+  Server,
+  Link2
 } from 'lucide-react'
 
 // Custom Bee Icon for Swarm
@@ -347,6 +352,144 @@ Begin by analyzing what needs action and selecting your agents now.`
     }, 45000)
   }, [activeTerminalId, swarmRunning, showToast])
 
+  // Swarm: Design Polish - improve visual design
+  const launchSwarmDesign = useCallback(() => {
+    if (!activeTerminalId || swarmRunning) return
+    setShowSwarmMenu(false)
+    setSwarmRunning(true)
+    setSwarmAgents([
+      { id: '1', name: 'Design Analysis', role: 'Analyzing visual design', status: 'pending' },
+      { id: '2', name: 'Style Improvements', role: 'Improving styles', status: 'pending' },
+      { id: '3', name: 'Polish Agent', role: 'Final polish', status: 'pending' },
+    ])
+    const prompt = `🎨 **SWARM DESIGN POLISH MODE**\n\nAnalyze the UI/UX and visual design of the current codebase. Focus on:\n1. Color consistency and palette\n2. Spacing and alignment\n3. Typography hierarchy\n4. Visual polish and micro-interactions\n5. Accessibility (contrast, focus states)\n\nLaunch 3 specialized design agents to improve the visual quality. Show specific CSS/style changes with file:line references.`
+    window.api.terminalSendText(prompt, activeTerminalId)
+    showToast('info', 'Design Swarm', 'Polishing visual design')
+    setTimeout(() => setSwarmAgents(prev => prev.map((a, i) => i === 0 ? { ...a, status: 'running' } : a)), 2000)
+    setTimeout(() => setSwarmAgents(prev => prev.map((a, i) => i === 1 ? { ...a, status: 'running' } : a)), 5000)
+    setTimeout(() => setSwarmAgents(prev => prev.map((a, i) => i === 2 ? { ...a, status: 'running' } : a)), 8000)
+    setTimeout(() => { setSwarmAgents(prev => prev.map(a => ({ ...a, status: 'complete' }))); setSwarmRunning(false) }, 30000)
+  }, [activeTerminalId, swarmRunning, showToast])
+
+  // Swarm: UI Fix - fix UI bugs and layout issues
+  const launchSwarmUIFix = useCallback(() => {
+    if (!activeTerminalId || swarmRunning) return
+    setShowSwarmMenu(false)
+    setSwarmRunning(true)
+    setSwarmAgents([
+      { id: '1', name: 'Bug Scanner', role: 'Finding UI bugs', status: 'pending' },
+      { id: '2', name: 'Layout Fixer', role: 'Fixing layouts', status: 'pending' },
+      { id: '3', name: 'Render Optimizer', role: 'Optimizing renders', status: 'pending' },
+    ])
+    const prompt = `🔧 **SWARM UI FIX MODE**\n\nScan for and fix UI bugs and layout issues:\n1. Overflow and clipping problems\n2. Z-index and stacking issues\n3. Responsive breakpoint bugs\n4. Hover/focus state issues\n5. Animation glitches\n6. Missing error boundaries\n\nLaunch 3 specialized agents to identify and fix UI bugs. Provide specific fixes with file:line references.`
+    window.api.terminalSendText(prompt, activeTerminalId)
+    showToast('info', 'UI Fix Swarm', 'Finding and fixing UI bugs')
+    setTimeout(() => setSwarmAgents(prev => prev.map((a, i) => i === 0 ? { ...a, status: 'running' } : a)), 2000)
+    setTimeout(() => setSwarmAgents(prev => prev.map((a, i) => i === 1 ? { ...a, status: 'running' } : a)), 5000)
+    setTimeout(() => setSwarmAgents(prev => prev.map((a, i) => i === 2 ? { ...a, status: 'running' } : a)), 8000)
+    setTimeout(() => { setSwarmAgents(prev => prev.map(a => ({ ...a, status: 'complete' }))); setSwarmRunning(false) }, 30000)
+  }, [activeTerminalId, swarmRunning, showToast])
+
+  // Swarm: Route - improve routing and navigation
+  const launchSwarmRoute = useCallback(() => {
+    if (!activeTerminalId || swarmRunning) return
+    setShowSwarmMenu(false)
+    setSwarmRunning(true)
+    setSwarmAgents([
+      { id: '1', name: 'Route Analyzer', role: 'Analyzing routes', status: 'pending' },
+      { id: '2', name: 'Nav Optimizer', role: 'Improving navigation', status: 'pending' },
+      { id: '3', name: 'Flow Agent', role: 'Optimizing user flow', status: 'pending' },
+    ])
+    const prompt = `🗺️ **SWARM ROUTE MODE**\n\nAnalyze and improve routing and navigation:\n1. Route structure and organization\n2. Navigation patterns and UX\n3. Deep linking and URL structure\n4. Route guards and auth flow\n5. Loading states and transitions\n6. Back/forward navigation\n\nLaunch 3 specialized agents to improve the routing architecture. Show specific improvements with file:line references.`
+    window.api.terminalSendText(prompt, activeTerminalId)
+    showToast('info', 'Route Swarm', 'Improving navigation')
+    setTimeout(() => setSwarmAgents(prev => prev.map((a, i) => i === 0 ? { ...a, status: 'running' } : a)), 2000)
+    setTimeout(() => setSwarmAgents(prev => prev.map((a, i) => i === 1 ? { ...a, status: 'running' } : a)), 5000)
+    setTimeout(() => setSwarmAgents(prev => prev.map((a, i) => i === 2 ? { ...a, status: 'running' } : a)), 8000)
+    setTimeout(() => { setSwarmAgents(prev => prev.map(a => ({ ...a, status: 'complete' }))); setSwarmRunning(false) }, 30000)
+  }, [activeTerminalId, swarmRunning, showToast])
+
+  // Swarm: API - improve API layer and data fetching
+  const launchSwarmAPI = useCallback(() => {
+    if (!activeTerminalId || swarmRunning) return
+    setShowSwarmMenu(false)
+    setSwarmRunning(true)
+    setSwarmAgents([
+      { id: '1', name: 'API Auditor', role: 'Auditing API layer', status: 'pending' },
+      { id: '2', name: 'Data Optimizer', role: 'Optimizing data flow', status: 'pending' },
+      { id: '3', name: 'IPC Agent', role: 'Improving IPC handlers', status: 'pending' },
+    ])
+    const prompt = `⚡ **SWARM API MODE**\n\nAnalyze and improve the API layer:\n1. API endpoint structure and naming\n2. Error handling and responses\n3. Data validation and types\n4. IPC handlers (Electron)\n5. Caching and optimization\n6. Loading and error states\n\nLaunch 3 specialized agents to improve the API architecture. Show specific improvements with file:line references.`
+    window.api.terminalSendText(prompt, activeTerminalId)
+    showToast('info', 'API Swarm', 'Improving API layer')
+    setTimeout(() => setSwarmAgents(prev => prev.map((a, i) => i === 0 ? { ...a, status: 'running' } : a)), 2000)
+    setTimeout(() => setSwarmAgents(prev => prev.map((a, i) => i === 1 ? { ...a, status: 'running' } : a)), 5000)
+    setTimeout(() => setSwarmAgents(prev => prev.map((a, i) => i === 2 ? { ...a, status: 'running' } : a)), 8000)
+    setTimeout(() => { setSwarmAgents(prev => prev.map(a => ({ ...a, status: 'complete' }))); setSwarmRunning(false) }, 30000)
+  }, [activeTerminalId, swarmRunning, showToast])
+
+  // Swarm: Connector - improve integrations
+  const launchSwarmConnector = useCallback(() => {
+    if (!activeTerminalId || swarmRunning) return
+    setShowSwarmMenu(false)
+    setSwarmRunning(true)
+    setSwarmAgents([
+      { id: '1', name: 'Integration Auditor', role: 'Auditing integrations', status: 'pending' },
+      { id: '2', name: 'MCP Agent', role: 'Improving MCP', status: 'pending' },
+      { id: '3', name: 'Git Agent', role: 'Improving Git integration', status: 'pending' },
+    ])
+    const prompt = `🔗 **SWARM CONNECTOR MODE**\n\nAnalyze and improve integrations:\n1. MCP server connections\n2. Git integration (commit, push, PR)\n3. File system operations\n4. External service connections\n5. CLI tool integration\n6. Plugin/extension system\n\nLaunch 3 specialized agents to improve integrations. Show specific improvements with file:line references.`
+    window.api.terminalSendText(prompt, activeTerminalId)
+    showToast('info', 'Connector Swarm', 'Improving integrations')
+    setTimeout(() => setSwarmAgents(prev => prev.map((a, i) => i === 0 ? { ...a, status: 'running' } : a)), 2000)
+    setTimeout(() => setSwarmAgents(prev => prev.map((a, i) => i === 1 ? { ...a, status: 'running' } : a)), 5000)
+    setTimeout(() => setSwarmAgents(prev => prev.map((a, i) => i === 2 ? { ...a, status: 'running' } : a)), 8000)
+    setTimeout(() => { setSwarmAgents(prev => prev.map(a => ({ ...a, status: 'complete' }))); setSwarmRunning(false) }, 30000)
+  }, [activeTerminalId, swarmRunning, showToast])
+
+  // Swarm: Research - deep web research on GitHub, Reddit, docs
+  const launchSwarmResearch = useCallback(() => {
+    if (!activeTerminalId || swarmRunning) return
+    setShowSwarmMenu(false)
+    setSwarmRunning(true)
+    setSwarmAgents([
+      { id: '1', name: 'Web Researcher', role: 'Searching the web', status: 'pending' },
+      { id: '2', name: 'GitHub Agent', role: 'Searching repos/issues', status: 'pending' },
+      { id: '3', name: 'Reddit Agent', role: 'Finding discussions', status: 'pending' },
+    ])
+    const prompt = `🔍 **SWARM RESEARCH MODE**
+
+You are now in DEEP RESEARCH MODE. Your task is to conduct comprehensive research using all available tools.
+
+**RESEARCH STRATEGY:**
+1. **Web Search**: Use WebSearch tool to find relevant documentation, tutorials, blog posts
+2. **GitHub Search**: Search for related repositories, issues, pull requests, code examples
+3. **Reddit/Forums**: Look for community discussions, solutions, experiences
+4. **Documentation**: Find official docs, API references, guides
+
+**TOOLS TO USE:**
+- Use the WebSearch tool extensively
+- Use WebFetch to read detailed pages
+- Search GitHub for code examples and issues
+- Look for Stack Overflow answers
+- Find Reddit discussions
+
+**OUTPUT FORMAT:**
+For each finding, provide:
+- Source URL
+- Key insight or solution
+- Relevance to current task
+- Code examples if applicable
+
+**Begin researching now.** Start with a WebSearch for the most relevant query based on our conversation context.`
+    window.api.terminalSendText(prompt, activeTerminalId)
+    showToast('info', 'Research Swarm', 'Starting deep web research')
+    setTimeout(() => setSwarmAgents(prev => prev.map((a, i) => i === 0 ? { ...a, status: 'running' } : a)), 2000)
+    setTimeout(() => setSwarmAgents(prev => prev.map((a, i) => i === 1 ? { ...a, status: 'running' } : a)), 6000)
+    setTimeout(() => setSwarmAgents(prev => prev.map((a, i) => i === 2 ? { ...a, status: 'running' } : a)), 10000)
+    setTimeout(() => { setSwarmAgents(prev => prev.map(a => ({ ...a, status: 'complete' }))); setSwarmRunning(false) }, 60000)
+  }, [activeTerminalId, swarmRunning, showToast])
+
   // Kill swarm
   const handleKillSwarm = useCallback(() => {
     if (activeTerminalId) {
@@ -398,14 +541,19 @@ Begin by analyzing what needs action and selecting your agents now.`
         {screen === 'terminal' && (
           <button
             onClick={onTogglePlan}
-            className={`relative flex items-center gap-1 px-2 py-1.5 rounded-lg text-xs transition-colors ${
-              showPlan ? 'bg-[#cc785c]/20 text-[#cc785c]' : 'hover:bg-white/[0.06] text-gray-400'
+            className={`relative flex items-center gap-1.5 px-3 py-2 rounded-xl text-sm font-medium transition-all duration-200 ${
+              showPlan
+                ? 'bg-gradient-to-r from-orange-500/25 to-amber-500/25 text-orange-300 shadow-[0_0_15px_rgba(249,115,22,0.3)] border border-orange-500/30'
+                : planCount > 0
+                ? 'bg-gradient-to-r from-orange-500/20 to-amber-500/20 text-orange-400 shadow-[0_0_10px_rgba(249,115,22,0.2)] border border-orange-500/25'
+                : 'bg-orange-500/10 text-orange-400 hover:bg-gradient-to-r hover:from-orange-500/15 hover:to-amber-500/15 hover:shadow-[0_0_12px_rgba(249,115,22,0.15)] border border-orange-500/20 hover:border-orange-500/30'
             }`}
             title="View current plan"
           >
-            <ClipboardList size={14} />
+            <ClipboardList size={16} />
+            <span>Plan</span>
             {planCount > 0 && (
-              <span className="absolute -top-1 -right-1 w-4 h-4 flex items-center justify-center rounded-full bg-[#cc785c] text-[9px] text-white font-bold">{planCount}</span>
+              <span className="absolute -top-1 -right-1 w-5 h-5 flex items-center justify-center rounded-full bg-orange-500 text-[10px] text-white font-bold shadow-[0_0_8px_rgba(249,115,22,0.6)]">{planCount}</span>
             )}
           </button>
         )}
@@ -491,6 +639,88 @@ Begin by analyzing what needs action and selecting your agents now.`
                         <p className="text-[10px] text-gray-500">Bug fixes, refactoring, tests</p>
                       </div>
                       <span className="px-2 py-0.5 rounded-full text-[9px] bg-green-500/15 text-green-400">3+</span>
+                    </button>
+
+                    {/* Divider */}
+                    <div className="border-t border-white/[0.06] my-2" />
+
+                    {/* New Specialized Swarms */}
+                    <button
+                      onClick={launchSwarmDesign}
+                      className="w-full flex items-center gap-3 px-3 py-2 rounded-xl hover:bg-pink-500/10 transition-all text-left group"
+                    >
+                      <div className="p-1.5 rounded-lg bg-pink-500/15 text-pink-400 group-hover:bg-pink-500/25 transition-all">
+                        <Paintbrush size={12} />
+                      </div>
+                      <div className="flex-1">
+                        <span className="text-xs font-medium text-white group-hover:text-pink-300">Design Polish</span>
+                        <p className="text-[9px] text-gray-500">Colors, spacing, visual polish</p>
+                      </div>
+                    </button>
+
+                    <button
+                      onClick={launchSwarmUIFix}
+                      className="w-full flex items-center gap-3 px-3 py-2 rounded-xl hover:bg-orange-500/10 transition-all text-left group"
+                    >
+                      <div className="p-1.5 rounded-lg bg-orange-500/15 text-orange-400 group-hover:bg-orange-500/25 transition-all">
+                        <Layers size={12} />
+                      </div>
+                      <div className="flex-1">
+                        <span className="text-xs font-medium text-white group-hover:text-orange-300">UI Fix</span>
+                        <p className="text-[9px] text-gray-500">Layout bugs, overflow, z-index</p>
+                      </div>
+                    </button>
+
+                    <button
+                      onClick={launchSwarmRoute}
+                      className="w-full flex items-center gap-3 px-3 py-2 rounded-xl hover:bg-cyan-500/10 transition-all text-left group"
+                    >
+                      <div className="p-1.5 rounded-lg bg-cyan-500/15 text-cyan-400 group-hover:bg-cyan-500/25 transition-all">
+                        <Route size={12} />
+                      </div>
+                      <div className="flex-1">
+                        <span className="text-xs font-medium text-white group-hover:text-cyan-300">Route</span>
+                        <p className="text-[9px] text-gray-500">Navigation, routing, flow</p>
+                      </div>
+                    </button>
+
+                    <button
+                      onClick={launchSwarmAPI}
+                      className="w-full flex items-center gap-3 px-3 py-2 rounded-xl hover:bg-purple-500/10 transition-all text-left group"
+                    >
+                      <div className="p-1.5 rounded-lg bg-purple-500/15 text-purple-400 group-hover:bg-purple-500/25 transition-all">
+                        <Server size={12} />
+                      </div>
+                      <div className="flex-1">
+                        <span className="text-xs font-medium text-white group-hover:text-purple-300">API</span>
+                        <p className="text-[9px] text-gray-500">Data fetching, IPC, handlers</p>
+                      </div>
+                    </button>
+
+                    <button
+                      onClick={launchSwarmConnector}
+                      className="w-full flex items-center gap-3 px-3 py-2 rounded-xl hover:bg-teal-500/10 transition-all text-left group"
+                    >
+                      <div className="p-1.5 rounded-lg bg-teal-500/15 text-teal-400 group-hover:bg-teal-500/25 transition-all">
+                        <Link2 size={12} />
+                      </div>
+                      <div className="flex-1">
+                        <span className="text-xs font-medium text-white group-hover:text-teal-300">Connector</span>
+                        <p className="text-[9px] text-gray-500">MCP, Git, integrations</p>
+                      </div>
+                    </button>
+
+                    <button
+                      onClick={launchSwarmResearch}
+                      className="w-full flex items-center gap-3 px-3 py-2 rounded-xl hover:bg-indigo-500/10 transition-all text-left group"
+                    >
+                      <div className="p-1.5 rounded-lg bg-indigo-500/15 text-indigo-400 group-hover:bg-indigo-500/25 transition-all">
+                        <Search size={12} />
+                      </div>
+                      <div className="flex-1">
+                        <span className="text-xs font-medium text-white group-hover:text-indigo-300">Research</span>
+                        <p className="text-[9px] text-gray-500">Web, GitHub, Reddit, docs</p>
+                      </div>
                     </button>
                   </div>
                 )}
