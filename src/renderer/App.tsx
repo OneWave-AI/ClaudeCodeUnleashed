@@ -95,7 +95,18 @@ function App() {
         <div className="flex flex-1 overflow-hidden">
           {/* Sidebar - only on terminal screen */}
           {screen === 'terminal' && (
-            <Sidebar cwd={cwd} onSelectFolder={handleSelectFolder} />
+            <Sidebar
+              cwd={cwd}
+              onSelectFolder={handleSelectFolder}
+              onPreviewFile={(path) => setPreviewUrl(path)}
+              onSendToChat={(path) => {
+                // Send file path to active terminal as a message
+                if (activeTerminalId) {
+                  const quotedPath = path.includes(' ') ? `"${path}"` : path
+                  window.api.terminalSendText(`Here's a file: ${quotedPath}\n`, activeTerminalId)
+                }
+              }}
+            />
           )}
 
           {/* Main content */}

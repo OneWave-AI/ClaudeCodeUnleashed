@@ -140,6 +140,8 @@ export default function TerminalWrapper({
   // Detected HTML file for auto-preview
   const [detectedHtmlFile, setDetectedHtmlFile] = useState<string | null>(null)
   const lastDetectedFileRef = useRef<string | null>(null)
+  const dismissedHtmlFilesRef = useRef<Set<string>>(new Set())
+  const lastHtmlDetectionTimeRef = useRef<number>(0)
 
   // Drag state
   const [draggedTab, setDraggedTab] = useState<{ tabId: string; panelId: string } | null>(null)
@@ -896,16 +898,34 @@ export default function TerminalWrapper({
     }
   }, [])
 
-  // HTML file detection
+  // HTML file detection - only for explicit file creation messages
   const detectHtmlFile = useCallback((data: string) => {
+    // Debounce: don't detect more than once every 3 seconds
+    const now = Date.now()
+    if (now - lastHtmlDetectionTimeRef.current < 3000) return
+
     const cleanData = data.replace(/\x1b\[[0-9;]*[a-zA-Z]/g, '')
-    const patterns = [/(?:created|wrote|saved|generated|file is ready at|file saved to)\s+([^\s]+\.html)/i, /([\/~][^\s]+\.html)\b/, /Writing to:\s*([^\s]+\.html)/i, /Output:\s*([^\s]+\.html)/i]
+
+    // Only match explicit file creation patterns - NOT just any .html path
+    const patterns = [
+      /(?:created|wrote|saved|generated)\s+(?:file\s+)?["']?([^\s"']+\.html)["']?/i,
+      /(?:file is ready at|file saved to|output saved to)\s+["']?([^\s"']+\.html)["']?/i,
+      /Writing to:\s*["']?([^\s"']+\.html)["']?/i,
+      /✓\s+(?:wrote|created)\s+["']?([^\s"']+\.html)["']?/i
+    ]
 
     for (const pattern of patterns) {
       const match = cleanData.match(pattern)
-      if (match && match[1] && match[1] !== lastDetectedFileRef.current) {
-        lastDetectedFileRef.current = match[1]
-        setDetectedHtmlFile(match[1].startsWith('~') ? match[1].replace('~', '') : match[1])
+      if (match && match[1]) {
+        const filePath = match[1].startsWith('~') ? match[1].replace('~', '') : match[1]
+
+        // Skip if same as last detection or already dismissed
+        if (filePath === lastDetectedFileRef.current) return
+        if (dismissedHtmlFilesRef.current.has(filePath)) return
+
+        lastDetectedFileRef.current = filePath
+        lastHtmlDetectionTimeRef.current = now
+        setDetectedHtmlFile(filePath)
         return
       }
     }
@@ -927,12 +947,20 @@ export default function TerminalWrapper({
 
   // Preview handlers
   const handlePreviewHtmlFile = useCallback((filePath: string) => {
+    // Add to dismissed set so it doesn't reappear
+    dismissedHtmlFilesRef.current.add(filePath)
     setDetectedHtmlFile(null)
     if (onOpenPreview) onOpenPreview(filePath)
     else window.api.openFileExternal(filePath)
   }, [onOpenPreview])
 
-  const handleDismissHtmlFile = useCallback(() => setDetectedHtmlFile(null), [])
+  const handleDismissHtmlFile = useCallback(() => {
+    // Add to dismissed set so it doesn't reappear
+    if (detectedHtmlFile) {
+      dismissedHtmlFilesRef.current.add(detectedHtmlFile)
+    }
+    setDetectedHtmlFile(null)
+  }, [detectedHtmlFile])
   const handleLocalhostDetected = useCallback((url: string) => setDetectedLocalhostUrl(url), [])
   const handleDismissPreview = useCallback(() => setDetectedLocalhostUrl(null), [])
 

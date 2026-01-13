@@ -1,0 +1,364 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Why ClaudeCode Arena? - Real Problems, Real Solutions</title>
+  <meta name="description" content="Claude Code is powerful but the terminal is limiting. See the real issues developers face and how Arena fixes them.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: { sans: ['Inter', 'system-ui', 'sans-serif'] },
+          colors: {
+            bg: '#030303',
+            surface: '#0a0a0a',
+            primary: '#FF4F18',
+            accent: '#A855F7',
+          },
+        }
+      }
+    }
+  </script>
+  <style>
+    body { background: #030303; color: #fff; }
+    .glass {
+      background: linear-gradient(145deg, rgba(18,18,18,0.9) 0%, rgba(8,8,8,0.95) 100%);
+      backdrop-filter: blur(20px);
+      border: 1px solid rgba(255,255,255,0.08);
+      box-shadow: 0 4px 6px -1px rgba(0,0,0,0.4), 0 10px 20px -5px rgba(0,0,0,0.5);
+    }
+    .fade-up { opacity: 0; transform: translateY(30px); transition: all 0.7s ease; }
+    .fade-up.visible { opacity: 1; transform: translateY(0); }
+    .stagger-1 { transition-delay: 100ms; }
+    .stagger-2 { transition-delay: 200ms; }
+    .stagger-3 { transition-delay: 300ms; }
+    .problem-card { border-left: 3px solid #ef4444; }
+    .solution-card { border-left: 3px solid #22c55e; }
+    blockquote { border-left: 3px solid rgba(255,79,24,0.5); padding-left: 1rem; font-style: italic; }
+  </style>
+</head>
+<body class="antialiased">
+
+  <!-- Navigation -->
+  <nav class="fixed top-0 w-full z-50 glass">
+    <div class="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
+      <a href="index.html" class="flex items-center gap-3">
+        <div class="w-9 h-9 rounded-xl bg-gradient-to-b from-zinc-700 to-zinc-900 border border-white/10 flex items-center justify-center shadow-lg">
+          <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none">
+            <path d="M6 8l4 4-4 4" stroke="#FACC15" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+            <rect x="13" y="14" width="5" height="8" rx="1" fill="#FACC15"/>
+          </svg>
+        </div>
+        <span class="font-bold text-lg">ClaudeCode Arena</span>
+      </a>
+      <div class="flex items-center gap-3">
+        <a href="index.html" class="px-4 py-2 text-zinc-400 hover:text-white transition-colors text-sm">Home</a>
+        <a href="index.html#download" class="px-5 py-2 bg-primary hover:bg-orange-600 text-white rounded-lg text-sm font-semibold transition-colors">
+          Download
+        </a>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Hero -->
+  <section class="pt-32 pb-16 px-6">
+    <div class="max-w-4xl mx-auto text-center">
+      <p class="text-primary font-semibold mb-4 fade-up">Why we built this</p>
+      <h1 class="text-4xl md:text-6xl font-bold mb-6 fade-up stagger-1">
+        Claude Code is <span class="text-transparent bg-clip-text bg-gradient-to-r from-primary to-orange-400">amazing</span>.<br>
+        The terminal is <span class="text-zinc-500">limiting</span>.
+      </h1>
+      <p class="text-xl text-zinc-400 max-w-2xl mx-auto fade-up stagger-2">
+        We love Claude Code. We use it every day. But after hitting the same frustrations hundreds of times, we built Arena to fix them.
+      </p>
+    </div>
+  </section>
+
+  <!-- The Problems -->
+  <section class="py-16 px-6">
+    <div class="max-w-4xl mx-auto">
+      <h2 class="text-3xl font-bold mb-4 fade-up">The Problems</h2>
+      <p class="text-zinc-400 mb-12 fade-up stagger-1">Real issues reported by real developers. These aren't edge cases—they're everyday frustrations.</p>
+
+      <!-- Problem 1: Terminal is Intimidating -->
+      <div class="glass rounded-2xl p-8 mb-8 problem-card fade-up">
+        <div class="flex items-start gap-4 mb-6">
+          <div class="w-10 h-10 rounded-lg bg-red-500/10 flex items-center justify-center flex-shrink-0">
+            <svg class="w-5 h-5 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+          </div>
+          <div>
+            <h3 class="text-xl font-bold mb-2">The Terminal is Intimidating</h3>
+            <p class="text-zinc-400 mb-4">For non-developers, Claude Code's power is locked behind a scary black screen.</p>
+          </div>
+        </div>
+
+        <div class="space-y-4 text-sm">
+          <blockquote class="text-zinc-400">
+            "The terminal looks intimidating. Black screen. Text-only interface. It feels like something only engineers should touch."
+            <cite class="block mt-2 text-zinc-500 not-italic">— <a href="https://www.producttalk.org/claude-code-what-it-is-and-how-its-different/" class="text-primary hover:underline" target="_blank">ProductTalk</a></cite>
+          </blockquote>
+
+          <blockquote class="text-zinc-400">
+            "Unlike ChatGPT, there is a significant barrier to entry: you need to know how to use your terminal and be comfortable with a handful of basic commands. This isn't hard, but it's intimidating enough for novices to be a problem."
+            <cite class="block mt-2 text-zinc-500 not-italic">— <a href="https://www.lennysnewsletter.com/p/everyone-should-be-using-claude-code" class="text-primary hover:underline" target="_blank">Lenny's Newsletter</a></cite>
+          </blockquote>
+        </div>
+      </div>
+
+      <!-- Problem 2: Conversation History is a Nightmare -->
+      <div class="glass rounded-2xl p-8 mb-8 problem-card fade-up stagger-1">
+        <div class="flex items-start gap-4 mb-6">
+          <div class="w-10 h-10 rounded-lg bg-red-500/10 flex items-center justify-center flex-shrink-0">
+            <svg class="w-5 h-5 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+          </div>
+          <div>
+            <h3 class="text-xl font-bold mb-2">Conversation History is a Nightmare</h3>
+            <p class="text-zinc-400 mb-4">700+ upvotes on GitHub issues about history, scrolling, and losing context. Still unfixed.</p>
+          </div>
+        </div>
+
+        <div class="space-y-4 text-sm">
+          <blockquote class="text-zinc-400">
+            "When resuming a conversation, the terminal should display all previous messages. This is a UX regression that makes it harder to resume work on complex tasks."
+            <cite class="block mt-2 text-zinc-500 not-italic">— <a href="https://github.com/anthropics/claude-code/issues/8937" class="text-primary hover:underline" target="_blank">GitHub Issue #8937</a></cite>
+          </blockquote>
+
+          <blockquote class="text-zinc-400">
+            "Claude Code has a crippling terminal flickering bug that crashes IDEs and causes uncontrollable scrolling. With 700+ combined upvotes since March 2025, Anthropic still has not shipped a fix."
+            <cite class="block mt-2 text-zinc-500 not-italic">— <a href="https://namiru.ai/blog/claude-code-s-terminal-flickering-700-upvotes-9-months-still-broken" class="text-primary hover:underline" target="_blank">Namiru.ai</a></cite>
+          </blockquote>
+
+          <blockquote class="text-zinc-400">
+            "Claude Code saves every conversation in ~/.claude/history.jsonl. But if you closed that terminal window three days ago and now you're trying to remember how you fixed something, good luck finding it."
+            <cite class="block mt-2 text-zinc-500 not-italic">— <a href="https://kentgigger.com/posts/claude-code-conversation-history" class="text-primary hover:underline" target="_blank">Kent Gigger</a></cite>
+          </blockquote>
+        </div>
+      </div>
+
+      <!-- Problem 3: Skills & MCP Setup is Complex -->
+      <div class="glass rounded-2xl p-8 mb-8 problem-card fade-up stagger-2">
+        <div class="flex items-start gap-4 mb-6">
+          <div class="w-10 h-10 rounded-lg bg-red-500/10 flex items-center justify-center flex-shrink-0">
+            <svg class="w-5 h-5 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+          </div>
+          <div>
+            <h3 class="text-xl font-bold mb-2">Skills & MCP Setup is Complex</h3>
+            <p class="text-zinc-400 mb-4">Installing MCP servers requires JSON config, Node.js packages, and terminal commands. Skills live in hidden folders.</p>
+          </div>
+        </div>
+
+        <div class="space-y-4 text-sm">
+          <blockquote class="text-zinc-400">
+            "MCP tends to require more technical setup than Skills. Developers must run or install MCP servers (often Node or Python packages) and configure JSON metadata."
+            <cite class="block mt-2 text-zinc-500 not-italic">— <a href="https://intuitionlabs.ai/articles/claude-skills-vs-mcp" class="text-primary hover:underline" target="_blank">IntuitionLabs</a></cite>
+          </blockquote>
+
+          <blockquote class="text-zinc-400">
+            "Early adopters have noted that many developers 'don't understand MCP at all' and that its broad feature set can be confusing."
+            <cite class="block mt-2 text-zinc-500 not-italic">— <a href="https://colinmcnamara.com/blog/understanding-skills-agents-and-mcp-in-claude-code" class="text-primary hover:underline" target="_blank">Colin McNamara</a></cite>
+          </blockquote>
+        </div>
+      </div>
+
+      <!-- Problem 4: No Visual Feedback -->
+      <div class="glass rounded-2xl p-8 mb-8 problem-card fade-up stagger-3">
+        <div class="flex items-start gap-4 mb-6">
+          <div class="w-10 h-10 rounded-lg bg-red-500/10 flex items-center justify-center flex-shrink-0">
+            <svg class="w-5 h-5 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+          </div>
+          <div>
+            <h3 class="text-xl font-bold mb-2">No Visual Feedback</h3>
+            <p class="text-zinc-400 mb-4">Claude builds websites and apps, but you can't see them without manually opening a browser and navigating to localhost.</p>
+          </div>
+        </div>
+
+        <div class="space-y-4 text-sm">
+          <blockquote class="text-zinc-400">
+            "There's a growing frustration that these powerful AI tools, which are supposed to make our lives easier, are often more cumbersome to use than they should be. It's about efficiency, cognitive load, and ultimately, the very promise of what these AI assistants are supposed to deliver."
+            <cite class="block mt-2 text-zinc-500 not-italic">— <a href="https://www.arsturn.com/blog/why-command-line-ai-tools-need-a-better-ui" class="text-primary hover:underline" target="_blank">Arsturn</a></cite>
+          </blockquote>
+        </div>
+      </div>
+
+      <!-- Problem 5: One Agent at a Time -->
+      <div class="glass rounded-2xl p-8 problem-card fade-up">
+        <div class="flex items-start gap-4 mb-6">
+          <div class="w-10 h-10 rounded-lg bg-red-500/10 flex items-center justify-center flex-shrink-0">
+            <svg class="w-5 h-5 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+          </div>
+          <div>
+            <h3 class="text-xl font-bold mb-2">One Agent at a Time</h3>
+            <p class="text-zinc-400 mb-4">Want to run security audit, tests, and refactoring simultaneously? You'll need multiple terminal windows and manual coordination.</p>
+          </div>
+        </div>
+
+        <div class="space-y-4 text-sm">
+          <blockquote class="text-zinc-400">
+            "I have 16 specialised agents, 10+ slash commands, MCP integrations... Setup took a day. Then I started building."
+            <cite class="block mt-2 text-zinc-500 not-italic">— <a href="https://sankalp.bearblog.dev/my-experience-with-claude-code-20-and-how-to-get-better-at-using-coding-agents/" class="text-primary hover:underline" target="_blank">Sankalp's Blog</a></cite>
+          </blockquote>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- The Solutions -->
+  <section class="py-16 px-6 bg-surface/50">
+    <div class="max-w-4xl mx-auto">
+      <h2 class="text-3xl font-bold mb-4 fade-up">How Arena Fixes This</h2>
+      <p class="text-zinc-400 mb-12 fade-up stagger-1">Every problem above has a solution built into Arena.</p>
+
+      <div class="grid md:grid-cols-2 gap-6">
+        <!-- Solution 1 -->
+        <div class="glass rounded-2xl p-6 solution-card fade-up">
+          <div class="flex items-center gap-3 mb-4">
+            <div class="w-10 h-10 rounded-lg bg-green-500/10 flex items-center justify-center">
+              <svg class="w-5 h-5 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+            </div>
+            <h3 class="font-bold">Beautiful Desktop App</h3>
+          </div>
+          <p class="text-sm text-zinc-400">No more scary black terminal. A real app with buttons, menus, and a modern UI that anyone can use.</p>
+        </div>
+
+        <!-- Solution 2 -->
+        <div class="glass rounded-2xl p-6 solution-card fade-up stagger-1">
+          <div class="flex items-center gap-3 mb-4">
+            <div class="w-10 h-10 rounded-lg bg-green-500/10 flex items-center justify-center">
+              <svg class="w-5 h-5 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+            </div>
+            <h3 class="font-bold">Visual Conversation History</h3>
+          </div>
+          <p class="text-sm text-zinc-400">Browse, search, and resume any past conversation. Pin favorites. See message previews. No more digging through JSONL files.</p>
+        </div>
+
+        <!-- Solution 3 -->
+        <div class="glass rounded-2xl p-6 solution-card fade-up stagger-2">
+          <div class="flex items-center gap-3 mb-4">
+            <div class="w-10 h-10 rounded-lg bg-green-500/10 flex items-center justify-center">
+              <svg class="w-5 h-5 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+            </div>
+            <h3 class="font-bold">One-Click MCP & Skills</h3>
+          </div>
+          <p class="text-sm text-zinc-400">Install MCP servers with a button. Browse skills visually. 25 starter skills + 5 agents included. No JSON editing required.</p>
+        </div>
+
+        <!-- Solution 4 -->
+        <div class="glass rounded-2xl p-6 solution-card fade-up stagger-3">
+          <div class="flex items-center gap-3 mb-4">
+            <div class="w-10 h-10 rounded-lg bg-green-500/10 flex items-center justify-center">
+              <svg class="w-5 h-5 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+            </div>
+            <h3 class="font-bold">Built-in Live Preview</h3>
+          </div>
+          <p class="text-sm text-zinc-400">Auto-detects localhost servers and shows them in a split panel. See what you're building as Claude builds it.</p>
+        </div>
+
+        <!-- Solution 5 -->
+        <div class="glass rounded-2xl p-6 solution-card fade-up">
+          <div class="flex items-center gap-3 mb-4">
+            <div class="w-10 h-10 rounded-lg bg-green-500/10 flex items-center justify-center">
+              <svg class="w-5 h-5 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+            </div>
+            <h3 class="font-bold">Agent Hive (Swarm)</h3>
+          </div>
+          <p class="text-sm text-zinc-400">Launch multiple specialized agents in parallel with one click. Security, testing, code review, refactoring—all at once.</p>
+        </div>
+
+        <!-- Solution 6 -->
+        <div class="glass rounded-2xl p-6 solution-card fade-up stagger-1">
+          <div class="flex items-center gap-3 mb-4">
+            <div class="w-10 h-10 rounded-lg bg-green-500/10 flex items-center justify-center">
+              <svg class="w-5 h-5 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+            </div>
+            <h3 class="font-bold">Split Terminals + Tabs</h3>
+          </div>
+          <p class="text-sm text-zinc-400">Run multiple sessions side-by-side. Watch logs in one panel while Claude works in another. Drag and drop to reorganize.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Who is this for? -->
+  <section class="py-16 px-6">
+    <div class="max-w-4xl mx-auto">
+      <h2 class="text-3xl font-bold mb-12 text-center fade-up">Who is Arena for?</h2>
+
+      <div class="grid md:grid-cols-2 gap-8">
+        <div class="glass rounded-2xl p-8 fade-up stagger-1">
+          <h3 class="text-xl font-bold mb-4 text-primary">New Users</h3>
+          <p class="text-zinc-400 mb-4">You've heard Claude Code is powerful but the terminal scares you. Arena gives you all that power with a friendly interface.</p>
+          <ul class="space-y-2 text-sm text-zinc-400">
+            <li class="flex items-center gap-2"><span class="text-green-500">✓</span> No terminal knowledge required</li>
+            <li class="flex items-center gap-2"><span class="text-green-500">✓</span> Visual file explorer</li>
+            <li class="flex items-center gap-2"><span class="text-green-500">✓</span> See results as they happen</li>
+            <li class="flex items-center gap-2"><span class="text-green-500">✓</span> One-click everything</li>
+          </ul>
+        </div>
+
+        <div class="glass rounded-2xl p-8 fade-up stagger-2">
+          <h3 class="text-xl font-bold mb-4 text-accent">Power Users</h3>
+          <p class="text-zinc-400 mb-4">You use Claude Code daily and have hit every limitation. Arena removes the friction so you can move faster.</p>
+          <ul class="space-y-2 text-sm text-zinc-400">
+            <li class="flex items-center gap-2"><span class="text-green-500">✓</span> Conversation history that actually works</li>
+            <li class="flex items-center gap-2"><span class="text-green-500">✓</span> Multi-agent swarms</li>
+            <li class="flex items-center gap-2"><span class="text-green-500">✓</span> Analytics for billing clients</li>
+            <li class="flex items-center gap-2"><span class="text-green-500">✓</span> Split terminals + live preview</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- CTA -->
+  <section class="py-24 px-6 bg-surface/50">
+    <div class="max-w-4xl mx-auto text-center fade-up">
+      <h2 class="text-4xl font-bold mb-6">Ready to try it?</h2>
+      <p class="text-xl text-zinc-400 mb-8">Same Claude Code you love. Better experience.</p>
+      <div class="flex flex-col sm:flex-row justify-center gap-4">
+        <a href="index.html#download" class="px-8 py-4 bg-primary hover:bg-orange-600 text-white rounded-xl font-bold text-lg transition-colors">
+          Download Free
+        </a>
+        <a href="https://github.com/OneWave-AI/ClaudeCodeArena" class="px-8 py-4 bg-white/5 hover:bg-white/10 border border-white/10 text-white rounded-xl font-bold text-lg transition-colors flex items-center justify-center gap-2">
+          <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/></svg>
+          Star on GitHub
+        </a>
+      </div>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer class="py-12 px-6 border-t border-white/5">
+    <div class="max-w-6xl mx-auto flex flex-col md:flex-row justify-between items-center gap-6">
+      <span class="text-zinc-400 font-medium">ClaudeCode Arena</span>
+      <p class="text-zinc-500 text-sm">Made by <a href="https://onewave-ai.com" class="text-zinc-400 hover:text-white transition-colors">OneWave AI</a></p>
+      <div class="flex gap-6 text-sm text-zinc-500">
+        <a href="https://github.com/OneWave-AI/ClaudeCodeArena" class="hover:text-white transition-colors">GitHub</a>
+        <a href="index.html" class="hover:text-white transition-colors">Home</a>
+      </div>
+    </div>
+  </footer>
+
+  <script>
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          entry.target.classList.add('visible');
+          observer.unobserve(entry.target);
+        }
+      });
+    }, { threshold: 0.1 });
+    document.querySelectorAll('.fade-up').forEach(el => observer.observe(el));
+    setTimeout(() => {
+      document.querySelectorAll('.fade-up').forEach(el => {
+        const rect = el.getBoundingClientRect();
+        if (rect.top < window.innerHeight) el.classList.add('visible');
+      });
+    }, 100);
+  </script>
+</body>
+</html>

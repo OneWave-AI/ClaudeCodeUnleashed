@@ -209,17 +209,17 @@ export default function Header({
     }
   }
 
-  // Git actions as Claude prompts
+  // Git actions as Claude prompts - specific and actionable
   const gitActions = [
-    { id: 'commit', label: 'Commit Changes', icon: GitCommit, prompt: 'Please commit all my changes with a good commit message describing what changed' },
-    { id: 'push', label: 'Push to Remote', icon: Upload, prompt: 'Please push my commits to the remote repository' },
-    { id: 'pr', label: 'Create Pull Request', icon: GitPullRequest, prompt: 'Please create a pull request for my current branch with a good title and description' }
+    { id: 'commit', label: 'Commit Changes', icon: GitCommit, prompt: 'Run git status to see changes, then commit all changes with a descriptive commit message that explains what was changed and why. Use conventional commit format if appropriate.' },
+    { id: 'push', label: 'Push to Remote', icon: Upload, prompt: 'Push my commits to the remote repository. If the branch is not tracking a remote, set up tracking first with git push -u origin <branch>.' },
+    { id: 'pr', label: 'Create Pull Request', icon: GitPullRequest, prompt: 'Create a pull request for my current branch. First check git status, then use gh pr create with a good title and description summarizing the changes.' }
   ]
 
-  // Deploy actions as Claude prompts
+  // Deploy actions as Claude prompts - specific and actionable
   const deployActions = [
-    { id: 'vercel', label: 'Deploy to Vercel', icon: Rocket, prompt: 'Please deploy this project to Vercel' },
-    { id: 'gh-pages', label: 'GitHub Pages', icon: Globe, prompt: 'Please deploy this project to GitHub Pages' }
+    { id: 'vercel', label: 'Deploy to Vercel', icon: Rocket, prompt: 'Deploy this project to Vercel. First check if vercel CLI is installed (vercel --version), if not guide me to install it. Then run vercel deploy --prod to deploy. If this is a new project, run vercel link first.' },
+    { id: 'gh-pages', label: 'GitHub Pages', icon: Globe, prompt: 'Deploy this project to GitHub Pages. Check the project type and build it if needed (npm run build), then deploy to the gh-pages branch. Use gh-pages package or manual git commands as appropriate for this project.' }
   ]
 
   // Swarm: Launch audit agents
@@ -723,9 +723,10 @@ Begin researching now. Start with a WebSearch for the most relevant query based 
                   <div className="p-2 space-y-1">
                     <button
                       onClick={launchSwarmAudit}
-                      className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-blue-500/10 transition-all text-left group"
+                      disabled={!activeTerminalId}
+                      className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-blue-500/10 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-transparent transition-all text-left group"
                     >
-                      <div className="p-2 rounded-lg bg-blue-500/15 text-blue-400 group-hover:bg-blue-500/25 group-hover:scale-110 transition-all">
+                      <div className="p-2 rounded-lg bg-blue-500/15 text-blue-400 group-hover:bg-blue-500/25 group-hover:scale-110 group-disabled:group-hover:bg-blue-500/15 group-disabled:group-hover:scale-100 transition-all">
                         <Search size={14} />
                       </div>
                       <div className="flex-1">
@@ -737,7 +738,8 @@ Begin researching now. Start with a WebSearch for the most relevant query based 
 
                     <button
                       onClick={launchSwarmAction}
-                      className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-green-500/10 transition-all text-left group"
+                      disabled={!activeTerminalId}
+                      className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-green-500/10 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-transparent transition-all text-left group"
                     >
                       <div className="p-2 rounded-lg bg-green-500/15 text-green-400 group-hover:bg-green-500/25 group-hover:scale-110 transition-all">
                         <Play size={14} />
@@ -755,7 +757,8 @@ Begin researching now. Start with a WebSearch for the most relevant query based 
                     {/* New Specialized Swarms */}
                     <button
                       onClick={launchSwarmDesign}
-                      className="w-full flex items-center gap-3 px-3 py-2 rounded-xl hover:bg-pink-500/10 transition-all text-left group"
+                      disabled={!activeTerminalId}
+                      className="w-full flex items-center gap-3 px-3 py-2 rounded-xl hover:bg-pink-500/10 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-transparent transition-all text-left group"
                     >
                       <div className="p-1.5 rounded-lg bg-pink-500/15 text-pink-400 group-hover:bg-pink-500/25 transition-all">
                         <Paintbrush size={12} />
@@ -768,7 +771,8 @@ Begin researching now. Start with a WebSearch for the most relevant query based 
 
                     <button
                       onClick={launchSwarmUIFix}
-                      className="w-full flex items-center gap-3 px-3 py-2 rounded-xl hover:bg-orange-500/10 transition-all text-left group"
+                      disabled={!activeTerminalId}
+                      className="w-full flex items-center gap-3 px-3 py-2 rounded-xl hover:bg-orange-500/10 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-transparent transition-all text-left group"
                     >
                       <div className="p-1.5 rounded-lg bg-orange-500/15 text-orange-400 group-hover:bg-orange-500/25 transition-all">
                         <Layers size={12} />
@@ -781,7 +785,8 @@ Begin researching now. Start with a WebSearch for the most relevant query based 
 
                     <button
                       onClick={launchSwarmRoute}
-                      className="w-full flex items-center gap-3 px-3 py-2 rounded-xl hover:bg-cyan-500/10 transition-all text-left group"
+                      disabled={!activeTerminalId}
+                      className="w-full flex items-center gap-3 px-3 py-2 rounded-xl hover:bg-cyan-500/10 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-transparent transition-all text-left group"
                     >
                       <div className="p-1.5 rounded-lg bg-cyan-500/15 text-cyan-400 group-hover:bg-cyan-500/25 transition-all">
                         <Route size={12} />
@@ -794,7 +799,8 @@ Begin researching now. Start with a WebSearch for the most relevant query based 
 
                     <button
                       onClick={launchSwarmAPI}
-                      className="w-full flex items-center gap-3 px-3 py-2 rounded-xl hover:bg-purple-500/10 transition-all text-left group"
+                      disabled={!activeTerminalId}
+                      className="w-full flex items-center gap-3 px-3 py-2 rounded-xl hover:bg-purple-500/10 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-transparent transition-all text-left group"
                     >
                       <div className="p-1.5 rounded-lg bg-purple-500/15 text-purple-400 group-hover:bg-purple-500/25 transition-all">
                         <Server size={12} />
@@ -807,7 +813,8 @@ Begin researching now. Start with a WebSearch for the most relevant query based 
 
                     <button
                       onClick={launchSwarmConnector}
-                      className="w-full flex items-center gap-3 px-3 py-2 rounded-xl hover:bg-teal-500/10 transition-all text-left group"
+                      disabled={!activeTerminalId}
+                      className="w-full flex items-center gap-3 px-3 py-2 rounded-xl hover:bg-teal-500/10 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-transparent transition-all text-left group"
                     >
                       <div className="p-1.5 rounded-lg bg-teal-500/15 text-teal-400 group-hover:bg-teal-500/25 transition-all">
                         <Link2 size={12} />
@@ -820,7 +827,8 @@ Begin researching now. Start with a WebSearch for the most relevant query based 
 
                     <button
                       onClick={launchSwarmResearch}
-                      className="w-full flex items-center gap-3 px-3 py-2 rounded-xl hover:bg-indigo-500/10 transition-all text-left group"
+                      disabled={!activeTerminalId}
+                      className="w-full flex items-center gap-3 px-3 py-2 rounded-xl hover:bg-indigo-500/10 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-transparent transition-all text-left group"
                     >
                       <div className="p-1.5 rounded-lg bg-indigo-500/15 text-indigo-400 group-hover:bg-indigo-500/25 transition-all">
                         <Search size={12} />

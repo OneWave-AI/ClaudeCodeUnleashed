@@ -25,7 +25,9 @@ import {
   Palette,
   Eye,
   EyeOff,
-  Home
+  Home,
+  MessageSquarePlus,
+  Monitor
 } from 'lucide-react'
 import { useContextMenu, type ContextMenuItem } from '../common/ContextMenu'
 import type { FileNode, FileStats, GitFileStatusMap, GitFileStatusType } from '../../../shared/types'
@@ -33,6 +35,8 @@ import type { FileNode, FileStats, GitFileStatusMap, GitFileStatusType } from '.
 interface SidebarProps {
   cwd: string
   onSelectFolder: () => void
+  onPreviewFile?: (path: string) => void
+  onSendToChat?: (path: string) => void
 }
 
 // File type icons and colors
@@ -70,7 +74,14 @@ const GIT_STATUS: Record<GitFileStatusType, { color: string; label: string }> = 
   conflict: { color: '#f85149', label: '!' }
 }
 
-export default function Sidebar({ cwd, onSelectFolder }: SidebarProps) {
+// Check if a file can be previewed in-app
+const isPreviewable = (name: string): boolean => {
+  const ext = name.toLowerCase().split('.').pop() || ''
+  const previewableExts = ['html', 'htm', 'png', 'jpg', 'jpeg', 'gif', 'svg', 'webp', 'md', 'txt', 'json', 'css']
+  return previewableExts.includes(ext)
+}
+
+export default function Sidebar({ cwd, onSelectFolder, onPreviewFile, onSendToChat }: SidebarProps) {
   const [files, setFiles] = useState<FileNode[]>([])
   const [expanded, setExpanded] = useState<Set<string>>(new Set())
   const [search, setSearch] = useState('')
@@ -214,15 +225,53 @@ export default function Sidebar({ cwd, onSelectFolder }: SidebarProps) {
     setDeleteTarget(null)
   }
 
-  // Context menu
+  // Context menu - organized by action type
   const handleContext = (e: React.MouseEvent, node: FileNode) => {
-    const items: ContextMenuItem[] = [
-      { id: 'open', label: 'Open', icon: ExternalLink, onClick: () => window.api.openFileExternal(node.path) },
-      { id: 'finder', label: 'Reveal in Finder', icon: FolderOpen, onClick: () => window.api.showInFinder(node.path) },
+    const items: ContextMenuItem[] = []
+
+    // Primary actions first
+    if (!node.isDirectory && onSendToChat) {
+      items.push({ id: 'chat', label: 'Send to Claude', icon: MessageSquarePlus, onClick: () => onSendToChat(node.path) })
+    }
+
+    if (!node.isDirectory && isPreviewable(node.name) && onPreviewFile) {
+      items.push({ id: 'preview', label: 'Preview in App', icon: Monitor, onClick: () => onPreviewFile(node.path) })
+    }
+
+    if (items.length > 0) {
+      items.push({ id: 'd0', label: '', divider: true })
+    }
+
+    // Open actions
+    items.push(
+      { id: 'open', label: 'Open in Default App', icon: ExternalLink, onClick: () => window.api.openFileExternal(node.path) },
+      { id: 'finder', label: 'Reveal in Finder', icon: FolderOpen, onClick: () => window.api.showInFinder(node.path) }
+    )
+
+    if (node.isDirectory) {
+      items.push({
+        id: 'terminal',
+        label: 'Open in Terminal',
+        icon: Terminal,
+        onClick: async () => {
+          try {
+            const terminals = await window.api.getTerminals()
+            if (terminals && terminals.length > 0) {
+              await window.api.terminalSendText(`cd "${node.path}"\n`, terminals[0].id)
+            }
+          } catch (err) {
+            console.error('Failed to cd:', err)
+          }
+        }
+      })
+    }
+
+    items.push(
       { id: 'd1', label: '', divider: true },
-      { id: 'rename', label: 'Rename', icon: Edit3, shortcut: 'F2', onClick: () => startRename(node) },
       { id: 'copy', label: 'Copy Path', icon: Copy, onClick: () => navigator.clipboard.writeText(node.path) },
-    ]
+      { id: 'rename', label: 'Rename', icon: Edit3, shortcut: 'F2', onClick: () => startRename(node) }
+    )
+
     if (node.isDirectory) {
       items.push(
         { id: 'd2', label: '', divider: true },
@@ -230,10 +279,12 @@ export default function Sidebar({ cwd, onSelectFolder }: SidebarProps) {
         { id: 'newfolder', label: 'New Folder', icon: FolderPlus, onClick: () => { setCreateModal({ type: 'folder', path: node.path }); setTimeout(() => createRef.current?.focus(), 50) } }
       )
     }
+
     items.push(
       { id: 'd3', label: '', divider: true },
       { id: 'delete', label: 'Delete', icon: Trash2, danger: true, onClick: () => setDeleteTarget(node) }
     )
+
     showContextMenu(e, items)
   }
 
@@ -244,6 +295,7 @@ export default function Sidebar({ cwd, onSelectFolder }: SidebarProps) {
       const isRenaming = renaming === node.path
       const { Icon, color } = getIcon(node.name, node.isDirectory)
       const status = gitStatus[node.path]
+      const canPreview = !node.isDirectory && isPreviewable(node.name)
 
       return (
         <div key={node.path}>
@@ -252,9 +304,26 @@ export default function Sidebar({ cwd, onSelectFolder }: SidebarProps) {
               isRenaming ? 'bg-white/[0.06]' : ''
             }`}
             style={{ paddingLeft: `${8 + depth * 16}px` }}
-            onClick={() => node.isDirectory ? toggle(node.path) : window.api.openFileExternal(node.path)}
+            onClick={() => {
+              if (node.isDirectory) {
+                toggle(node.path)
+              } else {
+                // Single click: preview if possible, otherwise show context menu
+                if (canPreview && onPreviewFile) {
+                  onPreviewFile(node.path)
+                } else {
+                  // For non-previewable files, show a tooltip hint
+                  window.api.openFileExternal(node.path)
+                }
+              }
+            }}
             onContextMenu={e => handleContext(e, node)}
-            onDoubleClick={() => !node.isDirectory && startRename(node)}
+            onDoubleClick={() => {
+              if (!node.isDirectory) {
+                // Double click always opens externally
+                window.api.openFileExternal(node.path)
+              }
+            }}
           >
             {/* Expand arrow */}
             {node.isDirectory ? (
@@ -299,8 +368,34 @@ export default function Sidebar({ cwd, onSelectFolder }: SidebarProps) {
               </span>
             )}
 
-            {/* Quick actions on hover */}
+            {/* Quick actions on hover - clearer icons */}
             <div className="opacity-0 group-hover:opacity-100 flex items-center gap-0.5 transition-all">
+              {/* Send to Claude - files only */}
+              {!node.isDirectory && onSendToChat && (
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    onSendToChat(node.path)
+                  }}
+                  className="p-0.5 rounded hover:bg-blue-500/20 text-gray-500 hover:text-blue-400 transition-all"
+                  title="Send to Claude"
+                >
+                  <MessageSquarePlus size={12} />
+                </button>
+              )}
+              {/* Preview in app - previewable files only */}
+              {canPreview && onPreviewFile && (
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    onPreviewFile(node.path)
+                  }}
+                  className="p-0.5 rounded hover:bg-[#cc785c]/20 text-gray-500 hover:text-[#cc785c] transition-all"
+                  title="Preview in App"
+                >
+                  <Monitor size={12} />
+                </button>
+              )}
               {/* Terminal cd button - folders only */}
               {node.isDirectory && (
                 <button
@@ -309,19 +404,29 @@ export default function Sidebar({ cwd, onSelectFolder }: SidebarProps) {
                     try {
                       const terminals = await window.api.getTerminals()
                       if (terminals && terminals.length > 0) {
-                        // Send cd command to first active terminal
                         await window.api.terminalSendText(`cd "${node.path}"\n`, terminals[0].id)
                       }
                     } catch (err) {
                       console.error('Failed to cd:', err)
                     }
                   }}
-                  className="p-0.5 rounded hover:bg-[#cc785c]/20 text-gray-500 hover:text-[#cc785c] transition-all"
-                  title="Open in Terminal"
+                  className="p-0.5 rounded hover:bg-green-500/20 text-gray-500 hover:text-green-400 transition-all"
+                  title="cd in Terminal"
                 >
                   <Terminal size={12} />
                 </button>
               )}
+              {/* Open externally */}
+              <button
+                onClick={e => {
+                  e.stopPropagation()
+                  window.api.openFileExternal(node.path)
+                }}
+                className="p-0.5 rounded hover:bg-white/10 text-gray-500 hover:text-gray-300 transition-all"
+                title="Open in Default App"
+              >
+                <ExternalLink size={12} />
+              </button>
               {/* Copy path button */}
               <button
                 onClick={e => {
@@ -332,13 +437,6 @@ export default function Sidebar({ cwd, onSelectFolder }: SidebarProps) {
                 title="Copy Path"
               >
                 <Copy size={12} />
-              </button>
-              {/* More options */}
-              <button
-                onClick={e => { e.stopPropagation(); handleContext(e, node) }}
-                className="p-0.5 rounded hover:bg-white/10 text-gray-500 hover:text-gray-300 transition-all"
-              >
-                <MoreHorizontal size={12} />
               </button>
             </div>
           </div>
@@ -470,7 +568,7 @@ export default function Sidebar({ cwd, onSelectFolder }: SidebarProps) {
       {/* Keyboard hint */}
       {cwd && (
         <div className="px-3 py-2 border-t border-white/[0.06] text-[10px] text-gray-600">
-          Hover for quick actions • Right-click for more
+          Click to preview • Double-click to open • Right-click for more
         </div>
       )}
 

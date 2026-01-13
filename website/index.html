@@ -1,825 +1,990 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" class="scroll-smooth">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>ClaudeCode Arena - The Ultimate GUI for Claude Code</title>
-  <meta name="description" content="ClaudeCode Arena transforms the Claude Code CLI into a beautiful, powerful desktop experience. Track your coding time, manage multiple sessions, and let AI build while you focus.">
+  <title>ClaudeCode Arena - Code with Superpowers</title>
+  <meta name="description" content="The premium native desktop experience for Claude Code. Multi-agent swarms, analytics, and a beautiful zero-config environment.">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'system-ui', 'sans-serif'],
+          },
+          colors: {
+            bg: '#050505',
+            surface: '#0a0a0a',
+            surfaceLight: '#111111',
+            primary: '#FF4F18',
+            primaryHover: '#FF6A3D',
+            accent: '#A855F7',
+            border: 'rgba(255,255,255,0.08)',
+          },
+        }
+      }
+    }
+  </script>
   <style>
-    * {
-      margin: 0;
-      padding: 0;
-      box-sizing: border-box;
+    body { background: #030303; color: #fff; }
+
+    /* Deep 3D Glass Cards */
+    .glass {
+      background: linear-gradient(145deg, rgba(18,18,18,0.9) 0%, rgba(8,8,8,0.95) 100%);
+      backdrop-filter: blur(20px);
+      border: 1px solid rgba(255,255,255,0.08);
+      border-top-color: rgba(255,255,255,0.12);
+      border-left-color: rgba(255,255,255,0.1);
+      box-shadow:
+        0 4px 6px -1px rgba(0,0,0,0.4),
+        0 10px 20px -5px rgba(0,0,0,0.5),
+        0 25px 50px -12px rgba(0,0,0,0.6),
+        inset 0 1px 0 0 rgba(255,255,255,0.05);
+      transform: translateZ(0);
+      transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    .glass:hover {
+      transform: translateY(-6px) translateZ(20px);
+      box-shadow:
+        0 8px 12px -2px rgba(0,0,0,0.4),
+        0 20px 35px -10px rgba(0,0,0,0.5),
+        0 40px 70px -20px rgba(0,0,0,0.6),
+        inset 0 1px 0 0 rgba(255,255,255,0.08);
+      border-top-color: rgba(255,255,255,0.15);
     }
 
-    :root {
-      --accent: #cc785c;
-      --accent-light: #e8956e;
-      --purple: #a78bfa;
-      --bg-dark: #030305;
-      --bg-card: rgba(255, 255, 255, 0.03);
-      --border: rgba(255, 255, 255, 0.08);
-      --text: #e0e0e0;
-      --text-muted: #888;
+    /* 3D Tilt Card Effect */
+    .tilt-card {
+      position: relative;
+      transform-style: preserve-3d;
+      transition: transform 0.1s ease-out;
     }
-
-    body {
-      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-      background: var(--bg-dark);
-      color: var(--text);
-      line-height: 1.6;
-      overflow-x: hidden;
-    }
-
-    /* Background effects */
-    .bg-effects {
-      position: fixed;
+    .tilt-card::before {
+      content: '';
+      position: absolute;
       inset: 0;
+      border-radius: inherit;
+      background: linear-gradient(135deg, rgba(255,255,255,0.1) 0%, transparent 50%);
+      opacity: 0;
+      transition: opacity 0.3s ease;
       pointer-events: none;
+    }
+    .tilt-card:hover::before {
+      opacity: 1;
+    }
+    .tilt-card::after {
+      content: '';
+      position: absolute;
+      bottom: -20px;
+      left: 10%;
+      right: 10%;
+      height: 30px;
+      background: radial-gradient(ellipse at center, rgba(0,0,0,0.5) 0%, transparent 70%);
+      filter: blur(12px);
+      transition: all 0.3s ease;
       z-index: -1;
+      transform: translateZ(-50px);
+    }
+    .tilt-card:hover::after {
+      bottom: -35px;
+      filter: blur(18px);
     }
 
-    .bg-effects::before {
-      content: '';
+    /* Glare effect overlay */
+    .tilt-glare {
       position: absolute;
-      top: -20%;
-      left: -10%;
-      width: 500px;
-      height: 500px;
-      background: radial-gradient(ellipse, rgba(204, 120, 92, 0.15) 0%, transparent 70%);
-      filter: blur(80px);
-      animation: float 20s ease-in-out infinite;
+      inset: 0;
+      border-radius: inherit;
+      background: radial-gradient(circle at var(--glare-x, 50%) var(--glare-y, 50%), rgba(255,255,255,0.15) 0%, transparent 60%);
+      opacity: 0;
+      transition: opacity 0.3s ease;
+      pointer-events: none;
+      z-index: 10;
+    }
+    .tilt-card:hover .tilt-glare {
+      opacity: 1;
     }
 
-    .bg-effects::after {
+    .glow-primary { box-shadow: 0 0 60px -15px rgba(255,79,24,0.4); }
+    .glow-primary:hover { box-shadow: 0 0 80px -15px rgba(255,79,24,0.5); }
+
+    /* Pop-in scroll animation */
+    .pop-in {
+      opacity: 0;
+      transform: translateY(40px) scale(0.95);
+      transition: all 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+    .pop-in.visible {
+      opacity: 1;
+      transform: translateY(0) scale(1);
+    }
+    .fade-up { opacity: 0; transform: translateY(30px); transition: all 0.7s cubic-bezier(0.4, 0, 0.2, 1); }
+    .fade-up.visible { opacity: 1; transform: translateY(0); }
+    .stagger-1 { transition-delay: 80ms; }
+    .stagger-2 { transition-delay: 160ms; }
+    .stagger-3 { transition-delay: 240ms; }
+    .stagger-4 { transition-delay: 320ms; }
+    .stagger-5 { transition-delay: 400ms; }
+    details summary { cursor: pointer; list-style: none; }
+    details summary::-webkit-details-marker { display: none; }
+    details[open] summary .chevron { transform: rotate(180deg); }
+    .chevron { transition: transform 0.2s ease; }
+
+    /* Deep background layers */
+    .deep-bg {
+      background:
+        radial-gradient(ellipse 100% 100% at 50% 100%, rgba(8,8,8,1) 0%, transparent 70%),
+        linear-gradient(180deg, #030303 0%, #050505 50%, #080808 100%);
+    }
+    .section-depth {
+      position: relative;
+    }
+    .section-depth::before {
       content: '';
       position: absolute;
-      bottom: -10%;
-      right: -10%;
+      inset: 0;
+      background: radial-gradient(ellipse 80% 50% at 50% 0%, rgba(255,79,24,0.03) 0%, transparent 50%);
+      pointer-events: none;
+    }
+
+    /* Aurora Borealis Animation */
+    .aurora-container {
+      position: absolute;
+      inset: 0;
+      overflow: hidden;
+      z-index: -1;
+      background: radial-gradient(ellipse 100% 80% at 50% 120%, rgba(5,5,5,1) 0%, transparent 60%);
+    }
+    .aurora {
+      position: absolute;
+      width: 200%;
+      height: 200%;
+      top: -50%;
+      left: -50%;
+      background:
+        radial-gradient(ellipse 80% 50% at 20% 40%, rgba(255,79,24,0.15) 0%, transparent 50%),
+        radial-gradient(ellipse 60% 40% at 70% 60%, rgba(168,85,247,0.12) 0%, transparent 50%),
+        radial-gradient(ellipse 70% 50% at 50% 30%, rgba(255,120,50,0.1) 0%, transparent 50%);
+      animation: aurora-drift 20s ease-in-out infinite;
+    }
+    .aurora-2 {
+      animation: aurora-drift-2 25s ease-in-out infinite;
+      opacity: 0.7;
+    }
+    @keyframes aurora-drift {
+      0%, 100% { transform: translate(0, 0) rotate(0deg) scale(1); }
+      25% { transform: translate(5%, 3%) rotate(2deg) scale(1.05); }
+      50% { transform: translate(-3%, 5%) rotate(-1deg) scale(0.98); }
+      75% { transform: translate(-5%, -3%) rotate(1deg) scale(1.02); }
+    }
+    @keyframes aurora-drift-2 {
+      0%, 100% { transform: translate(0, 0) rotate(0deg); }
+      33% { transform: translate(-4%, 4%) rotate(-2deg); }
+      66% { transform: translate(4%, -2%) rotate(2deg); }
+    }
+
+    /* Floating Orbs */
+    .orb {
+      position: absolute;
+      border-radius: 50%;
+      filter: blur(60px);
+      animation: orb-float 15s ease-in-out infinite;
+    }
+    .orb-1 {
       width: 400px;
       height: 400px;
-      background: radial-gradient(ellipse, rgba(167, 139, 250, 0.1) 0%, transparent 70%);
-      filter: blur(80px);
-      animation: float 25s ease-in-out infinite reverse;
+      background: radial-gradient(circle, rgba(255,79,24,0.25) 0%, transparent 70%);
+      top: 10%;
+      left: 10%;
+      animation-delay: 0s;
+    }
+    .orb-2 {
+      width: 350px;
+      height: 350px;
+      background: radial-gradient(circle, rgba(168,85,247,0.2) 0%, transparent 70%);
+      top: 20%;
+      right: 15%;
+      animation-delay: -5s;
+      animation-duration: 18s;
+    }
+    .orb-3 {
+      width: 300px;
+      height: 300px;
+      background: radial-gradient(circle, rgba(255,150,80,0.18) 0%, transparent 70%);
+      bottom: 20%;
+      left: 25%;
+      animation-delay: -10s;
+      animation-duration: 20s;
+    }
+    .orb-4 {
+      width: 250px;
+      height: 250px;
+      background: radial-gradient(circle, rgba(139,92,246,0.15) 0%, transparent 70%);
+      bottom: 30%;
+      right: 20%;
+      animation-delay: -3s;
+      animation-duration: 22s;
+    }
+    @keyframes orb-float {
+      0%, 100% { transform: translate(0, 0) scale(1); }
+      25% { transform: translate(30px, -40px) scale(1.1); }
+      50% { transform: translate(-20px, 30px) scale(0.95); }
+      75% { transform: translate(40px, 20px) scale(1.05); }
     }
 
-    @keyframes float {
-      0%, 100% { transform: translate(0, 0); }
-      50% { transform: translate(30px, -30px); }
-    }
-
-    /* Container */
-    .container {
-      max-width: 1200px;
-      margin: 0 auto;
-      padding: 0 24px;
-    }
-
-    /* Navigation */
-    nav {
-      position: fixed;
-      top: 0;
+    /* Wave effect at bottom */
+    .wave-line {
+      position: absolute;
+      bottom: 0;
       left: 0;
       right: 0;
-      z-index: 100;
-      padding: 16px 0;
-      background: rgba(3, 3, 5, 0.8);
-      backdrop-filter: blur(20px);
-      border-bottom: 1px solid var(--border);
+      height: 2px;
+      background: linear-gradient(90deg, transparent, rgba(255,79,24,0.3), rgba(168,85,247,0.3), transparent);
+      animation: wave-pulse 4s ease-in-out infinite;
+    }
+    @keyframes wave-pulse {
+      0%, 100% { opacity: 0.3; transform: scaleX(0.8); }
+      50% { opacity: 0.6; transform: scaleX(1); }
     }
 
-    nav .container {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
+    /* 3D App Frame */
+    .perspective-container {
+      perspective: 2000px;
+      transform-style: preserve-3d;
+    }
+    .app-frame {
+      background: linear-gradient(145deg, #0a0a0a 0%, #050505 100%);
+      box-shadow:
+        0 4px 6px -1px rgba(0,0,0,0.5),
+        0 12px 24px -4px rgba(0,0,0,0.6),
+        0 32px 64px -8px rgba(0,0,0,0.7),
+        0 64px 128px -16px rgba(0,0,0,0.5),
+        inset 0 1px 0 0 rgba(255,255,255,0.05);
+      transform: rotateX(2deg) translateZ(0);
+      transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    .perspective-container:hover .app-frame {
+      transform: rotateX(0deg) translateY(-8px) translateZ(20px);
     }
 
-    .logo {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      font-weight: 700;
-      font-size: 1.25rem;
-      text-decoration: none;
-      color: white;
-    }
-
-    .logo-icon {
-      width: 36px;
-      height: 36px;
-      background: linear-gradient(135deg, var(--accent), var(--accent-light));
-      border-radius: 10px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-    }
-
-    .logo span:last-child {
-      background: linear-gradient(90deg, var(--accent), var(--purple));
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-    }
-
-    .nav-links {
-      display: flex;
-      gap: 32px;
-      align-items: center;
-    }
-
-    .nav-links a {
-      color: var(--text-muted);
-      text-decoration: none;
-      font-size: 0.9rem;
-      transition: color 0.2s;
-    }
-
-    .nav-links a:hover {
-      color: white;
-    }
-
-    .btn {
-      display: inline-flex;
-      align-items: center;
-      gap: 8px;
-      padding: 12px 24px;
-      border-radius: 12px;
-      font-weight: 600;
-      font-size: 0.95rem;
-      text-decoration: none;
-      transition: all 0.3s;
-      cursor: pointer;
-      border: none;
-    }
-
-    .btn-primary {
-      background: linear-gradient(135deg, var(--accent), var(--accent-light));
-      color: white;
-      box-shadow: 0 4px 20px rgba(204, 120, 92, 0.3);
-    }
-
-    .btn-primary:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 8px 30px rgba(204, 120, 92, 0.4);
-    }
-
-    .btn-secondary {
-      background: var(--bg-card);
-      color: white;
-      border: 1px solid var(--border);
-    }
-
-    .btn-secondary:hover {
-      background: rgba(255, 255, 255, 0.08);
-      border-color: rgba(255, 255, 255, 0.15);
-    }
-
-    /* Hero Section */
-    .hero {
-      padding: 160px 0 100px;
-      text-align: center;
-    }
-
-    .hero-badge {
-      display: inline-flex;
-      align-items: center;
-      gap: 8px;
-      padding: 8px 16px;
-      background: rgba(167, 139, 250, 0.1);
-      border: 1px solid rgba(167, 139, 250, 0.2);
-      border-radius: 100px;
-      font-size: 0.85rem;
-      color: var(--purple);
-      margin-bottom: 24px;
-    }
-
-    .hero h1 {
-      font-size: clamp(2.5rem, 6vw, 4rem);
-      font-weight: 800;
-      line-height: 1.1;
-      margin-bottom: 24px;
-      letter-spacing: -0.02em;
-    }
-
-    .hero h1 .gradient {
-      background: linear-gradient(135deg, var(--accent), var(--accent-light), var(--purple));
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-    }
-
-    .hero p {
-      font-size: 1.25rem;
-      color: var(--text-muted);
-      max-width: 600px;
-      margin: 0 auto 40px;
-    }
-
-    .hero-buttons {
-      display: flex;
-      gap: 16px;
-      justify-content: center;
-      flex-wrap: wrap;
-    }
-
-    .hero-image {
-      margin-top: 60px;
-      border-radius: 16px;
-      overflow: hidden;
-      border: 1px solid var(--border);
-      box-shadow: 0 40px 80px rgba(0, 0, 0, 0.5);
-    }
-
-    .hero-image img {
-      width: 100%;
-      height: auto;
-      display: block;
-    }
-
-    /* Features Section */
-    .section {
-      padding: 100px 0;
-    }
-
-    .section-header {
-      text-align: center;
-      margin-bottom: 60px;
-    }
-
-    .section-header h2 {
-      font-size: 2.5rem;
-      font-weight: 700;
-      margin-bottom: 16px;
-    }
-
-    .section-header p {
-      color: var(--text-muted);
-      font-size: 1.1rem;
-      max-width: 600px;
-      margin: 0 auto;
-    }
-
-    .features-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
-      gap: 24px;
-    }
-
-    .feature-card {
-      background: var(--bg-card);
-      border: 1px solid var(--border);
-      border-radius: 16px;
-      padding: 32px;
-      transition: all 0.3s;
-    }
-
-    .feature-card:hover {
-      border-color: rgba(204, 120, 92, 0.3);
-      transform: translateY(-4px);
-    }
-
-    .feature-icon {
-      width: 48px;
-      height: 48px;
-      border-radius: 12px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      margin-bottom: 20px;
-      font-size: 1.5rem;
-    }
-
-    .feature-icon.orange { background: rgba(204, 120, 92, 0.15); }
-    .feature-icon.purple { background: rgba(167, 139, 250, 0.15); }
-    .feature-icon.blue { background: rgba(96, 165, 250, 0.15); }
-    .feature-icon.green { background: rgba(52, 211, 153, 0.15); }
-
-    .feature-card h3 {
-      font-size: 1.25rem;
-      font-weight: 600;
-      margin-bottom: 12px;
-    }
-
-    .feature-card p {
-      color: var(--text-muted);
-      font-size: 0.95rem;
-    }
-
-    /* Comparison Section */
-    .comparison {
-      background: var(--bg-card);
-      border-radius: 24px;
-      border: 1px solid var(--border);
-      padding: 60px;
-      margin-top: 40px;
-    }
-
-    .comparison-grid {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 60px;
-    }
-
-    .comparison-col h3 {
-      font-size: 1.5rem;
-      margin-bottom: 24px;
-      display: flex;
-      align-items: center;
-      gap: 12px;
-    }
-
-    .comparison-col.arena h3 {
-      color: var(--accent);
-    }
-
-    .comparison-list {
-      list-style: none;
-    }
-
-    .comparison-list li {
-      display: flex;
-      align-items: flex-start;
-      gap: 12px;
-      padding: 12px 0;
-      border-bottom: 1px solid var(--border);
-    }
-
-    .comparison-list li:last-child {
-      border-bottom: none;
-    }
-
-    .check {
-      color: #34d399;
-      font-size: 1.2rem;
-    }
-
-    .x {
-      color: #f87171;
-      font-size: 1.2rem;
-    }
-
-    /* Analytics Section */
-    .analytics-preview {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 40px;
-      align-items: center;
-      margin-top: 60px;
-    }
-
-    .analytics-content h3 {
-      font-size: 1.75rem;
-      margin-bottom: 16px;
-    }
-
-    .analytics-content p {
-      color: var(--text-muted);
-      margin-bottom: 24px;
-    }
-
-    .analytics-features {
-      list-style: none;
-    }
-
-    .analytics-features li {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      padding: 8px 0;
-      color: var(--text-muted);
-    }
-
-    .analytics-features li span {
-      color: var(--accent);
-    }
-
-    /* Download Section */
-    .download {
-      text-align: center;
-      padding: 120px 0;
-    }
-
-    .download h2 {
-      font-size: 2.5rem;
-      margin-bottom: 16px;
-    }
-
-    .download p {
-      color: var(--text-muted);
-      margin-bottom: 40px;
-      font-size: 1.1rem;
-    }
-
-    .download-cards {
-      display: flex;
-      gap: 24px;
-      justify-content: center;
-      flex-wrap: wrap;
-    }
-
-    .download-card {
-      background: var(--bg-card);
-      border: 1px solid var(--border);
-      border-radius: 16px;
-      padding: 32px 40px;
-      text-align: center;
-      min-width: 280px;
-      transition: all 0.3s;
-    }
-
-    .download-card:hover {
-      border-color: var(--accent);
-      transform: translateY(-4px);
-    }
-
-    .download-card .icon {
-      font-size: 3rem;
-      margin-bottom: 16px;
-    }
-
-    .download-card h4 {
-      font-size: 1.25rem;
-      margin-bottom: 8px;
-    }
-
-    .download-card p {
-      color: var(--text-muted);
-      font-size: 0.9rem;
-      margin-bottom: 20px;
-    }
-
-    /* Requirements */
-    .requirements {
-      background: var(--bg-card);
-      border-radius: 16px;
-      border: 1px solid var(--border);
-      padding: 40px;
-      margin-top: 60px;
-      text-align: left;
-      max-width: 600px;
-      margin-left: auto;
-      margin-right: auto;
-    }
-
-    .requirements h4 {
-      margin-bottom: 16px;
-    }
-
-    .requirements ul {
-      list-style: none;
-      color: var(--text-muted);
-    }
-
-    .requirements li {
-      padding: 8px 0;
-      display: flex;
-      align-items: center;
-      gap: 12px;
-    }
-
-    /* Footer */
-    footer {
-      padding: 40px 0;
-      border-top: 1px solid var(--border);
-      text-align: center;
-      color: var(--text-muted);
-      font-size: 0.9rem;
-    }
-
-    footer a {
-      color: var(--accent);
-      text-decoration: none;
-    }
-
-    /* Responsive */
-    @media (max-width: 768px) {
-      .nav-links {
-        display: none;
-      }
-
-      .comparison-grid {
-        grid-template-columns: 1fr;
-        gap: 40px;
-      }
-
-      .analytics-preview {
-        grid-template-columns: 1fr;
-      }
-
-      .comparison {
-        padding: 40px 24px;
-      }
+    /* Reduce motion for accessibility */
+    @media (prefers-reduced-motion: reduce) {
+      .aurora, .orb, .wave-line { animation: none; }
+      .app-frame { transform: none; }
+      .perspective-container:hover .app-frame { transform: translateY(-4px); }
     }
   </style>
 </head>
-<body>
-  <div class="bg-effects"></div>
+<body class="antialiased">
 
   <!-- Navigation -->
-  <nav>
-    <div class="container">
-      <a href="#" class="logo">
-        <div class="logo-icon">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-            <polyline points="16 18 22 12 16 6"></polyline>
-            <polyline points="8 6 2 12 8 18"></polyline>
+  <nav class="fixed top-0 w-full z-50 glass">
+    <div class="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
+      <a href="#" class="flex items-center gap-3" onclick="window.scrollTo({top:0,behavior:'smooth'})">
+        <div class="w-9 h-9 rounded-xl bg-gradient-to-b from-zinc-700 to-zinc-900 border border-white/10 flex items-center justify-center shadow-lg">
+          <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none">
+            <path d="M6 8l4 4-4 4" stroke="#FACC15" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+            <rect x="13" y="14" width="5" height="8" rx="1" fill="#FACC15"/>
           </svg>
         </div>
-        <span>ClaudeCode</span>
-        <span>Arena</span>
+        <span class="font-bold text-lg">ClaudeCode Arena</span>
       </a>
-      <div class="nav-links">
-        <a href="#features">Features</a>
-        <a href="#comparison">Why Arena?</a>
-        <a href="#analytics">Analytics</a>
-        <a href="#download" class="btn btn-primary">Download</a>
+
+      <div class="hidden md:flex items-center gap-1 text-sm">
+        <a href="why.html" class="px-4 py-2 text-zinc-400 hover:text-white transition-colors">Why Arena?</a>
+        <a href="#features" class="px-4 py-2 text-zinc-400 hover:text-white transition-colors">Features</a>
+        <a href="#developers" class="px-4 py-2 text-zinc-400 hover:text-white transition-colors">For Developers</a>
+        <a href="#everyone" class="px-4 py-2 text-zinc-400 hover:text-white transition-colors">For Everyone</a>
+        <a href="https://github.com/OneWave-AI/ClaudeCodeArena" class="px-4 py-2 text-zinc-400 hover:text-white transition-colors flex items-center gap-2">
+          <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/></svg>
+          GitHub
+        </a>
+      </div>
+
+      <div class="flex items-center gap-3">
+        <a href="https://github.com/OneWave-AI/ClaudeCodeArena" class="hidden sm:flex items-center gap-2 px-4 py-2 rounded-lg border border-white/10 text-sm text-zinc-300 hover:bg-white/5 transition-colors">
+          <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M12 .587l3.668 7.568 8.332 1.151-6.064 5.828 1.48 8.279-7.416-3.967-7.417 3.967 1.481-8.279-6.064-5.828 8.332-1.151z"/></svg>
+          Star
+        </a>
+        <a href="#download" class="px-5 py-2 bg-primary hover:bg-primaryHover text-white rounded-lg text-sm font-semibold transition-colors">
+          Download
+        </a>
       </div>
     </div>
   </nav>
 
   <!-- Hero Section -->
-  <section class="hero">
-    <div class="container">
-      <div class="hero-badge">
-        <span>✨</span>
-        <span>Built for developers who ship fast</span>
+  <section class="pt-32 pb-20 md:pt-44 md:pb-32 px-6 relative overflow-hidden">
+    <!-- Aurora Borealis Background -->
+    <div class="aurora-container">
+      <div class="aurora"></div>
+      <div class="aurora aurora-2"></div>
+      <!-- Floating Orbs -->
+      <div class="orb orb-1"></div>
+      <div class="orb orb-2"></div>
+      <div class="orb orb-3"></div>
+      <div class="orb orb-4"></div>
+      <!-- Wave line -->
+      <div class="wave-line"></div>
+    </div>
+
+    <div class="max-w-6xl mx-auto text-center">
+      <!-- Badge -->
+      <div class="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-white/5 border border-white/10 text-sm text-zinc-300 mb-8 fade-up">
+        <span class="w-2 h-2 rounded-full bg-primary animate-pulse"></span>
+        v2.0 Released
       </div>
-      <h1>
-        The Ultimate GUI for<br>
-        <span class="gradient">Claude Code</span>
-      </h1>
-      <p>
-        Transform the powerful Claude Code CLI into a beautiful desktop experience.
-        Track your coding time, manage multiple sessions, and let AI build while you focus on what matters.
+
+      <!-- Narrative Hook -->
+      <p class="text-lg text-zinc-500 max-w-2xl mx-auto mb-6 fade-up">
+        If you've used Claude Code, you know it just works different. It's just <em class="text-zinc-400">better</em>. We were power users who wanted more—a real desktop app, better workflows, and full customization. So we built it.
       </p>
-      <div class="hero-buttons">
-        <a href="#download" class="btn btn-primary">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
-            <polyline points="7 10 12 15 17 10"></polyline>
-            <line x1="12" y1="15" x2="12" y2="3"></line>
-          </svg>
-          Download for Mac
+
+      <!-- Headline -->
+      <h1 class="text-5xl md:text-7xl lg:text-8xl font-extrabold tracking-tight mb-6 fade-up stagger-1">
+        Code with <span class="text-transparent bg-clip-text bg-gradient-to-r from-primary to-orange-400">Superpowers</span>
+      </h1>
+
+      <!-- Subhead -->
+      <p class="text-xl md:text-2xl text-zinc-400 max-w-3xl mx-auto mb-10 leading-relaxed fade-up stagger-2">
+        The premium native desktop GUI for Claude Code. Multi-agent swarms, analytics, skills marketplace, and a beautiful zero-config environment—built by power users, for everyone.
+      </p>
+
+      <!-- Dual CTAs -->
+      <div class="flex flex-col sm:flex-row items-center justify-center gap-4 mb-6 fade-up stagger-3">
+        <a href="#download" class="w-full sm:w-auto px-8 py-4 bg-primary hover:bg-primaryHover text-white rounded-xl font-bold text-lg transition-all glow-primary">
+          Download Free
         </a>
-        <a href="https://github.com" class="btn btn-secondary">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
-            <path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/>
-          </svg>
-          View on GitHub
+        <a href="https://github.com/OneWave-AI/ClaudeCodeArena" class="w-full sm:w-auto px-8 py-4 bg-white/5 hover:bg-white/10 border border-white/10 text-white rounded-xl font-bold text-lg transition-all flex items-center justify-center gap-2">
+          <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M12 .587l3.668 7.568 8.332 1.151-6.064 5.828 1.48 8.279-7.416-3.967-7.417 3.967 1.481-8.279-6.064-5.828 8.332-1.151z"/></svg>
+          Star on GitHub
         </a>
       </div>
-    </div>
-  </section>
 
-  <!-- Features Section -->
-  <section id="features" class="section">
-    <div class="container">
-      <div class="section-header">
-        <h2>Everything you need to code with AI</h2>
-        <p>ClaudeCode Arena enhances the Claude Code CLI with powerful features designed for professional developers.</p>
-      </div>
+      <!-- Trust Badge -->
+      <p class="text-sm text-zinc-500 mb-16 fade-up stagger-3">
+        Open Source  •  Free Forever  •  Made by <a href="https://onewave-ai.com" class="text-zinc-400 hover:text-white transition-colors">OneWave AI</a>
+      </p>
 
-      <div class="features-grid">
-        <div class="feature-card">
-          <div class="feature-icon orange">🖥️</div>
-          <h3>Beautiful Terminal Experience</h3>
-          <p>A polished, native Mac app with custom themes, syntax highlighting, and smooth animations. No more plain terminal windows.</p>
-        </div>
-
-        <div class="feature-card">
-          <div class="feature-icon purple">📊</div>
-          <h3>Developer Analytics</h3>
-          <p>Track time spent on each project for billing and productivity. See 7-day and 30-day trends, session history, and usage patterns.</p>
-        </div>
-
-        <div class="feature-card">
-          <div class="feature-icon blue">🔀</div>
-          <h3>Split Panel View</h3>
-          <p>Run multiple Claude sessions side-by-side. Work on different tasks simultaneously without switching windows.</p>
-        </div>
-
-        <div class="feature-card">
-          <div class="feature-icon green">🤖</div>
-          <h3>Super Agent Mode</h3>
-          <p>Let an LLM supervisor auto-approve Claude's actions. Set safety levels and time limits for fully autonomous coding.</p>
-        </div>
-
-        <div class="feature-card">
-          <div class="feature-icon orange">📁</div>
-          <h3>File Browser Sidebar</h3>
-          <p>Navigate your project structure visually. Drag and drop files directly into chat. Quick folder switching.</p>
-        </div>
-
-        <div class="feature-card">
-          <div class="feature-icon purple">🔧</div>
-          <h3>Skills & Agents Manager</h3>
-          <p>Create, edit, and organize custom skills and agents. Import community tools with one click.</p>
-        </div>
-
-        <div class="feature-card">
-          <div class="feature-icon blue">🌐</div>
-          <h3>Live Preview</h3>
-          <p>Automatically detect localhost URLs and preview your app in a built-in browser. See changes instantly.</p>
-        </div>
-
-        <div class="feature-card">
-          <div class="feature-icon green">⚡</div>
-          <h3>Model Switcher</h3>
-          <p>Instantly switch between Opus, Sonnet, and Haiku models. Choose the right balance of capability and speed.</p>
-        </div>
-      </div>
-    </div>
-  </section>
-
-  <!-- Comparison Section -->
-  <section id="comparison" class="section">
-    <div class="container">
-      <div class="section-header">
-        <h2>Why ClaudeCode Arena?</h2>
-        <p>See how Arena enhances your Claude Code workflow compared to the standard CLI.</p>
-      </div>
-
-      <div class="comparison">
-        <div class="comparison-grid">
-          <div class="comparison-col arena">
-            <h3>
-              <span class="logo-icon" style="width:32px;height:32px;">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5">
-                  <polyline points="16 18 22 12 16 6"></polyline>
-                  <polyline points="8 6 2 12 8 18"></polyline>
-                </svg>
-              </span>
-              ClaudeCode Arena
-            </h3>
-            <ul class="comparison-list">
-              <li><span class="check">✓</span> Beautiful native Mac app with custom themes</li>
-              <li><span class="check">✓</span> Track coding time per project for billing</li>
-              <li><span class="check">✓</span> Split panels for multiple sessions</li>
-              <li><span class="check">✓</span> Visual file browser with drag & drop</li>
-              <li><span class="check">✓</span> Super Agent for autonomous execution</li>
-              <li><span class="check">✓</span> Built-in localhost preview</li>
-              <li><span class="check">✓</span> Session history with search</li>
-              <li><span class="check">✓</span> One-click model switching</li>
-              <li><span class="check">✓</span> MCP server configuration UI</li>
-              <li><span class="check">✓</span> Skills & Agents visual editor</li>
-            </ul>
+      <!-- Screenshot - 3D Floating Effect -->
+      <div class="relative max-w-5xl mx-auto fade-up stagger-3 perspective-container">
+        <!-- Deep shadow underneath -->
+        <div class="absolute -bottom-8 left-[10%] right-[10%] h-24 bg-black/60 rounded-[50%] blur-3xl"></div>
+        <!-- Outer glow -->
+        <div class="absolute -inset-8 bg-gradient-to-b from-primary/15 via-accent/10 to-transparent rounded-3xl blur-3xl opacity-60"></div>
+        <!-- Reflection light -->
+        <div class="absolute -inset-1 bg-gradient-to-b from-white/5 to-transparent rounded-3xl opacity-50"></div>
+        <!-- Main screenshot container -->
+        <div class="relative rounded-2xl overflow-hidden app-frame">
+          <!-- Glass border effect -->
+          <div class="absolute inset-0 rounded-2xl border border-white/10 border-t-white/20 pointer-events-none z-10"></div>
+          <!-- Window chrome -->
+          <div class="flex items-center gap-2 px-4 py-3 bg-gradient-to-b from-zinc-800/90 to-zinc-900/95 border-b border-white/5 relative">
+            <div class="flex gap-1.5">
+              <div class="w-3 h-3 rounded-full bg-red-500 shadow-lg shadow-red-500/30"></div>
+              <div class="w-3 h-3 rounded-full bg-yellow-500 shadow-lg shadow-yellow-500/30"></div>
+              <div class="w-3 h-3 rounded-full bg-green-500 shadow-lg shadow-green-500/30"></div>
+            </div>
+            <span class="mx-auto text-xs text-zinc-500 font-mono">ClaudeCode Arena</span>
           </div>
-
-          <div class="comparison-col">
-            <h3>
-              <span style="font-size:1.5rem;">⬛</span>
-              Standard Claude Code CLI
-            </h3>
-            <ul class="comparison-list">
-              <li><span class="x">✗</span> Plain terminal interface</li>
-              <li><span class="x">✗</span> No time tracking or analytics</li>
-              <li><span class="x">✗</span> One session per terminal window</li>
-              <li><span class="x">✗</span> Manual file path typing</li>
-              <li><span class="x">✗</span> Manual approval for each action</li>
-              <li><span class="x">✗</span> Open preview URLs manually</li>
-              <li><span class="x">✗</span> History via terminal scrollback</li>
-              <li><span class="x">✗</span> Type /model command each time</li>
-              <li><span class="x">✗</span> Edit JSON config files manually</li>
-              <li><span class="x">✗</span> Create markdown files manually</li>
-            </ul>
-          </div>
+          <img src="dashboard.png" alt="ClaudeCode Arena Dashboard" class="w-full">
         </div>
       </div>
     </div>
   </section>
 
-  <!-- Analytics Section -->
-  <section id="analytics" class="section">
-    <div class="container">
-      <div class="section-header">
-        <h2>Track Every Minute</h2>
-        <p>Know exactly how much time you spend on each project. Perfect for freelancers, consultants, and teams.</p>
+  <!-- What Is This? Explainer -->
+  <section class="py-24 px-6 border-b border-white/5">
+    <div class="max-w-4xl mx-auto">
+      <div class="text-center mb-12 fade-up">
+        <p class="text-primary font-semibold mb-3">Wait, what is this exactly?</p>
+        <h2 class="text-4xl md:text-5xl font-bold mb-6">Your AI Assistant,<br>With a Real App</h2>
       </div>
 
-      <div class="analytics-preview">
-        <div class="analytics-content">
-          <h3>Developer Time Tracking Built-In</h3>
-          <p>
-            ClaudeCode Arena automatically tracks your coding sessions with real timestamps.
-            See which projects take the most time, identify your most productive days, and generate reports for clients.
-          </p>
-          <ul class="analytics-features">
-            <li><span>📈</span> 7-day and 30-day activity charts</li>
-            <li><span>⏱️</span> Accurate time tracking per project</li>
-            <li><span>📊</span> Session count and token usage</li>
-            <li><span>🗂️</span> Projects sorted by time spent</li>
-            <li><span>📅</span> Peak productivity hours analysis</li>
-            <li><span>🔍</span> Detailed session history browser</li>
+      <div class="space-y-8 text-lg text-zinc-400 leading-relaxed fade-up stagger-1">
+        <p>
+          <strong class="text-white">Claude Code</strong> is Anthropic's AI that can actually <em>do things</em> on your computer—write files, run commands, analyze data, build websites. It's not just a chatbot. It's an AI that works.
+        </p>
+
+        <p>
+          The problem? Claude Code runs in a terminal. If you're not a developer, that's intimidating. And even if you <em>are</em> a developer, the terminal is limiting—no visual feedback, no file browser, no way to run multiple tasks at once.
+        </p>
+
+        <p>
+          <strong class="text-white">ClaudeCode Arena fixes that.</strong> It's a desktop app that wraps Claude Code in a beautiful interface. You get a real file explorer, split terminals, live previews, and the ability to launch multiple AI agents working in parallel. Same powerful Claude Code underneath—but now anyone can use it.
+        </p>
+      </div>
+
+      <!-- Use Cases Grid -->
+      <div class="grid sm:grid-cols-2 lg:grid-cols-4 gap-4 mt-12 fade-up stagger-2">
+        <div class="glass rounded-xl p-4 text-center">
+          <div class="text-2xl mb-2">📊</div>
+          <p class="text-sm text-zinc-300">"Analyze this spreadsheet and show me trends"</p>
+        </div>
+        <div class="glass rounded-xl p-4 text-center">
+          <div class="text-2xl mb-2">🌐</div>
+          <p class="text-sm text-zinc-300">"Build me a landing page for my business"</p>
+        </div>
+        <div class="glass rounded-xl p-4 text-center">
+          <div class="text-2xl mb-2">📁</div>
+          <p class="text-sm text-zinc-300">"Organize my photos by date and location"</p>
+        </div>
+        <div class="glass rounded-xl p-4 text-center">
+          <div class="text-2xl mb-2">🔍</div>
+          <p class="text-sm text-zinc-300">"Research competitors and summarize findings"</p>
+        </div>
+      </div>
+
+      <p class="text-center text-zinc-500 mt-8 fade-up stagger-3">
+        Just tell it what you want. ClaudeCode Arena handles the rest.
+      </p>
+    </div>
+  </section>
+
+  <!-- Who Is This For? -->
+  <section class="py-24 px-6 bg-surface/50">
+    <div class="max-w-6xl mx-auto">
+      <div class="text-center mb-16 fade-up">
+        <h2 class="text-4xl md:text-5xl font-bold mb-4">Built for Everyone</h2>
+        <p class="text-xl text-zinc-400 max-w-2xl mx-auto">People use Claude Code for way more than coding—data analysis, research, automation, content creation. Arena is for those everyday users <em>and</em> the power users.</p>
+      </div>
+
+      <div class="grid md:grid-cols-2 gap-8">
+        <!-- For Developers -->
+        <div id="developers" class="glass rounded-2xl p-8 fade-up stagger-1">
+          <div class="flex items-center gap-3 mb-6">
+            <div class="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center">
+              <svg class="w-6 h-6 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"/></svg>
+            </div>
+            <h3 class="text-2xl font-bold">For Developers</h3>
+          </div>
+          <p class="text-zinc-400 mb-6 text-lg">Stop context switching. Arena gives you a native terminal environment that integrates directly with your existing toolchain.</p>
+          <ul class="space-y-4">
+            <li class="flex items-start gap-3">
+              <svg class="w-5 h-5 text-primary mt-0.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+              <span><strong class="text-white">Full Git Workflow</strong> — Visual commits, one-click PRs, conflict resolution</span>
+            </li>
+            <li class="flex items-start gap-3">
+              <svg class="w-5 h-5 text-primary mt-0.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+              <span><strong class="text-white">Multi-Agent Swarms</strong> — Parallel agents for testing, security, refactoring</span>
+            </li>
+            <li class="flex items-start gap-3">
+              <svg class="w-5 h-5 text-primary mt-0.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+              <span><strong class="text-white">Zero Config</strong> — Auto-detects dev servers, linters, package managers</span>
+            </li>
+            <li class="flex items-start gap-3">
+              <svg class="w-5 h-5 text-primary mt-0.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+              <span><strong class="text-white">MCP Servers</strong> — GitHub, Puppeteer, Slack, Memory, and more</span>
+            </li>
           </ul>
         </div>
-        <div style="background: var(--bg-card); border: 1px solid var(--border); border-radius: 16px; padding: 24px;">
-          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 20px;">
-            <div style="background: rgba(204,120,92,0.1); padding: 16px; border-radius: 12px;">
-              <div style="font-size: 0.75rem; color: var(--text-muted); margin-bottom: 4px;">This Week</div>
-              <div style="font-size: 1.75rem; font-weight: 700; color: var(--accent);">47</div>
-              <div style="font-size: 0.8rem; color: var(--text-muted);">sessions</div>
+
+        <!-- For Everyone -->
+        <div id="everyone" class="glass rounded-2xl p-8 fade-up stagger-2">
+          <div class="flex items-center gap-3 mb-6">
+            <div class="w-12 h-12 rounded-xl bg-accent/10 flex items-center justify-center">
+              <svg class="w-6 h-6 text-accent" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
             </div>
-            <div style="background: rgba(167,139,250,0.1); padding: 16px; border-radius: 12px;">
-              <div style="font-size: 0.75rem; color: var(--text-muted); margin-bottom: 4px;">Time Coded</div>
-              <div style="font-size: 1.75rem; font-weight: 700; color: var(--purple);">12h 30m</div>
-              <div style="font-size: 0.8rem; color: var(--text-muted);">this week</div>
-            </div>
+            <h3 class="text-2xl font-bold">For Everyone</h3>
           </div>
-          <div style="font-size: 0.75rem; color: var(--text-muted); margin-bottom: 12px; text-transform: uppercase; letter-spacing: 0.05em;">Top Projects</div>
-          <div style="space-y: 8px;">
-            <div style="display: flex; align-items: center; gap: 12px; padding: 8px 0; border-bottom: 1px solid var(--border);">
-              <span style="color: var(--text-muted);">1.</span>
-              <span style="flex: 1;">claude-ui</span>
-              <span style="color: var(--accent); font-weight: 600;">4h 20m</span>
-            </div>
-            <div style="display: flex; align-items: center; gap: 12px; padding: 8px 0; border-bottom: 1px solid var(--border);">
-              <span style="color: var(--text-muted);">2.</span>
-              <span style="flex: 1;">api-server</span>
-              <span style="color: var(--accent); font-weight: 600;">2h 15m</span>
-            </div>
-            <div style="display: flex; align-items: center; gap: 12px; padding: 8px 0;">
-              <span style="color: var(--text-muted);">3.</span>
-              <span style="flex: 1;">docs</span>
-              <span style="color: var(--accent); font-weight: 600;">1h 45m</span>
-            </div>
-          </div>
+          <p class="text-zinc-400 mb-6 text-lg">You don't need to write code. Claude Code handles data analysis, research, automation—Arena makes it even easier.</p>
+          <ul class="space-y-4">
+            <li class="flex items-start gap-3">
+              <svg class="w-5 h-5 text-accent mt-0.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+              <span><strong class="text-white">Data Analysis</strong> — Crunch spreadsheets, visualize trends, generate reports</span>
+            </li>
+            <li class="flex items-start gap-3">
+              <svg class="w-5 h-5 text-accent mt-0.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+              <span><strong class="text-white">Natural Language</strong> — Just describe what you want and watch it happen</span>
+            </li>
+            <li class="flex items-start gap-3">
+              <svg class="w-5 h-5 text-accent mt-0.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+              <span><strong class="text-white">Automate Anything</strong> — Web scraping, file organization, content creation</span>
+            </li>
+            <li class="flex items-start gap-3">
+              <svg class="w-5 h-5 text-accent mt-0.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+              <span><strong class="text-white">No Setup Required</strong> — Everything just works out of the box</span>
+            </li>
+          </ul>
         </div>
       </div>
     </div>
   </section>
 
-  <!-- Download Section -->
-  <section id="download" class="download">
-    <div class="container">
-      <h2>Ready to level up your AI coding?</h2>
-      <p>Download ClaudeCode Arena for free and transform your development workflow.</p>
+  <!-- How It Works -->
+  <section class="py-24 px-6">
+    <div class="max-w-6xl mx-auto">
+      <div class="text-center mb-16 fade-up">
+        <h2 class="text-4xl md:text-5xl font-bold mb-4">From Idea to Production</h2>
+        <p class="text-xl text-zinc-400">Three steps to ship faster than ever.</p>
+      </div>
 
-      <div class="download-cards">
-        <div class="download-card">
-          <div class="icon">🍎</div>
-          <h4>macOS (Apple Silicon)</h4>
-          <p>For M1, M2, M3 Macs</p>
-          <a href="ClaudeCodeArena-2.0.0-arm64.dmg" class="btn btn-primary" download>
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
-              <polyline points="7 10 12 15 17 10"></polyline>
-              <line x1="12" y1="15" x2="12" y2="3"></line>
-            </svg>
-            Download DMG
-          </a>
+      <div class="grid md:grid-cols-3 gap-8">
+        <!-- Step 1 -->
+        <div class="text-center fade-up stagger-1">
+          <div class="w-16 h-16 rounded-2xl bg-primary/10 border border-primary/20 flex items-center justify-center mx-auto mb-6 relative">
+            <span class="absolute -top-2 -right-2 w-7 h-7 bg-primary rounded-full flex items-center justify-center text-sm font-bold">1</span>
+            <svg class="w-8 h-8 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/></svg>
+          </div>
+          <h3 class="text-xl font-bold mb-2">Describe</h3>
+          <p class="text-zinc-400">Speak naturally about what you want to build, fix, or change.</p>
         </div>
 
-        <div class="download-card">
-          <div class="icon">💻</div>
-          <h4>macOS (Intel)</h4>
-          <p>For Intel-based Macs</p>
-          <a href="#" class="btn btn-secondary">Coming Soon</a>
+        <!-- Step 2 -->
+        <div class="text-center fade-up stagger-2">
+          <div class="w-16 h-16 rounded-2xl bg-accent/10 border border-accent/20 flex items-center justify-center mx-auto mb-6 relative">
+            <span class="absolute -top-2 -right-2 w-7 h-7 bg-accent rounded-full flex items-center justify-center text-sm font-bold">2</span>
+            <svg class="w-8 h-8 text-accent" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"/></svg>
+          </div>
+          <h3 class="text-xl font-bold mb-2">Execute</h3>
+          <p class="text-zinc-400">Agent swarms architect, code, and fix errors in parallel.</p>
         </div>
 
-        <div class="download-card">
-          <div class="icon">🪟</div>
-          <h4>Windows</h4>
-          <p>Windows 10/11</p>
-          <a href="#" class="btn btn-secondary">Coming Soon</a>
+        <!-- Step 3 -->
+        <div class="text-center fade-up stagger-3">
+          <div class="w-16 h-16 rounded-2xl bg-green-500/10 border border-green-500/20 flex items-center justify-center mx-auto mb-6 relative">
+            <span class="absolute -top-2 -right-2 w-7 h-7 bg-green-500 rounded-full flex items-center justify-center text-sm font-bold">3</span>
+            <svg class="w-8 h-8 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z"/></svg>
+          </div>
+          <h3 class="text-xl font-bold mb-2">Ship</h3>
+          <p class="text-zinc-400">One-click deploy to Vercel, GitHub Pages, or create a PR.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Hero Features (Bento Grid) -->
+  <section id="features" class="py-24 px-6 bg-surface/50">
+    <div class="max-w-6xl mx-auto">
+      <div class="text-center mb-16 fade-up">
+        <h2 class="text-4xl md:text-5xl font-bold mb-4">Powerful Features</h2>
+        <p class="text-xl text-zinc-400">Everything you need to ship faster.</p>
+      </div>
+
+      <!-- Super Agent + Agent Hive Hero Section -->
+      <div class="grid lg:grid-cols-2 gap-6 mb-6">
+        <!-- Super Agent - Large Card -->
+        <div class="glass rounded-2xl p-8 tilt-card pop-in relative overflow-hidden">
+          <div class="absolute top-0 right-0 w-32 h-32 bg-primary/10 rounded-full blur-3xl"></div>
+          <div class="relative">
+            <div class="flex items-center gap-3 mb-4">
+              <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-primary to-orange-600 flex items-center justify-center shadow-lg shadow-primary/25">
+                <svg class="w-6 h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+              </div>
+              <div>
+                <h3 class="text-xl font-bold">Super Agent</h3>
+                <p class="text-xs text-primary">Autonomous Mode</p>
+              </div>
+            </div>
+            <p class="text-zinc-400 mb-6">Let Claude work independently. Set time limits, auto-approve tool calls, and watch the AI plan, execute, and self-correct until the job is done.</p>
+
+            <!-- Activity Visualization -->
+            <div class="bg-black/40 rounded-xl p-4 border border-white/5">
+              <div class="flex items-center justify-between mb-3">
+                <span class="text-xs text-zinc-500 font-mono">SUPER AGENT ACTIVE</span>
+                <span class="flex items-center gap-1.5 text-xs text-green-400">
+                  <span class="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse"></span>
+                  Running
+                </span>
+              </div>
+              <div class="space-y-2 text-xs font-mono text-zinc-500">
+                <div class="flex items-center gap-2"><span class="text-green-400">✓</span> Analyzing codebase structure...</div>
+                <div class="flex items-center gap-2"><span class="text-green-400">✓</span> Planning implementation steps...</div>
+                <div class="flex items-center gap-2"><span class="text-primary animate-pulse">●</span> Writing auth module...</div>
+              </div>
+              <div class="mt-3 pt-3 border-t border-white/5 flex justify-between text-xs text-zinc-500">
+                <span>Time: 4:32 / 15:00</span>
+                <span>12 tool calls auto-approved</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Agent Hive - Large Card with Swarm Visualization -->
+        <div class="glass rounded-2xl p-8 tilt-card pop-in stagger-1 relative overflow-hidden">
+          <div class="absolute top-0 right-0 w-32 h-32 bg-accent/10 rounded-full blur-3xl"></div>
+          <div class="relative">
+            <div class="flex items-center gap-3 mb-4">
+              <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-accent to-purple-600 flex items-center justify-center shadow-lg shadow-accent/25">
+                <svg class="w-6 h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/></svg>
+              </div>
+              <div>
+                <h3 class="text-xl font-bold">Agent Hive</h3>
+                <p class="text-xs text-accent">Multi-Agent Swarm</p>
+              </div>
+            </div>
+            <p class="text-zinc-400 mb-6">Deploy specialized agents in parallel. Security auditor, test writer, code reviewer, and refactorer—all working simultaneously on your codebase.</p>
+
+            <!-- Swarm Visualization -->
+            <div class="bg-black/40 rounded-xl p-4 border border-white/5">
+              <div class="flex items-center justify-between mb-4">
+                <span class="text-xs text-zinc-500 font-mono">SWARM ACTIVE • 4 AGENTS</span>
+                <span class="text-xs text-accent">Orchestrating...</span>
+              </div>
+              <div class="grid grid-cols-2 gap-2">
+                <div class="flex items-center gap-2 bg-white/5 rounded-lg px-3 py-2">
+                  <div class="w-2 h-2 rounded-full bg-red-400 animate-pulse"></div>
+                  <span class="text-xs text-zinc-300">Security Auditor</span>
+                </div>
+                <div class="flex items-center gap-2 bg-white/5 rounded-lg px-3 py-2">
+                  <div class="w-2 h-2 rounded-full bg-green-400 animate-pulse" style="animation-delay: 0.2s"></div>
+                  <span class="text-xs text-zinc-300">Test Engineer</span>
+                </div>
+                <div class="flex items-center gap-2 bg-white/5 rounded-lg px-3 py-2">
+                  <div class="w-2 h-2 rounded-full bg-blue-400 animate-pulse" style="animation-delay: 0.4s"></div>
+                  <span class="text-xs text-zinc-300">Code Reviewer</span>
+                </div>
+                <div class="flex items-center gap-2 bg-white/5 rounded-lg px-3 py-2">
+                  <div class="w-2 h-2 rounded-full bg-yellow-400 animate-pulse" style="animation-delay: 0.6s"></div>
+                  <span class="text-xs text-zinc-300">Refactorer</span>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
 
-      <div class="requirements">
-        <h4>Requirements</h4>
-        <ul>
-          <li>
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2">
-              <polyline points="20 6 9 17 4 12"></polyline>
-            </svg>
-            macOS 12.0 or later
-          </li>
-          <li>
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2">
-              <polyline points="20 6 9 17 4 12"></polyline>
-            </svg>
-            Claude Code CLI installed (<code style="background: var(--bg-card); padding: 2px 6px; border-radius: 4px;">npm i -g @anthropic-ai/claude-code</code>)
-          </li>
-          <li>
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2">
-              <polyline points="20 6 9 17 4 12"></polyline>
-            </svg>
-            Anthropic API key configured
-          </li>
-        </ul>
+      <!-- Other Features Grid -->
+      <div class="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
+
+        <!-- Analytics Dashboard -->
+        <div class="glass rounded-2xl p-6 tilt-card pop-in stagger-2">
+          <div class="w-12 h-12 rounded-xl bg-blue-500/10 flex items-center justify-center mb-4">
+            <svg class="w-6 h-6 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
+          </div>
+          <h3 class="text-lg font-bold mb-2">Analytics Dashboard</h3>
+          <p class="text-sm text-zinc-400">Track coding time, token usage, and project hours. Great for billing!</p>
+        </div>
+
+        <!-- Split Terminals -->
+        <div class="glass rounded-2xl p-6 tilt-card pop-in stagger-3">
+          <div class="w-12 h-12 rounded-xl bg-green-500/10 flex items-center justify-center mb-4">
+            <svg class="w-6 h-6 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 9l3 3-3 3m5 0h3M5 20h14a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+          </div>
+          <h3 class="text-lg font-bold mb-2">Split Terminals</h3>
+          <p class="text-sm text-zinc-400">Dual panels, multiple tabs, 8 themes. Watch logs while Claude works.</p>
+        </div>
+
+        <!-- Skills Marketplace -->
+        <div class="glass rounded-2xl p-6 tilt-card pop-in stagger-4">
+          <div class="w-12 h-12 rounded-xl bg-yellow-500/10 flex items-center justify-center mb-4">
+            <svg class="w-6 h-6 text-yellow-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"/></svg>
+          </div>
+          <h3 class="text-lg font-bold mb-2">Skills Marketplace</h3>
+          <p class="text-sm text-zinc-400">25 starter skills + 5 agents. One-click install. Create your own.</p>
+        </div>
+
+        <!-- Zero Config -->
+        <div class="glass rounded-2xl p-6 tilt-card pop-in stagger-5">
+          <div class="w-12 h-12 rounded-xl bg-pink-500/10 flex items-center justify-center mb-4">
+            <svg class="w-6 h-6 text-pink-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z"/></svg>
+          </div>
+          <h3 class="text-lg font-bold mb-2">Zero Config</h3>
+          <p class="text-sm text-zinc-400">Auto-detects dev servers, skills, agents, MCP servers. Just works.</p>
+        </div>
       </div>
+    </div>
+  </section>
+
+  <!-- Full Feature Showcase (Expandable) -->
+  <section class="py-24 px-6">
+    <div class="max-w-4xl mx-auto">
+      <div class="text-center mb-16 fade-up">
+        <h2 class="text-4xl md:text-5xl font-bold mb-4">All Features</h2>
+        <p class="text-xl text-zinc-400">Everything included in Arena.</p>
+      </div>
+
+      <div class="space-y-4 fade-up">
+        <!-- Developer Tools -->
+        <details class="glass rounded-xl overflow-hidden group" open>
+          <summary class="px-6 py-4 flex items-center justify-between cursor-pointer hover:bg-white/5 transition-colors">
+            <div class="flex items-center gap-3">
+              <svg class="w-5 h-5 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"/></svg>
+              <span class="font-semibold">Developer Tools</span>
+            </div>
+            <svg class="w-5 h-5 text-zinc-400 chevron" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+          </summary>
+          <div class="px-6 pb-4 grid sm:grid-cols-2 gap-3 text-sm text-zinc-400">
+            <div class="flex items-center gap-2"><span class="w-1.5 h-1.5 rounded-full bg-primary"></span>File Explorer with Git status</div>
+            <div class="flex items-center gap-2"><span class="w-1.5 h-1.5 rounded-full bg-primary"></span>Document Viewer (PDF, Word, Excel)</div>
+            <div class="flex items-center gap-2"><span class="w-1.5 h-1.5 rounded-full bg-primary"></span>Localhost auto-preview</div>
+            <div class="flex items-center gap-2"><span class="w-1.5 h-1.5 rounded-full bg-primary"></span>8 Terminal Themes</div>
+            <div class="flex items-center gap-2"><span class="w-1.5 h-1.5 rounded-full bg-primary"></span>Syntax highlighting</div>
+            <div class="flex items-center gap-2"><span class="w-1.5 h-1.5 rounded-full bg-primary"></span>Keyboard shortcuts (Cmd+P, Cmd+O)</div>
+          </div>
+        </details>
+
+        <!-- Git & Deploy -->
+        <details class="glass rounded-xl overflow-hidden">
+          <summary class="px-6 py-4 flex items-center justify-between cursor-pointer hover:bg-white/5 transition-colors">
+            <div class="flex items-center gap-3">
+              <svg class="w-5 h-5 text-accent" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7v8a2 2 0 002 2h6M8 7V5a2 2 0 012-2h4.586a1 1 0 01.707.293l4.414 4.414a1 1 0 01.293.707V15a2 2 0 01-2 2h-2M8 7H6a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2v-2"/></svg>
+              <span class="font-semibold">Git & Deploy</span>
+            </div>
+            <svg class="w-5 h-5 text-zinc-400 chevron" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+          </summary>
+          <div class="px-6 pb-4 grid sm:grid-cols-2 gap-3 text-sm text-zinc-400">
+            <div class="flex items-center gap-2"><span class="w-1.5 h-1.5 rounded-full bg-accent"></span>One-click commit & push</div>
+            <div class="flex items-center gap-2"><span class="w-1.5 h-1.5 rounded-full bg-accent"></span>Create Pull Requests</div>
+            <div class="flex items-center gap-2"><span class="w-1.5 h-1.5 rounded-full bg-accent"></span>Visual Git status indicators</div>
+            <div class="flex items-center gap-2"><span class="w-1.5 h-1.5 rounded-full bg-accent"></span>Vercel one-click deploy</div>
+            <div class="flex items-center gap-2"><span class="w-1.5 h-1.5 rounded-full bg-accent"></span>GitHub Pages support</div>
+            <div class="flex items-center gap-2"><span class="w-1.5 h-1.5 rounded-full bg-accent"></span>Conflict resolution</div>
+          </div>
+        </details>
+
+        <!-- MCP Servers -->
+        <details class="glass rounded-xl overflow-hidden">
+          <summary class="px-6 py-4 flex items-center justify-between cursor-pointer hover:bg-white/5 transition-colors">
+            <div class="flex items-center gap-3">
+              <svg class="w-5 h-5 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 12h14M5 12a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v4a2 2 0 01-2 2M5 12a2 2 0 00-2 2v4a2 2 0 002 2h14a2 2 0 002-2v-4a2 2 0 00-2-2m-2-4h.01M17 16h.01"/></svg>
+              <span class="font-semibold">MCP Servers</span>
+            </div>
+            <svg class="w-5 h-5 text-zinc-400 chevron" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+          </summary>
+          <div class="px-6 pb-4 grid sm:grid-cols-2 gap-3 text-sm text-zinc-400">
+            <div class="flex items-center gap-2"><span class="w-1.5 h-1.5 rounded-full bg-blue-500"></span>Filesystem access</div>
+            <div class="flex items-center gap-2"><span class="w-1.5 h-1.5 rounded-full bg-blue-500"></span>GitHub integration</div>
+            <div class="flex items-center gap-2"><span class="w-1.5 h-1.5 rounded-full bg-blue-500"></span>Puppeteer browser automation</div>
+            <div class="flex items-center gap-2"><span class="w-1.5 h-1.5 rounded-full bg-blue-500"></span>Fetch HTTP requests</div>
+            <div class="flex items-center gap-2"><span class="w-1.5 h-1.5 rounded-full bg-blue-500"></span>Slack workspace</div>
+            <div class="flex items-center gap-2"><span class="w-1.5 h-1.5 rounded-full bg-blue-500"></span>Memory persistence</div>
+            <div class="flex items-center gap-2"><span class="w-1.5 h-1.5 rounded-full bg-blue-500"></span>Custom servers supported</div>
+          </div>
+        </details>
+
+        <!-- Conversation History -->
+        <details class="glass rounded-xl overflow-hidden">
+          <summary class="px-6 py-4 flex items-center justify-between cursor-pointer hover:bg-white/5 transition-colors">
+            <div class="flex items-center gap-3">
+              <svg class="w-5 h-5 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+              <span class="font-semibold">Conversation History</span>
+            </div>
+            <svg class="w-5 h-5 text-zinc-400 chevron" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+          </summary>
+          <div class="px-6 pb-4 grid sm:grid-cols-2 gap-3 text-sm text-zinc-400">
+            <div class="flex items-center gap-2"><span class="w-1.5 h-1.5 rounded-full bg-green-500"></span>Browse past sessions</div>
+            <div class="flex items-center gap-2"><span class="w-1.5 h-1.5 rounded-full bg-green-500"></span>Search and filter</div>
+            <div class="flex items-center gap-2"><span class="w-1.5 h-1.5 rounded-full bg-green-500"></span>Pin favorites</div>
+            <div class="flex items-center gap-2"><span class="w-1.5 h-1.5 rounded-full bg-green-500"></span>Resume any conversation</div>
+            <div class="flex items-center gap-2"><span class="w-1.5 h-1.5 rounded-full bg-green-500"></span>Project organization</div>
+            <div class="flex items-center gap-2"><span class="w-1.5 h-1.5 rounded-full bg-green-500"></span>Message preview</div>
+          </div>
+        </details>
+
+        <!-- Productivity -->
+        <details class="glass rounded-xl overflow-hidden">
+          <summary class="px-6 py-4 flex items-center justify-between cursor-pointer hover:bg-white/5 transition-colors">
+            <div class="flex items-center gap-3">
+              <svg class="w-5 h-5 text-yellow-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+              <span class="font-semibold">Productivity</span>
+            </div>
+            <svg class="w-5 h-5 text-zinc-400 chevron" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+          </summary>
+          <div class="px-6 pb-4 grid sm:grid-cols-2 gap-3 text-sm text-zinc-400">
+            <div class="flex items-center gap-2"><span class="w-1.5 h-1.5 rounded-full bg-yellow-500"></span>Command palette (Cmd+P)</div>
+            <div class="flex items-center gap-2"><span class="w-1.5 h-1.5 rounded-full bg-yellow-500"></span>Quick file open (Cmd+O)</div>
+            <div class="flex items-center gap-2"><span class="w-1.5 h-1.5 rounded-full bg-yellow-500"></span>Project switcher</div>
+            <div class="flex items-center gap-2"><span class="w-1.5 h-1.5 rounded-full bg-yellow-500"></span>Toast notifications</div>
+            <div class="flex items-center gap-2"><span class="w-1.5 h-1.5 rounded-full bg-yellow-500"></span>Settings panel</div>
+            <div class="flex items-center gap-2"><span class="w-1.5 h-1.5 rounded-full bg-yellow-500"></span>Error boundaries</div>
+          </div>
+        </details>
+      </div>
+    </div>
+  </section>
+
+  <!-- Starter Kit -->
+  <section class="py-24 px-6 bg-surface/50">
+    <div class="max-w-6xl mx-auto">
+      <div class="text-center mb-16 fade-up">
+        <h2 class="text-4xl md:text-5xl font-bold mb-4">Starter Kit Included</h2>
+        <p class="text-xl text-zinc-400">25 skills + 5 agents ready to use. One-click install.</p>
+      </div>
+
+      <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-3 mb-12 fade-up">
+        <div class="glass rounded-lg px-3 py-2 text-sm text-center">Code Review Pro</div>
+        <div class="glass rounded-lg px-3 py-2 text-sm text-center">API Doc Writer</div>
+        <div class="glass rounded-lg px-3 py-2 text-sm text-center">Git PR Reviewer</div>
+        <div class="glass rounded-lg px-3 py-2 text-sm text-center">Schema Designer</div>
+        <div class="glass rounded-lg px-3 py-2 text-sm text-center">Docker Debugger</div>
+        <div class="glass rounded-lg px-3 py-2 text-sm text-center">Dependency Auditor</div>
+        <div class="glass rounded-lg px-3 py-2 text-sm text-center">React Generator</div>
+        <div class="glass rounded-lg px-3 py-2 text-sm text-center">CSS Animations</div>
+        <div class="glass rounded-lg px-3 py-2 text-sm text-center">Landing Optimizer</div>
+        <div class="glass rounded-lg px-3 py-2 text-sm text-center">A11y Auditor</div>
+        <div class="glass rounded-lg px-3 py-2 text-sm text-center">Test Coverage</div>
+        <div class="glass rounded-lg px-3 py-2 text-sm text-center">Performance</div>
+        <div class="glass rounded-lg px-3 py-2 text-sm text-center text-zinc-500">+13 more skills</div>
+      </div>
+
+      <div class="flex flex-wrap justify-center gap-4 fade-up stagger-1">
+        <div class="glass rounded-xl px-6 py-3 flex items-center gap-3">
+          <div class="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center">
+            <svg class="w-4 h-4 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>
+          </div>
+          <span class="font-medium">Code Reviewer</span>
+        </div>
+        <div class="glass rounded-xl px-6 py-3 flex items-center gap-3">
+          <div class="w-8 h-8 rounded-lg bg-accent/10 flex items-center justify-center">
+            <svg class="w-4 h-4 text-accent" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 12h14M5 12a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v4a2 2 0 01-2 2M5 12a2 2 0 00-2 2v4a2 2 0 002 2h14a2 2 0 002-2v-4a2 2 0 00-2-2"/></svg>
+          </div>
+          <span class="font-medium">Backend Dev</span>
+        </div>
+        <div class="glass rounded-xl px-6 py-3 flex items-center gap-3">
+          <div class="w-8 h-8 rounded-lg bg-blue-500/10 flex items-center justify-center">
+            <svg class="w-4 h-4 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
+          </div>
+          <span class="font-medium">Frontend Dev</span>
+        </div>
+        <div class="glass rounded-xl px-6 py-3 flex items-center gap-3">
+          <div class="w-8 h-8 rounded-lg bg-green-500/10 flex items-center justify-center">
+            <svg class="w-4 h-4 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+          </div>
+          <span class="font-medium">Test Engineer</span>
+        </div>
+        <div class="glass rounded-xl px-6 py-3 flex items-center gap-3">
+          <div class="w-8 h-8 rounded-lg bg-red-500/10 flex items-center justify-center">
+            <svg class="w-4 h-4 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>
+          </div>
+          <span class="font-medium">Security Auditor</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Tech Stack -->
+  <section class="py-16 px-6 border-y border-white/5">
+    <div class="max-w-6xl mx-auto">
+      <p class="text-center text-sm text-zinc-500 mb-8">POWERED BY</p>
+      <div class="flex flex-wrap justify-center items-center gap-12 text-zinc-400">
+        <span class="text-xl font-semibold">Anthropic</span>
+        <span class="text-xl font-semibold">React</span>
+        <span class="text-xl font-semibold">Electron</span>
+        <span class="text-xl font-semibold">TypeScript</span>
+        <span class="text-xl font-semibold">Tailwind</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- CTA Section -->
+  <section id="download" class="py-32 px-6 relative overflow-hidden">
+    <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-primary/10 rounded-full blur-[120px] -z-10"></div>
+
+    <div class="max-w-4xl mx-auto text-center fade-up">
+      <h2 class="text-4xl md:text-6xl font-bold mb-6">Ready to code with superpowers?</h2>
+      <p class="text-xl text-zinc-400 mb-12">Join thousands of developers building faster with Arena. Open source and free forever.</p>
+
+      <div class="flex flex-col sm:flex-row justify-center gap-4 mb-8">
+        <a href="https://github.com/OneWave-AI/ClaudeCodeArena/releases" class="px-8 py-4 bg-white text-black rounded-xl font-bold text-lg hover:bg-zinc-200 transition-colors flex items-center justify-center gap-2">
+          <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 24 24"><path d="M18.71 19.5C17.88 20.74 17 21.95 15.66 21.97C14.32 22 13.89 21.18 12.37 21.18C10.84 21.18 10.37 21.95 9.1 22C7.79 22.05 6.8 20.68 5.96 19.47C4.25 17 2.94 12.45 4.7 9.39C5.57 7.87 7.13 6.91 8.82 6.88C10.1 6.86 11.32 7.75 12.11 7.75C12.89 7.75 14.37 6.68 15.92 6.84C16.57 6.87 18.39 7.1 19.56 8.82C19.47 8.88 17.39 10.1 17.41 12.63C17.44 15.65 20.06 16.66 20.09 16.67C20.06 16.74 19.67 18.11 18.71 19.5ZM13 3.5C13.73 2.67 14.94 2.04 15.94 2C16.07 3.17 15.6 4.35 14.9 5.19C14.21 6.04 13.07 6.7 11.95 6.61C11.8 5.46 12.36 4.26 13 3.5Z"/></svg>
+          Download for macOS
+        </a>
+        <a href="https://github.com/OneWave-AI/ClaudeCodeArena/releases" class="px-8 py-4 bg-surfaceLight border border-white/10 text-white rounded-xl font-bold text-lg hover:bg-white/10 transition-colors flex items-center justify-center gap-2">
+          <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 24 24"><path d="M3 5.557L10.936 4.5L10.939 12.018L3.007 12.064L3 5.557ZM10.933 12.994L10.94 20.518L3.006 19.456L3.006 13.004L10.933 12.994ZM11.966 4.362L21 3V12.001L11.966 12.082V4.362ZM21.002 12.996L21 21.999L11.966 20.67L11.95 12.983L21.002 12.996Z"/></svg>
+          Windows
+        </a>
+      </div>
+
+      <p class="text-sm text-zinc-500 mb-8">Also available for Linux (.deb, .AppImage)</p>
+
+      <a href="https://github.com/OneWave-AI/ClaudeCodeArena" class="inline-flex items-center gap-2 text-zinc-400 hover:text-white transition-colors">
+        <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/></svg>
+        Star on GitHub
+      </a>
     </div>
   </section>
 
   <!-- Footer -->
-  <footer>
-    <div class="container">
-      <p>
-        ClaudeCode Arena is an open-source project.
-        <a href="https://github.com">View on GitHub</a> ·
-        Built with ❤️ using Electron, React, and Claude
-      </p>
+  <footer class="py-12 px-6 border-t border-white/5">
+    <div class="max-w-6xl mx-auto flex flex-col md:flex-row justify-between items-center gap-6">
+      <div class="flex items-center gap-3">
+        <div class="w-8 h-8 rounded-lg bg-gradient-to-b from-zinc-700 to-zinc-900 flex items-center justify-center border border-white/10">
+          <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none">
+            <path d="M6 8l4 4-4 4" stroke="#FACC15" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+            <rect x="13" y="14" width="5" height="8" rx="1" fill="#FACC15"/>
+          </svg>
+        </div>
+        <span class="text-zinc-400 font-medium">ClaudeCode Arena</span>
+      </div>
+
+      <p class="text-zinc-500 text-sm">Made by <a href="https://onewave-ai.com" class="text-zinc-400 hover:text-white transition-colors">OneWave AI</a></p>
+
+      <div class="flex gap-6 text-sm text-zinc-500">
+        <a href="https://github.com/OneWave-AI/ClaudeCodeArena" class="hover:text-white transition-colors">GitHub</a>
+        <a href="#" class="hover:text-white transition-colors">Privacy</a>
+        <a href="#" class="hover:text-white transition-colors">Terms</a>
+      </div>
     </div>
   </footer>
+
+  <script>
+    // Scroll animations with pop-in effect
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          entry.target.classList.add('visible');
+          observer.unobserve(entry.target);
+        }
+      });
+    }, { threshold: 0.1, rootMargin: '0px 0px -50px 0px' });
+
+    document.querySelectorAll('.fade-up, .pop-in').forEach(el => observer.observe(el));
+
+    // Trigger for elements already visible
+    setTimeout(() => {
+      document.querySelectorAll('.fade-up, .pop-in').forEach(el => {
+        const rect = el.getBoundingClientRect();
+        if (rect.top < window.innerHeight) el.classList.add('visible');
+      });
+    }, 100);
+
+    // 3D Tilt Effect for Cards
+    const tiltCards = document.querySelectorAll('.tilt-card');
+
+    tiltCards.forEach(card => {
+      // Add glare element
+      const glare = document.createElement('div');
+      glare.className = 'tilt-glare';
+      card.appendChild(glare);
+
+      card.addEventListener('mousemove', (e) => {
+        const rect = card.getBoundingClientRect();
+        const x = e.clientX - rect.left;
+        const y = e.clientY - rect.top;
+        const centerX = rect.width / 2;
+        const centerY = rect.height / 2;
+
+        // Calculate rotation (max 8 degrees)
+        const rotateX = ((y - centerY) / centerY) * -8;
+        const rotateY = ((x - centerX) / centerX) * 8;
+
+        // Apply transform
+        card.style.transform = `perspective(1000px) rotateX(${rotateX}deg) rotateY(${rotateY}deg) translateZ(10px) scale(1.02)`;
+
+        // Update glare position
+        const glareX = (x / rect.width) * 100;
+        const glareY = (y / rect.height) * 100;
+        glare.style.setProperty('--glare-x', `${glareX}%`);
+        glare.style.setProperty('--glare-y', `${glareY}%`);
+      });
+
+      card.addEventListener('mouseleave', () => {
+        card.style.transform = 'perspective(1000px) rotateX(0) rotateY(0) translateZ(0) scale(1)';
+      });
+    });
+
+    // Respect reduced motion
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      tiltCards.forEach(card => {
+        card.style.transition = 'none';
+        card.addEventListener('mousemove', () => {});
+      });
+    }
+  </script>
 </body>
 </html>
