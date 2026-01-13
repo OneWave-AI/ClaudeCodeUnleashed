@@ -1,5 +1,5 @@
 import { contextBridge, ipcRenderer } from 'electron'
-import type { IpcApi, ConversationExportOptions, LLMApiRequest, SuperAgentConfig, SuperAgentSession } from '../shared/types'
+import type { IpcApi, ConversationExportOptions, LLMApiRequest, SuperAgentConfig, SuperAgentSession, Hive } from '../shared/types'
 
 const api: IpcApi = {
   // Terminal
@@ -140,6 +140,14 @@ const api: IpcApi = {
   listSuperAgentSessions: () => ipcRenderer.invoke('list-superagent-sessions'),
   deleteSuperAgentSession: (sessionId: string) =>
     ipcRenderer.invoke('delete-superagent-session', sessionId),
+
+  // Hives (Agent Swarms)
+  listHives: () => ipcRenderer.invoke('hive-list'),
+  getHive: (id: string) => ipcRenderer.invoke('hive-get', id),
+  createHive: (hive: Omit<Hive, 'id' | 'createdAt' | 'updatedAt'>) => ipcRenderer.invoke('hive-create', hive),
+  updateHive: (id: string, updates: Partial<Hive>) => ipcRenderer.invoke('hive-update', id, updates),
+  deleteHive: (id: string) => ipcRenderer.invoke('hive-delete', id),
+  resetHives: () => ipcRenderer.invoke('hive-reset'),
 
   // Window Controls
   windowClose: () => ipcRenderer.invoke('window-close'),

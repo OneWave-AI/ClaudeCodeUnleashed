@@ -10,6 +10,7 @@ import { registerGitHandlers } from './git'
 import { registerSettingsHandlers, initializeSettings } from './settings'
 import { registerMCPHandlers } from './mcp'
 import { registerSuperAgentHandlers } from './superagent'
+import { registerHiveHandlers } from './hives'
 
 export function registerIpcHandlers(): void {
   // Terminal handlers
@@ -35,6 +36,9 @@ export function registerIpcHandlers(): void {
 
   // Super Agent handlers
   registerSuperAgentHandlers()
+
+  // Hive handlers
+  registerHiveHandlers()
 
   // Initialize settings (apply window opacity, etc.)
   initializeSettings()

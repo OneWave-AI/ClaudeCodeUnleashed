@@ -94,6 +94,16 @@ export default function AnalyticsScreen({ onBack }: AnalyticsScreenProps) {
         const conversations: Conversation[] = await window.api.listConversations()
         console.log('[Analytics] Loaded conversations:', conversations.length)
 
+        // Debug: Log sample conversation data
+        if (conversations.length > 0) {
+          console.log('[Analytics] Sample conversation:', {
+            timestamp: conversations[0].timestamp,
+            date: new Date(conversations[0].timestamp).toISOString(),
+            stats: conversations[0].stats,
+            projectFolder: conversations[0].projectFolder
+          })
+        }
+
         const now = new Date()
         const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000)
         const fourteenDaysAgo = new Date(now.getTime() - 14 * 24 * 60 * 60 * 1000)
@@ -176,6 +186,9 @@ export default function AnalyticsScreen({ onBack }: AnalyticsScreenProps) {
             dayData.sessions++
             dayData.minutes += durationMinutes
             dayData.tokens += tokens
+          } else {
+            // Debug: conversation date not in 30-day range
+            console.log('[Analytics] Conv date not in range:', convDateStr, 'timestamp:', conv.timestamp)
           }
 
           // Hourly and weekday activity
@@ -303,6 +316,14 @@ export default function AnalyticsScreen({ onBack }: AnalyticsScreenProps) {
         // Convert daily activity to array
         const dailyActivity = Array.from(dailyMap.entries())
           .map(([date, data]) => ({ date, ...data }))
+
+        // Debug: Log daily activity summary
+        const activeDays = dailyActivity.filter(d => d.sessions > 0)
+        console.log('[Analytics] Daily activity:', {
+          totalDays: dailyActivity.length,
+          activeDays: activeDays.length,
+          sample: activeDays.slice(0, 3)
+        })
 
         // Find most active day and hour
         const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
@@ -670,11 +691,14 @@ function OverviewTab({ analytics, filteredStats, period, onProjectClick, onViewA
           </div>
           <div className="flex items-end gap-1 h-32">
             {(analytics.dailyActivity.length > 0 ? analytics.dailyActivity :
-              // Fallback: generate 30 empty days if no data
+              // Fallback: generate 30 empty days if no data (use local date format to match real data)
               Array.from({ length: 30 }, (_, i) => {
                 const date = new Date()
                 date.setDate(date.getDate() - (29 - i))
-                return { date: date.toISOString().split('T')[0], sessions: 0, minutes: 0, tokens: 0 }
+                const year = date.getFullYear()
+                const month = String(date.getMonth() + 1).padStart(2, '0')
+                const day = String(date.getDate()).padStart(2, '0')
+                return { date: `${year}-${month}-${day}`, sessions: 0, minutes: 0, tokens: 0 }
               })
             ).map((day, i, arr) => {
               const maxSessions = Math.max(...arr.map(d => d.sessions), 1)

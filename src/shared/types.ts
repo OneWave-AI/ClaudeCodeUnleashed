@@ -52,6 +52,26 @@ export interface Plugin {
   enabled: boolean
 }
 
+// Hive (Agent Swarm) types
+export interface Hive {
+  id: string
+  name: string
+  icon: string
+  description: string
+  prompt: string
+  category: 'audit' | 'action' | 'design' | 'custom'
+  color: string
+  enabled: boolean
+  createdAt: number
+  updatedAt: number
+}
+
+export interface HiveOperationResult {
+  success: boolean
+  error?: string
+  hive?: Hive
+}
+
 export interface SkillMetadata {
   categories?: string[]
   lastUsed?: number
@@ -344,6 +364,14 @@ export interface IpcApi {
   saveSuperAgentSession: (session: SuperAgentSession) => Promise<{ success: boolean }>
   listSuperAgentSessions: () => Promise<SuperAgentSession[]>
   deleteSuperAgentSession: (sessionId: string) => Promise<{ success: boolean }>
+
+  // Hives (Agent Swarms)
+  listHives: () => Promise<Hive[]>
+  getHive: (id: string) => Promise<Hive | null>
+  createHive: (hive: Omit<Hive, 'id' | 'createdAt' | 'updatedAt'>) => Promise<HiveOperationResult>
+  updateHive: (id: string, updates: Partial<Hive>) => Promise<HiveOperationResult>
+  deleteHive: (id: string) => Promise<HiveOperationResult>
+  resetHives: () => Promise<HiveOperationResult>
 
   // Window Controls
   windowClose: () => Promise<void>
