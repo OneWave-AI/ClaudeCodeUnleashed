@@ -208,9 +208,13 @@ export default function AnalyticsScreen({ onBack }: AnalyticsScreenProps) {
                 projectDaily.set(dateStr, { sessions: 0, minutes: 0 })
               }
 
+              // Create a readable project name from the path
+              // Handle paths like /Users/gabe/project or -Users-gabe-project
+              const projectName = getProjectName(conv.projectFolder)
+
               project = {
                 folder: conv.projectFolder,
-                name: conv.projectFolder.split('/').pop() || 'Unknown',
+                name: projectName,
                 totalSessions: 0,
                 totalTimeMinutes: 0,
                 totalTokens: 0,
@@ -1185,4 +1189,58 @@ function formatRelativeTime(timestamp: number): string {
   if (hours < 24) return `${hours}h ago`
   if (days < 7) return `${days}d ago`
   return new Date(timestamp).toLocaleDateString()
+}
+
+// Helper to create readable project names from folder paths
+// Handles both /Users/gabe/project and -Users-gabe-project formats
+function getProjectName(folder: string): string {
+  // Normalize the path - handle dash-separated format from Claude
+  // e.g., "-Users-gabe-myproject" -> "/Users/gabe/myproject"
+  let normalizedPath = folder
+  if (folder.startsWith('-')) {
+    normalizedPath = folder.replace(/-/g, '/')
+  }
+
+  // Split path into segments
+  const segments = normalizedPath.split('/').filter(Boolean)
+
+  // If we have enough segments, return last 2 for context
+  // e.g., /Users/gabe/Code/myproject -> "Code/myproject"
+  // e.g., /Users/gabe/myproject -> "gabe/myproject"
+  if (segments.length >= 2) {
+    // Skip common base directories for cleaner names
+    const skipDirs = ['Users', 'home', 'var', 'tmp', 'opt']
+    let startIndex = 0
+
+    // Find where the interesting part starts (skip Users/username typically)
+    for (let i = 0; i < segments.length - 1; i++) {
+      if (skipDirs.includes(segments[i])) {
+        startIndex = i + 1
+      } else {
+        break
+      }
+    }
+
+    // If the next segment after Users is the username, skip that too
+    if (startIndex < segments.length - 1 && segments.length > startIndex + 1) {
+      // Check if it looks like a username (short, no special chars)
+      const potentialUsername = segments[startIndex]
+      if (potentialUsername.length <= 20 && /^[a-zA-Z0-9_-]+$/.test(potentialUsername)) {
+        startIndex++
+      }
+    }
+
+    // Get remaining meaningful segments
+    const meaningfulSegments = segments.slice(startIndex)
+
+    // Return last 2 meaningful segments for context
+    if (meaningfulSegments.length >= 2) {
+      return meaningfulSegments.slice(-2).join('/')
+    } else if (meaningfulSegments.length === 1) {
+      return meaningfulSegments[0]
+    }
+  }
+
+  // Fallback to just the last segment
+  return segments[segments.length - 1] || folder
 }
