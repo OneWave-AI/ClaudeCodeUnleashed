@@ -1,6 +1,6 @@
 {
   "name": "claudecodeui-v2",
-  "version": "2.0.0",
+  "version": "2.1.0",
   "description": "Modern GUI for Claude Code CLI",
   "main": "./out/main/index.js",
   "author": "Gabe",
