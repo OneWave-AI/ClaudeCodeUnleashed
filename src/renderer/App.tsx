@@ -13,8 +13,9 @@ import { ToastProvider } from './components/common/Toast'
 import { useAppStore } from './store'
 import { SuperAgentModal, SuperAgentStatusBar } from './components/superagent'
 import { useSuperAgent } from './hooks/useSuperAgent'
+import HiveManager from './components/hives/HiveManager'
 
-type Screen = 'home' | 'terminal' | 'skills' | 'history' | 'analytics'
+type Screen = 'home' | 'terminal' | 'skills' | 'history' | 'analytics' | 'hive'
 
 function App() {
   const [showSplash, setShowSplash] = useState(true)
@@ -64,7 +65,7 @@ function App() {
   }, [setCwd])
 
   const handleNavigate = useCallback((screenName: string) => {
-    if (['home', 'terminal', 'skills', 'history', 'analytics'].includes(screenName)) {
+    if (['home', 'terminal', 'skills', 'history', 'analytics', 'hive'].includes(screenName)) {
       navigateTo(screenName as Screen)
     }
   }, [navigateTo])
@@ -132,15 +133,7 @@ function App() {
                     pendingSuperAgentOpen.current = true
                   }
                 }}
-                onOpenHive={() => {
-                  // Hive opens super agent modal with swarm management
-                  navigateTo('terminal')
-                  if (activeTerminalId) {
-                    setSuperAgentModalOpen(true)
-                  } else {
-                    pendingSuperAgentOpen.current = true
-                  }
-                }}
+                onOpenHive={() => navigateTo('hive')}
               />
             )}
 
@@ -181,6 +174,10 @@ function App() {
 
             {screen === 'analytics' && (
               <AnalyticsScreen onBack={() => navigateTo('home')} />
+            )}
+
+            {screen === 'hive' && (
+              <HiveManager onBack={() => navigateTo('home')} />
             )}
 
             {/* Super Agent Status Panel - integrated into layout */}
