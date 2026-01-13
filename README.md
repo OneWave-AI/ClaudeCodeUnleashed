@@ -1,10 +1,10 @@
-# ClaudeCode Arena
+# Claude Code Unleashed
 
 **Code with Superpowers.**
 
 The premium native desktop experience for [Claude Code](https://github.com/anthropics/claude-code). Multi-agent swarms, analytics, and a beautiful zero-config environment that lets you build faster—whether you're a developer or just getting started.
 
-[![Version](https://img.shields.io/badge/version-2.0.0-red)](https://github.com/OneWave-AI/ClaudeCodeArena/releases)
+[![Version](https://img.shields.io/badge/version-2.0.0-red)](https://github.com/OneWave-AI/ClaudeCodeUnleashed/releases)
 [![Made by OneWave AI](https://img.shields.io/badge/made%20by-OneWave--AI-orange)](https://onewave-ai.com)
 
 ## Screenshots
@@ -24,13 +24,13 @@ The premium native desktop experience for [Claude Code](https://github.com/anthr
 ## Who Is This For?
 
 ### For Developers
-Stop context switching. Arena gives you a native terminal environment that integrates directly with your existing toolchain.
+Stop context switching. Unleashed gives you a native terminal environment that integrates directly with your existing toolchain.
 - **Full Git Workflow**: Visual commit graphs, one-click PRs, and conflict resolution without leaving the app
 - **Multi-Agent Swarms**: Spin up specialized agents for testing, security, and refactoring to run in parallel
 - **Zero Config**: Auto-detects your dev server, linter, and package manager instantly
 
 ### For Everyone
-You don't need to be a coding expert to build amazing things. Arena translates your ideas into working software.
+You don't need to be a coding expert to build amazing things. Unleashed translates your ideas into working software.
 - **Natural Language**: Just describe what you want—"Make a landing page for my bakery"—and watch it happen
 - **Visual Feedback**: See your changes live as they happen in the built-in browser preview
 - **Automate Anything**: From organizing spreadsheets to scraping websites, let AI do the boring work
@@ -201,7 +201,7 @@ View documents directly in the app:
 
 ### From Release (Recommended)
 
-1. Go to [Releases](https://github.com/OneWave-AI/ClaudeCodeArena/releases)
+1. Go to [Releases](https://github.com/OneWave-AI/ClaudeCodeUnleashed/releases)
 2. Download the appropriate installer for your platform:
    - macOS: `.dmg` (universal - works on Intel and Apple Silicon)
    - Windows: `.exe` installer
@@ -221,8 +221,8 @@ Since the app is not signed with an Apple Developer certificate:
 
 ```bash
 # Clone the repository
-git clone https://github.com/OneWave-AI/ClaudeCodeArena.git
-cd ClaudeCodeArena
+git clone https://github.com/OneWave-AI/ClaudeCodeUnleashed.git
+cd ClaudeCodeUnleashed
 
 # Install dependencies
 npm install

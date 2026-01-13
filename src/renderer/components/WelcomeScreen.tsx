@@ -19,16 +19,16 @@ interface WelcomeScreenProps {
 }
 
 const APP_VERSION = '2.2.0'
-const LAST_SEEN_KEY = 'claudeCodeArena_lastSeenVersion'
+const LAST_SEEN_KEY = 'claudeCodeUnleashed_lastSeenVersion'
 
 // Feature carousel steps
 const FEATURES = [
   {
     id: 'welcome',
     icon: Sparkles,
-    title: 'Welcome to Claude Code Arena',
+    title: 'Welcome to Claude Code Unleashed',
     subtitle: 'Your Premium AI Terminal Experience',
-    description: 'A powerful, feature-rich terminal interface for Claude AI. Navigate through this guide to discover everything Claude Code Arena has to offer.',
+    description: 'A powerful, feature-rich terminal interface for Claude AI. Navigate through this guide to discover everything Claude Code Unleashed has to offer.',
     color: 'from-[#cc785c] to-[#e8956e]',
     iconBg: 'bg-gradient-to-br from-[#cc785c]/20 to-[#e8956e]/20',
     tips: [

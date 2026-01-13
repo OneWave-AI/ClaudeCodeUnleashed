@@ -3,8 +3,35 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>ClaudeCode Arena - Code with Superpowers</title>
+  <title>Claude Code Unleashed - Code with Superpowers</title>
   <meta name="description" content="The premium native desktop experience for Claude Code. Multi-agent swarms, analytics, and a beautiful zero-config environment.">
+
+  <!-- Favicon -->
+  <link rel="icon" type="image/svg+xml" href="favicon.svg">
+  <link rel="icon" type="image/png" href="favicon.png">
+  <link rel="apple-touch-icon" href="favicon.png">
+
+  <!-- Open Graph / Facebook -->
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://claudecodeunleashed.com/">
+  <meta property="og:title" content="Claude Code Unleashed - Code with Superpowers">
+  <meta property="og:description" content="The desktop app that makes Claude Code accessible to everyone. Agent swarms. Visual history. One-click skills. No terminal required.">
+  <meta property="og:image" content="https://website-six-theta-50.vercel.app/dashboard.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+
+  <!-- Twitter -->
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:url" content="https://claudecodeunleashed.com/">
+  <meta name="twitter:title" content="Claude Code Unleashed - Code with Superpowers">
+  <meta name="twitter:description" content="The desktop app that makes Claude Code accessible to everyone. Agent swarms. Visual history. One-click skills. No terminal required.">
+  <meta name="twitter:image" content="https://website-six-theta-50.vercel.app/dashboard.png">
+
+  <!-- Additional Meta -->
+  <meta name="theme-color" content="#FF4F18">
+  <meta name="author" content="OneWave AI">
+  <link rel="canonical" href="https://claudecodeunleashed.com/">
+
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -283,42 +310,69 @@
 
   <!-- Navigation -->
   <nav class="fixed top-0 w-full z-50 glass">
-    <div class="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
-      <a href="#" class="flex items-center gap-3" onclick="window.scrollTo({top:0,behavior:'smooth'})">
-        <div class="w-9 h-9 rounded-xl bg-gradient-to-b from-zinc-700 to-zinc-900 border border-white/10 flex items-center justify-center shadow-lg">
-          <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 h-14 sm:h-16 flex items-center justify-between">
+      <!-- Logo -->
+      <a href="#" class="flex items-center gap-2 sm:gap-3" onclick="window.scrollTo({top:0,behavior:'smooth'})">
+        <div class="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-gradient-to-b from-zinc-700 to-zinc-900 border border-white/10 flex items-center justify-center shadow-lg">
+          <svg class="w-4 h-4 sm:w-5 sm:h-5" viewBox="0 0 24 24" fill="none">
             <path d="M6 8l4 4-4 4" stroke="#FACC15" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
             <rect x="13" y="14" width="5" height="8" rx="1" fill="#FACC15"/>
           </svg>
         </div>
-        <span class="font-bold text-lg">ClaudeCode Arena</span>
+        <span class="font-bold text-base sm:text-lg">Unleashed</span>
       </a>
 
-      <div class="hidden md:flex items-center gap-1 text-sm">
-        <a href="why.html" class="px-4 py-2 text-zinc-400 hover:text-white transition-colors">Why Arena?</a>
+      <!-- Desktop Nav -->
+      <div class="hidden lg:flex items-center gap-1 text-sm">
+        <a href="why.html" class="px-4 py-2 text-zinc-400 hover:text-white transition-colors">Why Unleashed?</a>
         <a href="#features" class="px-4 py-2 text-zinc-400 hover:text-white transition-colors">Features</a>
         <a href="#developers" class="px-4 py-2 text-zinc-400 hover:text-white transition-colors">For Developers</a>
         <a href="#everyone" class="px-4 py-2 text-zinc-400 hover:text-white transition-colors">For Everyone</a>
-        <a href="https://github.com/OneWave-AI/ClaudeCodeArena" class="px-4 py-2 text-zinc-400 hover:text-white transition-colors flex items-center gap-2">
+        <a href="https://github.com/OneWave-AI/ClaudeCodeUnleashed" class="px-4 py-2 text-zinc-400 hover:text-white transition-colors flex items-center gap-2">
           <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/></svg>
           GitHub
         </a>
       </div>
 
-      <div class="flex items-center gap-3">
-        <a href="https://github.com/OneWave-AI/ClaudeCodeArena" class="hidden sm:flex items-center gap-2 px-4 py-2 rounded-lg border border-white/10 text-sm text-zinc-300 hover:bg-white/5 transition-colors">
+      <!-- Right side buttons -->
+      <div class="flex items-center gap-2 sm:gap-3">
+        <a href="https://github.com/OneWave-AI/ClaudeCodeUnleashed" class="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-lg border border-white/10 text-xs sm:text-sm text-zinc-300 hover:bg-white/5 transition-colors">
           <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M12 .587l3.668 7.568 8.332 1.151-6.064 5.828 1.48 8.279-7.416-3.967-7.417 3.967 1.481-8.279-6.064-5.828 8.332-1.151z"/></svg>
           Star
         </a>
-        <a href="#download" class="px-5 py-2 bg-primary hover:bg-primaryHover text-white rounded-lg text-sm font-semibold transition-colors">
+        <a href="https://github.com/OneWave-AI/ClaudeCodeUnleashed/releases" class="px-4 py-2 sm:px-5 bg-primary hover:bg-primaryHover text-white rounded-lg text-xs sm:text-sm font-semibold transition-colors">
           Download
         </a>
+        <!-- Mobile menu button -->
+        <button id="mobile-menu-btn" class="lg:hidden p-2 text-zinc-400 hover:text-white transition-colors" aria-label="Toggle menu">
+          <svg class="w-6 h-6 menu-open" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/></svg>
+          <svg class="w-6 h-6 menu-close hidden" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+        </button>
+      </div>
+    </div>
+
+    <!-- Mobile Menu -->
+    <div id="mobile-menu" class="lg:hidden hidden">
+      <div class="px-4 py-4 space-y-1 border-t border-white/5 bg-surface/95 backdrop-blur-xl">
+        <a href="why.html" class="block px-4 py-3 text-zinc-300 hover:text-white hover:bg-white/5 rounded-lg transition-colors">Why Unleashed?</a>
+        <a href="#features" class="mobile-link block px-4 py-3 text-zinc-300 hover:text-white hover:bg-white/5 rounded-lg transition-colors">Features</a>
+        <a href="#developers" class="mobile-link block px-4 py-3 text-zinc-300 hover:text-white hover:bg-white/5 rounded-lg transition-colors">For Developers</a>
+        <a href="#everyone" class="mobile-link block px-4 py-3 text-zinc-300 hover:text-white hover:bg-white/5 rounded-lg transition-colors">For Everyone</a>
+        <a href="https://github.com/OneWave-AI/ClaudeCodeUnleashed" class="block px-4 py-3 text-zinc-300 hover:text-white hover:bg-white/5 rounded-lg transition-colors flex items-center gap-2">
+          <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/></svg>
+          GitHub
+        </a>
+        <div class="pt-2">
+          <a href="https://github.com/OneWave-AI/ClaudeCodeUnleashed/releases" class="block w-full px-4 py-3 bg-primary hover:bg-primaryHover text-white text-center rounded-lg font-semibold transition-colors">
+            Download Free
+          </a>
+        </div>
       </div>
     </div>
   </nav>
 
   <!-- Hero Section -->
-  <section class="pt-32 pb-20 md:pt-44 md:pb-32 px-6 relative overflow-hidden">
+  <section class="pt-24 pb-16 sm:pt-32 sm:pb-20 md:pt-44 md:pb-32 px-4 sm:px-6 relative overflow-hidden">
     <!-- Aurora Borealis Background -->
     <div class="aurora-container">
       <div class="aurora"></div>
@@ -332,43 +386,50 @@
       <div class="wave-line"></div>
     </div>
 
-    <div class="max-w-6xl mx-auto text-center">
-      <!-- Badge -->
-      <div class="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-white/5 border border-white/10 text-sm text-zinc-300 mb-8 fade-up">
-        <span class="w-2 h-2 rounded-full bg-primary animate-pulse"></span>
-        v2.0 Released
-      </div>
-
-      <!-- Narrative Hook -->
-      <p class="text-lg text-zinc-500 max-w-2xl mx-auto mb-6 fade-up">
-        If you've used Claude Code, you know it just works different. It's just <em class="text-zinc-400">better</em>. We were power users who wanted more—a real desktop app, better workflows, and full customization. So we built it.
-      </p>
-
+    <div class="max-w-5xl mx-auto text-center">
       <!-- Headline -->
-      <h1 class="text-5xl md:text-7xl lg:text-8xl font-extrabold tracking-tight mb-6 fade-up stagger-1">
-        Code with <span class="text-transparent bg-clip-text bg-gradient-to-r from-primary to-orange-400">Superpowers</span>
+      <h1 class="text-4xl sm:text-5xl md:text-7xl lg:text-[5.5rem] font-extrabold tracking-tight mb-4 sm:mb-6 fade-up leading-[1.1]">
+        Claude Code.<br>
+        <span class="text-transparent bg-clip-text bg-gradient-to-r from-primary via-orange-400 to-primary">Unleashed.</span>
       </h1>
 
       <!-- Subhead -->
-      <p class="text-xl md:text-2xl text-zinc-400 max-w-3xl mx-auto mb-10 leading-relaxed fade-up stagger-2">
-        The premium native desktop GUI for Claude Code. Multi-agent swarms, analytics, skills marketplace, and a beautiful zero-config environment—built by power users, for everyone.
+      <p class="text-base sm:text-lg md:text-xl text-zinc-400 max-w-2xl mx-auto mb-6 sm:mb-8 leading-relaxed fade-up stagger-1">
+        The desktop app that makes Claude Code accessible to everyone. Agent swarms. Visual history. One-click skills. No terminal required.
       </p>
 
-      <!-- Dual CTAs -->
-      <div class="flex flex-col sm:flex-row items-center justify-center gap-4 mb-6 fade-up stagger-3">
-        <a href="#download" class="w-full sm:w-auto px-8 py-4 bg-primary hover:bg-primaryHover text-white rounded-xl font-bold text-lg transition-all glow-primary">
+      <!-- Narrative Hook -->
+      <p class="text-xs sm:text-sm text-zinc-500 max-w-xl mx-auto mb-8 sm:mb-10 fade-up stagger-2">
+        Built by power users who hit every limitation—and fixed them.
+      </p>
+
+      <!-- CTAs -->
+      <div class="flex flex-col sm:flex-row items-center justify-center gap-3 mb-6 sm:mb-8 fade-up stagger-2">
+        <a href="https://github.com/OneWave-AI/ClaudeCodeUnleashed/releases" class="group w-full sm:w-auto px-6 py-3 sm:px-8 sm:py-4 bg-primary hover:bg-primaryHover text-white rounded-xl font-semibold text-sm sm:text-base transition-all glow-primary flex items-center justify-center gap-2">
+          <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
           Download Free
         </a>
-        <a href="https://github.com/OneWave-AI/ClaudeCodeArena" class="w-full sm:w-auto px-8 py-4 bg-white/5 hover:bg-white/10 border border-white/10 text-white rounded-xl font-bold text-lg transition-all flex items-center justify-center gap-2">
-          <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M12 .587l3.668 7.568 8.332 1.151-6.064 5.828 1.48 8.279-7.416-3.967-7.417 3.967 1.481-8.279-6.064-5.828 8.332-1.151z"/></svg>
-          Star on GitHub
+        <a href="https://github.com/OneWave-AI/ClaudeCodeUnleashed" class="w-full sm:w-auto px-6 py-3 sm:px-8 sm:py-4 bg-white/5 hover:bg-white/10 border border-white/10 text-white rounded-xl font-semibold text-sm sm:text-base transition-all flex items-center justify-center gap-2">
+          <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/></svg>
+          View on GitHub
         </a>
       </div>
 
-      <!-- Trust Badge -->
-      <p class="text-sm text-zinc-500 mb-16 fade-up stagger-3">
-        Open Source  •  Free Forever  •  Made by <a href="https://onewave-ai.com" class="text-zinc-400 hover:text-white transition-colors">OneWave AI</a>
-      </p>
+      <!-- Trust indicators -->
+      <div class="flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-xs text-zinc-500 mb-16 fade-up stagger-3">
+        <span class="flex items-center gap-1.5">
+          <span class="w-1.5 h-1.5 rounded-full bg-green-500"></span>
+          Open Source
+        </span>
+        <span class="flex items-center gap-1.5">
+          <span class="w-1.5 h-1.5 rounded-full bg-green-500"></span>
+          Free Forever
+        </span>
+        <span class="flex items-center gap-1.5">
+          <span class="w-1.5 h-1.5 rounded-full bg-green-500"></span>
+          Mac, Windows, Linux
+        </span>
+      </div>
 
       <!-- Screenshot - 3D Floating Effect -->
       <div class="relative max-w-5xl mx-auto fade-up stagger-3 perspective-container">
@@ -389,68 +450,68 @@
               <div class="w-3 h-3 rounded-full bg-yellow-500 shadow-lg shadow-yellow-500/30"></div>
               <div class="w-3 h-3 rounded-full bg-green-500 shadow-lg shadow-green-500/30"></div>
             </div>
-            <span class="mx-auto text-xs text-zinc-500 font-mono">ClaudeCode Arena</span>
+            <span class="mx-auto text-xs text-zinc-500 font-mono">Claude Code Unleashed</span>
           </div>
-          <img src="dashboard.png" alt="ClaudeCode Arena Dashboard" class="w-full">
+          <img src="dashboard.png" alt="Claude Code Unleashed Dashboard" class="w-full">
         </div>
       </div>
     </div>
   </section>
 
   <!-- What Is This? Explainer -->
-  <section class="py-24 px-6 border-b border-white/5">
+  <section class="py-16 sm:py-24 px-4 sm:px-6 border-b border-white/5">
     <div class="max-w-4xl mx-auto">
       <div class="text-center mb-12 fade-up">
-        <p class="text-primary font-semibold mb-3">Wait, what is this exactly?</p>
-        <h2 class="text-4xl md:text-5xl font-bold mb-6">Your AI Assistant,<br>With a Real App</h2>
+        <p class="text-primary font-semibold mb-3 uppercase text-sm tracking-wide">Wait, what is this exactly?</p>
+        <h2 class="text-4xl md:text-5xl font-bold mb-6">Your AI Assistant,<br>With a <span class="underline decoration-primary decoration-4 underline-offset-8">Real App</span></h2>
       </div>
 
       <div class="space-y-8 text-lg text-zinc-400 leading-relaxed fade-up stagger-1">
         <p>
-          <strong class="text-white">Claude Code</strong> is Anthropic's AI that can actually <em>do things</em> on your computer—write files, run commands, analyze data, build websites. It's not just a chatbot. It's an AI that works.
+          <strong class="text-white">Claude Code</strong> is Anthropic's AI that can actually <em class="text-white">do things</em> on your computer—write files, run commands, analyze data, build websites. It's not just a chatbot. It's an <span class="text-white underline decoration-primary decoration-2 underline-offset-4">AI that works</span>.
         </p>
 
         <p>
-          The problem? Claude Code runs in a terminal. If you're not a developer, that's intimidating. And even if you <em>are</em> a developer, the terminal is limiting—no visual feedback, no file browser, no way to run multiple tasks at once.
+          <span class="text-primary font-semibold">The problem?</span> Claude Code runs in a <span class="font-mono bg-zinc-800 px-2 py-1 rounded text-zinc-300">terminal</span>. If you're not a developer, that's intimidating. And even if you <em class="text-white">are</em> a developer, the terminal is limiting—no visual feedback, no file browser, no way to run multiple tasks at once.
         </p>
 
         <p>
-          <strong class="text-white">ClaudeCode Arena fixes that.</strong> It's a desktop app that wraps Claude Code in a beautiful interface. You get a real file explorer, split terminals, live previews, and the ability to launch multiple AI agents working in parallel. Same powerful Claude Code underneath—but now anyone can use it.
+          <strong class="text-primary text-xl">Claude Code Unleashed fixes that.</strong> It's a desktop app that wraps Claude Code in a beautiful interface. You get a real file explorer, split terminals, live previews, and the ability to launch <span class="text-white font-semibold">multiple AI agents</span> working in parallel. Same powerful Claude Code underneath—but now <span class="underline decoration-primary decoration-2 underline-offset-4 text-white">anyone</span> can use it.
         </p>
       </div>
 
       <!-- Use Cases Grid -->
       <div class="grid sm:grid-cols-2 lg:grid-cols-4 gap-4 mt-12 fade-up stagger-2">
-        <div class="glass rounded-xl p-4 text-center">
-          <div class="text-2xl mb-2">📊</div>
+        <div class="glass rounded-xl p-5 text-center group hover:border-primary/30 transition-all">
+          <div class="text-3xl mb-3 group-hover:scale-110 transition-transform">📊</div>
           <p class="text-sm text-zinc-300">"Analyze this spreadsheet and show me trends"</p>
         </div>
-        <div class="glass rounded-xl p-4 text-center">
-          <div class="text-2xl mb-2">🌐</div>
+        <div class="glass rounded-xl p-5 text-center group hover:border-primary/30 transition-all">
+          <div class="text-3xl mb-3 group-hover:scale-110 transition-transform">🌐</div>
           <p class="text-sm text-zinc-300">"Build me a landing page for my business"</p>
         </div>
-        <div class="glass rounded-xl p-4 text-center">
-          <div class="text-2xl mb-2">📁</div>
+        <div class="glass rounded-xl p-5 text-center group hover:border-primary/30 transition-all">
+          <div class="text-3xl mb-3 group-hover:scale-110 transition-transform">📁</div>
           <p class="text-sm text-zinc-300">"Organize my photos by date and location"</p>
         </div>
-        <div class="glass rounded-xl p-4 text-center">
-          <div class="text-2xl mb-2">🔍</div>
+        <div class="glass rounded-xl p-5 text-center group hover:border-primary/30 transition-all">
+          <div class="text-3xl mb-3 group-hover:scale-110 transition-transform">🔍</div>
           <p class="text-sm text-zinc-300">"Research competitors and summarize findings"</p>
         </div>
       </div>
 
-      <p class="text-center text-zinc-500 mt-8 fade-up stagger-3">
-        Just tell it what you want. ClaudeCode Arena handles the rest.
+      <p class="text-center mt-10 fade-up stagger-3">
+        <span class="text-zinc-500">Just tell it what you want.</span> <span class="text-primary font-semibold">Claude Code Unleashed handles the rest.</span>
       </p>
     </div>
   </section>
 
   <!-- Who Is This For? -->
-  <section class="py-24 px-6 bg-surface/50">
+  <section class="py-16 sm:py-24 px-4 sm:px-6 bg-surface/50">
     <div class="max-w-6xl mx-auto">
       <div class="text-center mb-16 fade-up">
-        <h2 class="text-4xl md:text-5xl font-bold mb-4">Built for Everyone</h2>
-        <p class="text-xl text-zinc-400 max-w-2xl mx-auto">People use Claude Code for way more than coding—data analysis, research, automation, content creation. Arena is for those everyday users <em>and</em> the power users.</p>
+        <h2 class="text-4xl md:text-5xl font-bold mb-4">Built for <span class="text-primary">Everyone</span></h2>
+        <p class="text-xl text-zinc-400 max-w-2xl mx-auto">People use Claude Code for way more than coding—data analysis, research, automation, content creation. Unleashed is for those <span class="text-white">everyday users</span> <em class="text-primary font-semibold not-italic">and</em> the <span class="text-white">power users</span>.</p>
       </div>
 
       <div class="grid md:grid-cols-2 gap-8">
@@ -462,7 +523,7 @@
             </div>
             <h3 class="text-2xl font-bold">For Developers</h3>
           </div>
-          <p class="text-zinc-400 mb-6 text-lg">Stop context switching. Arena gives you a native terminal environment that integrates directly with your existing toolchain.</p>
+          <p class="text-zinc-400 mb-6 text-lg">Stop context switching. Unleashed gives you a native terminal environment that integrates directly with your existing toolchain.</p>
           <ul class="space-y-4">
             <li class="flex items-start gap-3">
               <svg class="w-5 h-5 text-primary mt-0.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
@@ -491,7 +552,7 @@
             </div>
             <h3 class="text-2xl font-bold">For Everyone</h3>
           </div>
-          <p class="text-zinc-400 mb-6 text-lg">You don't need to write code. Claude Code handles data analysis, research, automation—Arena makes it even easier.</p>
+          <p class="text-zinc-400 mb-6 text-lg">You don't need to write code. Claude Code handles data analysis, research, automation—Unleashed makes it even easier.</p>
           <ul class="space-y-4">
             <li class="flex items-start gap-3">
               <svg class="w-5 h-5 text-accent mt-0.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
@@ -516,7 +577,7 @@
   </section>
 
   <!-- How It Works -->
-  <section class="py-24 px-6">
+  <section class="py-16 sm:py-24 px-4 sm:px-6">
     <div class="max-w-6xl mx-auto">
       <div class="text-center mb-16 fade-up">
         <h2 class="text-4xl md:text-5xl font-bold mb-4">From Idea to Production</h2>
@@ -558,7 +619,7 @@
   </section>
 
   <!-- Hero Features (Bento Grid) -->
-  <section id="features" class="py-24 px-6 bg-surface/50">
+  <section id="features" class="py-16 sm:py-24 px-4 sm:px-6 bg-surface/50">
     <div class="max-w-6xl mx-auto">
       <div class="text-center mb-16 fade-up">
         <h2 class="text-4xl md:text-5xl font-bold mb-4">Powerful Features</h2>
@@ -691,11 +752,11 @@
   </section>
 
   <!-- Full Feature Showcase (Expandable) -->
-  <section class="py-24 px-6">
+  <section class="py-16 sm:py-24 px-4 sm:px-6">
     <div class="max-w-4xl mx-auto">
       <div class="text-center mb-16 fade-up">
         <h2 class="text-4xl md:text-5xl font-bold mb-4">All Features</h2>
-        <p class="text-xl text-zinc-400">Everything included in Arena.</p>
+        <p class="text-xl text-zinc-400">Everything included in Unleashed.</p>
       </div>
 
       <div class="space-y-4 fade-up">
@@ -799,7 +860,7 @@
   </section>
 
   <!-- Starter Kit -->
-  <section class="py-24 px-6 bg-surface/50">
+  <section class="py-16 sm:py-24 px-4 sm:px-6 bg-surface/50">
     <div class="max-w-6xl mx-auto">
       <div class="text-center mb-16 fade-up">
         <h2 class="text-4xl md:text-5xl font-bold mb-4">Starter Kit Included</h2>
@@ -858,7 +919,7 @@
   </section>
 
   <!-- Tech Stack -->
-  <section class="py-16 px-6 border-y border-white/5">
+  <section class="py-12 sm:py-16 px-4 sm:px-6 border-y border-white/5">
     <div class="max-w-6xl mx-auto">
       <p class="text-center text-sm text-zinc-500 mb-8">POWERED BY</p>
       <div class="flex flex-wrap justify-center items-center gap-12 text-zinc-400">
@@ -877,14 +938,14 @@
 
     <div class="max-w-4xl mx-auto text-center fade-up">
       <h2 class="text-4xl md:text-6xl font-bold mb-6">Ready to code with superpowers?</h2>
-      <p class="text-xl text-zinc-400 mb-12">Join thousands of developers building faster with Arena. Open source and free forever.</p>
+      <p class="text-xl text-zinc-400 mb-12">Join thousands of developers building faster with Unleashed. Open source and free forever.</p>
 
       <div class="flex flex-col sm:flex-row justify-center gap-4 mb-8">
-        <a href="https://github.com/OneWave-AI/ClaudeCodeArena/releases" class="px-8 py-4 bg-white text-black rounded-xl font-bold text-lg hover:bg-zinc-200 transition-colors flex items-center justify-center gap-2">
+        <a href="https://github.com/OneWave-AI/ClaudeCodeUnleashed/releases" class="px-8 py-4 bg-white text-black rounded-xl font-bold text-lg hover:bg-zinc-200 transition-colors flex items-center justify-center gap-2">
           <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 24 24"><path d="M18.71 19.5C17.88 20.74 17 21.95 15.66 21.97C14.32 22 13.89 21.18 12.37 21.18C10.84 21.18 10.37 21.95 9.1 22C7.79 22.05 6.8 20.68 5.96 19.47C4.25 17 2.94 12.45 4.7 9.39C5.57 7.87 7.13 6.91 8.82 6.88C10.1 6.86 11.32 7.75 12.11 7.75C12.89 7.75 14.37 6.68 15.92 6.84C16.57 6.87 18.39 7.1 19.56 8.82C19.47 8.88 17.39 10.1 17.41 12.63C17.44 15.65 20.06 16.66 20.09 16.67C20.06 16.74 19.67 18.11 18.71 19.5ZM13 3.5C13.73 2.67 14.94 2.04 15.94 2C16.07 3.17 15.6 4.35 14.9 5.19C14.21 6.04 13.07 6.7 11.95 6.61C11.8 5.46 12.36 4.26 13 3.5Z"/></svg>
           Download for macOS
         </a>
-        <a href="https://github.com/OneWave-AI/ClaudeCodeArena/releases" class="px-8 py-4 bg-surfaceLight border border-white/10 text-white rounded-xl font-bold text-lg hover:bg-white/10 transition-colors flex items-center justify-center gap-2">
+        <a href="https://github.com/OneWave-AI/ClaudeCodeUnleashed/releases" class="px-8 py-4 bg-surfaceLight border border-white/10 text-white rounded-xl font-bold text-lg hover:bg-white/10 transition-colors flex items-center justify-center gap-2">
           <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 24 24"><path d="M3 5.557L10.936 4.5L10.939 12.018L3.007 12.064L3 5.557ZM10.933 12.994L10.94 20.518L3.006 19.456L3.006 13.004L10.933 12.994ZM11.966 4.362L21 3V12.001L11.966 12.082V4.362ZM21.002 12.996L21 21.999L11.966 20.67L11.95 12.983L21.002 12.996Z"/></svg>
           Windows
         </a>
@@ -892,7 +953,7 @@
 
       <p class="text-sm text-zinc-500 mb-8">Also available for Linux (.deb, .AppImage)</p>
 
-      <a href="https://github.com/OneWave-AI/ClaudeCodeArena" class="inline-flex items-center gap-2 text-zinc-400 hover:text-white transition-colors">
+      <a href="https://github.com/OneWave-AI/ClaudeCodeUnleashed" class="inline-flex items-center gap-2 text-zinc-400 hover:text-white transition-colors">
         <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/></svg>
         Star on GitHub
       </a>
@@ -909,13 +970,13 @@
             <rect x="13" y="14" width="5" height="8" rx="1" fill="#FACC15"/>
           </svg>
         </div>
-        <span class="text-zinc-400 font-medium">ClaudeCode Arena</span>
+        <span class="text-zinc-400 font-medium">Claude Code Unleashed</span>
       </div>
 
       <p class="text-zinc-500 text-sm">Made by <a href="https://onewave-ai.com" class="text-zinc-400 hover:text-white transition-colors">OneWave AI</a></p>
 
       <div class="flex gap-6 text-sm text-zinc-500">
-        <a href="https://github.com/OneWave-AI/ClaudeCodeArena" class="hover:text-white transition-colors">GitHub</a>
+        <a href="https://github.com/OneWave-AI/ClaudeCodeUnleashed" class="hover:text-white transition-colors">GitHub</a>
         <a href="#" class="hover:text-white transition-colors">Privacy</a>
         <a href="#" class="hover:text-white transition-colors">Terms</a>
       </div>
@@ -985,6 +1046,40 @@
         card.addEventListener('mousemove', () => {});
       });
     }
+
+    // Mobile menu toggle
+    const mobileMenuBtn = document.getElementById('mobile-menu-btn');
+    const mobileMenu = document.getElementById('mobile-menu');
+    const menuOpen = mobileMenuBtn.querySelector('.menu-open');
+    const menuClose = mobileMenuBtn.querySelector('.menu-close');
+
+    mobileMenuBtn.addEventListener('click', () => {
+      const isOpen = !mobileMenu.classList.contains('hidden');
+      mobileMenu.classList.toggle('hidden');
+      menuOpen.classList.toggle('hidden');
+      menuClose.classList.toggle('hidden');
+      document.body.style.overflow = isOpen ? '' : 'hidden';
+    });
+
+    // Close mobile menu when clicking a link
+    document.querySelectorAll('#mobile-menu a').forEach(link => {
+      link.addEventListener('click', () => {
+        mobileMenu.classList.add('hidden');
+        menuOpen.classList.remove('hidden');
+        menuClose.classList.add('hidden');
+        document.body.style.overflow = '';
+      });
+    });
+
+    // Close menu on resize to desktop
+    window.addEventListener('resize', () => {
+      if (window.innerWidth >= 1024) {
+        mobileMenu.classList.add('hidden');
+        menuOpen.classList.remove('hidden');
+        menuClose.classList.add('hidden');
+        document.body.style.overflow = '';
+      }
+    });
   </script>
 </body>
 </html>

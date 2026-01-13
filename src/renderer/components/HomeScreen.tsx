@@ -439,7 +439,7 @@ export default function HomeScreen({
           <h1 className="text-4xl font-bold mb-3 tracking-tight">
             <span className="text-white">Claude</span>
             <span className="bg-gradient-to-r from-[#cc785c] to-[#e8956e] bg-clip-text text-transparent">Code</span>
-            <span className="bg-gradient-to-r from-purple-400 to-purple-300 bg-clip-text text-transparent ml-2">Arena</span>
+            <span className="bg-gradient-to-r from-purple-400 to-purple-300 bg-clip-text text-transparent ml-2">Unleashed</span>
           </h1>
           <p className="text-gray-400 text-sm max-w-md mx-auto">
             Your autonomous AI coding companion. Let Claude build, debug, and ship while you focus on what matters.
@@ -1021,7 +1021,7 @@ export default function HomeScreen({
 
         {/* Footer */}
         <div className="text-center">
-          <span className="text-[10px] text-gray-700">ClaudeCode Arena • Built with <Rocket className="w-2.5 h-2.5 inline text-purple-400" /></span>
+          <span className="text-[10px] text-gray-700">Claude Code Unleashed • Built with <Rocket className="w-2.5 h-2.5 inline text-purple-400" /></span>
         </div>
       </div>
 

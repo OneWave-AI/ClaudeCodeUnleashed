@@ -1,7 +1,7 @@
 {
-  "name": "claudecodeui-v2",
+  "name": "claude-code-unleashed",
   "version": "2.1.0",
-  "description": "Modern GUI for Claude Code CLI",
+  "description": "Claude Code Unleashed - The Premium Desktop Experience",
   "main": "./out/main/index.js",
   "author": "Gabe",
   "license": "MIT",
@@ -51,8 +51,8 @@
     "vite": "^5.4.21"
   },
   "build": {
-    "appId": "com.claudecodeui.app",
-    "productName": "ClaudeCodeArena",
+    "appId": "com.claudecodeunleashed.app",
+    "productName": "Claude Code Unleashed",
     "directories": {
       "output": "dist"
     },
