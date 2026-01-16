@@ -11,23 +11,21 @@
   <link rel="icon" type="image/png" href="favicon.png">
   <link rel="apple-touch-icon" href="favicon.png">
 
-  <!-- Open Graph / Facebook -->
+  <!-- Open Graph -->
   <meta property="og:type" content="website">
   <meta property="og:url" content="https://claudecodeunleashed.com/">
   <meta property="og:title" content="Claude Code Unleashed - Code with Superpowers">
-  <meta property="og:description" content="The desktop app that makes Claude Code accessible to everyone. Agent swarms. Visual history. One-click skills. No terminal required.">
+  <meta property="og:description" content="The desktop app that makes Claude Code accessible to everyone. Agent swarms. Visual history. One-click skills.">
   <meta property="og:image" content="https://website-six-theta-50.vercel.app/dashboard.png">
   <meta property="og:image:width" content="1200">
   <meta property="og:image:height" content="630">
 
   <!-- Twitter -->
   <meta name="twitter:card" content="summary_large_image">
-  <meta name="twitter:url" content="https://claudecodeunleashed.com/">
   <meta name="twitter:title" content="Claude Code Unleashed - Code with Superpowers">
-  <meta name="twitter:description" content="The desktop app that makes Claude Code accessible to everyone. Agent swarms. Visual history. One-click skills. No terminal required.">
+  <meta name="twitter:description" content="The desktop app that makes Claude Code accessible to everyone.">
   <meta name="twitter:image" content="https://website-six-theta-50.vercel.app/dashboard.png">
 
-  <!-- Additional Meta -->
   <meta name="theme-color" content="#FF4F18">
   <meta name="author" content="OneWave AI">
   <link rel="canonical" href="https://claudecodeunleashed.com/">
@@ -35,1155 +33,401 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
   <script src="https://cdn.tailwindcss.com"></script>
   <script>
     tailwind.config = {
       theme: {
         extend: {
-          fontFamily: {
-            sans: ['Inter', 'system-ui', 'sans-serif'],
-          },
+          fontFamily: { sans: ['Inter', 'system-ui', 'sans-serif'] },
           colors: {
-            bg: '#050505',
-            surface: '#0a0a0a',
-            surfaceLight: '#111111',
+            bg: '#030303',
+            surface: '#080808',
+            surfaceLight: '#0a0a0a',
             primary: '#FF4F18',
             primaryHover: '#FF6A3D',
             accent: '#A855F7',
-            border: 'rgba(255,255,255,0.08)',
           },
         }
       }
     }
   </script>
-  <style>
-    body { background: #030303; color: #fff; }
-
-    /* Deep 3D Glass Cards */
-    .glass {
-      background: linear-gradient(145deg, rgba(18,18,18,0.9) 0%, rgba(8,8,8,0.95) 100%);
-      backdrop-filter: blur(20px);
-      border: 1px solid rgba(255,255,255,0.08);
-      border-top-color: rgba(255,255,255,0.12);
-      border-left-color: rgba(255,255,255,0.1);
-      box-shadow:
-        0 4px 6px -1px rgba(0,0,0,0.4),
-        0 10px 20px -5px rgba(0,0,0,0.5),
-        0 25px 50px -12px rgba(0,0,0,0.6),
-        inset 0 1px 0 0 rgba(255,255,255,0.05);
-      transform: translateZ(0);
-      transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-    }
-    .glass:hover {
-      transform: translateY(-6px) translateZ(20px);
-      box-shadow:
-        0 8px 12px -2px rgba(0,0,0,0.4),
-        0 20px 35px -10px rgba(0,0,0,0.5),
-        0 40px 70px -20px rgba(0,0,0,0.6),
-        inset 0 1px 0 0 rgba(255,255,255,0.08);
-      border-top-color: rgba(255,255,255,0.15);
-    }
-
-    /* 3D Tilt Card Effect */
-    .tilt-card {
-      position: relative;
-      transform-style: preserve-3d;
-      transition: transform 0.1s ease-out;
-    }
-    .tilt-card::before {
-      content: '';
-      position: absolute;
-      inset: 0;
-      border-radius: inherit;
-      background: linear-gradient(135deg, rgba(255,255,255,0.1) 0%, transparent 50%);
-      opacity: 0;
-      transition: opacity 0.3s ease;
-      pointer-events: none;
-    }
-    .tilt-card:hover::before {
-      opacity: 1;
-    }
-    .tilt-card::after {
-      content: '';
-      position: absolute;
-      bottom: -20px;
-      left: 10%;
-      right: 10%;
-      height: 30px;
-      background: radial-gradient(ellipse at center, rgba(0,0,0,0.5) 0%, transparent 70%);
-      filter: blur(12px);
-      transition: all 0.3s ease;
-      z-index: -1;
-      transform: translateZ(-50px);
-    }
-    .tilt-card:hover::after {
-      bottom: -35px;
-      filter: blur(18px);
-    }
-
-    /* Glare effect overlay */
-    .tilt-glare {
-      position: absolute;
-      inset: 0;
-      border-radius: inherit;
-      background: radial-gradient(circle at var(--glare-x, 50%) var(--glare-y, 50%), rgba(255,255,255,0.15) 0%, transparent 60%);
-      opacity: 0;
-      transition: opacity 0.3s ease;
-      pointer-events: none;
-      z-index: 10;
-    }
-    .tilt-card:hover .tilt-glare {
-      opacity: 1;
-    }
-
-    .glow-primary { box-shadow: 0 0 60px -15px rgba(255,79,24,0.4); }
-    .glow-primary:hover { box-shadow: 0 0 80px -15px rgba(255,79,24,0.5); }
-
-    /* Pop-in scroll animation */
-    .pop-in {
-      opacity: 0;
-      transform: translateY(40px) scale(0.95);
-      transition: all 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
-    }
-    .pop-in.visible {
-      opacity: 1;
-      transform: translateY(0) scale(1);
-    }
-    .fade-up { opacity: 0; transform: translateY(30px); transition: all 0.7s cubic-bezier(0.4, 0, 0.2, 1); }
-    .fade-up.visible { opacity: 1; transform: translateY(0); }
-    .stagger-1 { transition-delay: 80ms; }
-    .stagger-2 { transition-delay: 160ms; }
-    .stagger-3 { transition-delay: 240ms; }
-    .stagger-4 { transition-delay: 320ms; }
-    .stagger-5 { transition-delay: 400ms; }
-    details summary { cursor: pointer; list-style: none; }
-    details summary::-webkit-details-marker { display: none; }
-    details[open] summary .chevron { transform: rotate(180deg); }
-    .chevron { transition: transform 0.2s ease; }
-
-    /* Deep background layers */
-    .deep-bg {
-      background:
-        radial-gradient(ellipse 100% 100% at 50% 100%, rgba(8,8,8,1) 0%, transparent 70%),
-        linear-gradient(180deg, #030303 0%, #050505 50%, #080808 100%);
-    }
-    .section-depth {
-      position: relative;
-    }
-    .section-depth::before {
-      content: '';
-      position: absolute;
-      inset: 0;
-      background: radial-gradient(ellipse 80% 50% at 50% 0%, rgba(255,79,24,0.03) 0%, transparent 50%);
-      pointer-events: none;
-    }
-
-    /* Aurora Borealis Animation */
-    .aurora-container {
-      position: absolute;
-      inset: 0;
-      overflow: hidden;
-      z-index: -1;
-      background: radial-gradient(ellipse 100% 80% at 50% 120%, rgba(5,5,5,1) 0%, transparent 60%);
-    }
-    .aurora {
-      position: absolute;
-      width: 200%;
-      height: 200%;
-      top: -50%;
-      left: -50%;
-      background:
-        radial-gradient(ellipse 80% 50% at 20% 40%, rgba(255,79,24,0.15) 0%, transparent 50%),
-        radial-gradient(ellipse 60% 40% at 70% 60%, rgba(168,85,247,0.12) 0%, transparent 50%),
-        radial-gradient(ellipse 70% 50% at 50% 30%, rgba(255,120,50,0.1) 0%, transparent 50%);
-      animation: aurora-drift 20s ease-in-out infinite;
-    }
-    .aurora-2 {
-      animation: aurora-drift-2 25s ease-in-out infinite;
-      opacity: 0.7;
-    }
-    @keyframes aurora-drift {
-      0%, 100% { transform: translate(0, 0) rotate(0deg) scale(1); }
-      25% { transform: translate(5%, 3%) rotate(2deg) scale(1.05); }
-      50% { transform: translate(-3%, 5%) rotate(-1deg) scale(0.98); }
-      75% { transform: translate(-5%, -3%) rotate(1deg) scale(1.02); }
-    }
-    @keyframes aurora-drift-2 {
-      0%, 100% { transform: translate(0, 0) rotate(0deg); }
-      33% { transform: translate(-4%, 4%) rotate(-2deg); }
-      66% { transform: translate(4%, -2%) rotate(2deg); }
-    }
-
-    /* Floating Orbs */
-    .orb {
-      position: absolute;
-      border-radius: 50%;
-      filter: blur(60px);
-      animation: orb-float 15s ease-in-out infinite;
-    }
-    .orb-1 {
-      width: 400px;
-      height: 400px;
-      background: radial-gradient(circle, rgba(255,79,24,0.25) 0%, transparent 70%);
-      top: 10%;
-      left: 10%;
-      animation-delay: 0s;
-    }
-    .orb-2 {
-      width: 350px;
-      height: 350px;
-      background: radial-gradient(circle, rgba(168,85,247,0.2) 0%, transparent 70%);
-      top: 20%;
-      right: 15%;
-      animation-delay: -5s;
-      animation-duration: 18s;
-    }
-    .orb-3 {
-      width: 300px;
-      height: 300px;
-      background: radial-gradient(circle, rgba(255,150,80,0.18) 0%, transparent 70%);
-      bottom: 20%;
-      left: 25%;
-      animation-delay: -10s;
-      animation-duration: 20s;
-    }
-    .orb-4 {
-      width: 250px;
-      height: 250px;
-      background: radial-gradient(circle, rgba(139,92,246,0.15) 0%, transparent 70%);
-      bottom: 30%;
-      right: 20%;
-      animation-delay: -3s;
-      animation-duration: 22s;
-    }
-    @keyframes orb-float {
-      0%, 100% { transform: translate(0, 0) scale(1); }
-      25% { transform: translate(30px, -40px) scale(1.1); }
-      50% { transform: translate(-20px, 30px) scale(0.95); }
-      75% { transform: translate(40px, 20px) scale(1.05); }
-    }
-
-    /* Wave effect at bottom */
-    .wave-line {
-      position: absolute;
-      bottom: 0;
-      left: 0;
-      right: 0;
-      height: 2px;
-      background: linear-gradient(90deg, transparent, rgba(255,79,24,0.3), rgba(168,85,247,0.3), transparent);
-      animation: wave-pulse 4s ease-in-out infinite;
-    }
-    @keyframes wave-pulse {
-      0%, 100% { opacity: 0.3; transform: scaleX(0.8); }
-      50% { opacity: 0.6; transform: scaleX(1); }
-    }
-
-    /* 3D App Frame */
-    .perspective-container {
-      perspective: 2000px;
-      transform-style: preserve-3d;
-    }
-    .app-frame {
-      background: linear-gradient(145deg, #0a0a0a 0%, #050505 100%);
-      box-shadow:
-        0 4px 6px -1px rgba(0,0,0,0.5),
-        0 12px 24px -4px rgba(0,0,0,0.6),
-        0 32px 64px -8px rgba(0,0,0,0.7),
-        0 64px 128px -16px rgba(0,0,0,0.5),
-        inset 0 1px 0 0 rgba(255,255,255,0.05);
-      transform: rotateX(2deg) translateZ(0);
-      transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1);
-    }
-    .perspective-container:hover .app-frame {
-      transform: rotateX(0deg) translateY(-8px) translateZ(20px);
-    }
-
-    /* Reduce motion for accessibility */
-    @media (prefers-reduced-motion: reduce) {
-      .aurora, .orb, .wave-line { animation: none; }
-      .app-frame { transform: none; }
-      .perspective-container:hover .app-frame { transform: translateY(-4px); }
-    }
-  </style>
 </head>
-<body class="antialiased">
+<body class="antialiased bg-bg text-white">
 
   <!-- Navigation -->
-  <nav class="fixed top-0 w-full z-50 glass">
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 h-14 sm:h-16 flex items-center justify-between">
+  <nav class="nav glass-static">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
       <!-- Logo -->
-      <a href="#" class="flex items-center gap-2 sm:gap-3" onclick="window.scrollTo({top:0,behavior:'smooth'})">
-        <div class="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-gradient-to-b from-zinc-700 to-zinc-900 border border-white/10 flex items-center justify-center shadow-lg">
-          <svg class="w-4 h-4 sm:w-5 sm:h-5" viewBox="0 0 24 24" fill="none">
+      <a href="#" class="flex items-center gap-3" onclick="window.scrollTo({top:0,behavior:'smooth'})">
+        <div class="w-9 h-9 rounded-xl bg-gradient-to-b from-zinc-700 to-zinc-900 border border-white/10 flex items-center justify-center shadow-lg">
+          <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none">
             <path d="M6 8l4 4-4 4" stroke="#FACC15" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
             <rect x="13" y="14" width="5" height="8" rx="1" fill="#FACC15"/>
           </svg>
         </div>
-        <span class="font-bold text-base sm:text-lg">Unleashed</span>
+        <span class="font-bold text-lg">Unleashed</span>
       </a>
 
       <!-- Desktop Nav -->
       <div class="hidden lg:flex items-center gap-1 text-sm">
-        <a href="why.html" class="px-4 py-2 text-zinc-400 hover:text-white transition-colors">Why Unleashed?</a>
-        <a href="#features" class="px-4 py-2 text-zinc-400 hover:text-white transition-colors">Features</a>
-        <a href="#developers" class="px-4 py-2 text-zinc-400 hover:text-white transition-colors">For Developers</a>
-        <a href="#everyone" class="px-4 py-2 text-zinc-400 hover:text-white transition-colors">For Everyone</a>
-        <a href="https://github.com/OneWave-AI/ClaudeCodeUnleashed" class="px-4 py-2 text-zinc-400 hover:text-white transition-colors flex items-center gap-2">
+        <a href="features.html" class="nav-link">Features</a>
+        <a href="docs.html" class="nav-link">Docs</a>
+        <a href="use-cases.html" class="nav-link">Use Cases</a>
+        <a href="why.html" class="nav-link">Why Unleashed?</a>
+        <a href="https://github.com/OneWave-AI/ClaudeCodeUnleashed" class="nav-link flex items-center gap-2">
           <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/></svg>
           GitHub
         </a>
       </div>
 
-      <!-- Right side buttons -->
-      <div class="flex items-center gap-2 sm:gap-3">
-        <a href="https://github.com/OneWave-AI/ClaudeCodeUnleashed" class="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-lg border border-white/10 text-xs sm:text-sm text-zinc-300 hover:bg-white/5 transition-colors">
+      <!-- Right buttons -->
+      <div class="flex items-center gap-3">
+        <a href="https://github.com/OneWave-AI/ClaudeCodeUnleashed" class="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-lg border border-white/10 text-sm text-zinc-300 hover:bg-white/5 transition-colors">
           <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M12 .587l3.668 7.568 8.332 1.151-6.064 5.828 1.48 8.279-7.416-3.967-7.417 3.967 1.481-8.279-6.064-5.828 8.332-1.151z"/></svg>
           Star
         </a>
-        <a href="https://github.com/OneWave-AI/ClaudeCodeUnleashed/releases" class="px-4 py-2 sm:px-5 bg-primary hover:bg-primaryHover text-white rounded-lg text-xs sm:text-sm font-semibold transition-colors">
+        <a href="https://github.com/OneWave-AI/ClaudeCodeUnleashed/releases" class="btn btn-primary">
           Download
         </a>
         <!-- Mobile menu button -->
-        <button id="mobile-menu-btn" class="lg:hidden p-2 text-zinc-400 hover:text-white transition-colors" aria-label="Toggle menu">
-          <svg class="w-6 h-6 menu-open" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/></svg>
-          <svg class="w-6 h-6 menu-close hidden" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+        <button id="mobile-menu-btn" class="lg:hidden p-2 text-zinc-400 hover:text-white" aria-label="Menu">
+          <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/></svg>
         </button>
       </div>
     </div>
 
     <!-- Mobile Menu -->
-    <div id="mobile-menu" class="lg:hidden hidden">
-      <div class="px-4 py-4 space-y-1 border-t border-white/5 bg-surface/95 backdrop-blur-xl">
-        <a href="why.html" class="block px-4 py-3 text-zinc-300 hover:text-white hover:bg-white/5 rounded-lg transition-colors">Why Unleashed?</a>
-        <a href="#features" class="mobile-link block px-4 py-3 text-zinc-300 hover:text-white hover:bg-white/5 rounded-lg transition-colors">Features</a>
-        <a href="#developers" class="mobile-link block px-4 py-3 text-zinc-300 hover:text-white hover:bg-white/5 rounded-lg transition-colors">For Developers</a>
-        <a href="#everyone" class="mobile-link block px-4 py-3 text-zinc-300 hover:text-white hover:bg-white/5 rounded-lg transition-colors">For Everyone</a>
-        <a href="https://github.com/OneWave-AI/ClaudeCodeUnleashed" class="block px-4 py-3 text-zinc-300 hover:text-white hover:bg-white/5 rounded-lg transition-colors flex items-center gap-2">
-          <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/></svg>
-          GitHub
-        </a>
+    <div id="mobile-menu" class="lg:hidden hidden border-t border-white/5 bg-surface/95 backdrop-blur-xl">
+      <div class="px-4 py-4 space-y-1">
+        <a href="features.html" class="block px-4 py-3 text-zinc-300 hover:text-white hover:bg-white/5 rounded-lg">Features</a>
+        <a href="docs.html" class="block px-4 py-3 text-zinc-300 hover:text-white hover:bg-white/5 rounded-lg">Docs</a>
+        <a href="use-cases.html" class="block px-4 py-3 text-zinc-300 hover:text-white hover:bg-white/5 rounded-lg">Use Cases</a>
+        <a href="why.html" class="block px-4 py-3 text-zinc-300 hover:text-white hover:bg-white/5 rounded-lg">Why Unleashed?</a>
+        <a href="https://github.com/OneWave-AI/ClaudeCodeUnleashed" class="block px-4 py-3 text-zinc-300 hover:text-white hover:bg-white/5 rounded-lg">GitHub</a>
         <div class="pt-2">
-          <a href="https://github.com/OneWave-AI/ClaudeCodeUnleashed/releases" class="block w-full px-4 py-3 bg-primary hover:bg-primaryHover text-white text-center rounded-lg font-semibold transition-colors">
-            Download Free
-          </a>
+          <a href="https://github.com/OneWave-AI/ClaudeCodeUnleashed/releases" class="block w-full px-4 py-3 bg-primary text-white text-center rounded-lg font-semibold">Download Free</a>
         </div>
       </div>
     </div>
   </nav>
 
   <!-- Hero Section -->
-  <section class="pt-24 pb-16 sm:pt-32 sm:pb-20 md:pt-44 md:pb-32 px-4 sm:px-6 relative overflow-hidden">
-    <!-- Aurora Borealis Background -->
+  <section class="pt-28 pb-16 sm:pt-36 sm:pb-20 md:pt-44 md:pb-28 px-4 sm:px-6 relative overflow-hidden">
+    <!-- Aurora Background -->
     <div class="aurora-container">
       <div class="aurora"></div>
       <div class="aurora aurora-2"></div>
-      <!-- Floating Orbs -->
       <div class="orb orb-1"></div>
       <div class="orb orb-2"></div>
       <div class="orb orb-3"></div>
-      <div class="orb orb-4"></div>
-      <!-- Wave line -->
       <div class="wave-line"></div>
     </div>
 
     <div class="max-w-5xl mx-auto text-center">
+      <!-- Badge -->
+      <div class="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/5 border border-white/10 text-sm text-zinc-300 mb-8 fade-up">
+        <span class="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span>
+        Free & Open Source
+      </div>
+
       <!-- Headline -->
-      <h1 class="text-4xl sm:text-5xl md:text-7xl lg:text-[5.5rem] font-extrabold tracking-tight mb-4 sm:mb-6 fade-up leading-[1.1]">
+      <h1 class="text-5xl sm:text-6xl md:text-7xl lg:text-8xl font-extrabold tracking-tight mb-6 fade-up stagger-1 leading-[1.05]">
         Claude Code.<br>
-        <span class="text-transparent bg-clip-text bg-gradient-to-r from-primary via-orange-400 to-primary">Unleashed.</span>
+        <span class="gradient-text">Unleashed.</span>
       </h1>
 
       <!-- Subhead -->
-      <p class="text-base sm:text-lg md:text-xl text-zinc-400 max-w-2xl mx-auto mb-6 sm:mb-8 leading-relaxed fade-up stagger-1">
+      <p class="text-lg sm:text-xl text-zinc-400 max-w-2xl mx-auto mb-10 leading-relaxed fade-up stagger-2">
         The desktop app that makes Claude Code accessible to everyone. Agent swarms. Visual history. One-click skills. No terminal required.
       </p>
 
-      <!-- Narrative Hook -->
-      <p class="text-xs sm:text-sm text-zinc-500 max-w-xl mx-auto mb-8 sm:mb-10 fade-up stagger-2">
-        Built by power users who hit every limitation—and fixed them.
-      </p>
-
-      <!-- CTAs -->
-      <div class="flex flex-col sm:flex-row items-center justify-center gap-3 mb-6 sm:mb-8 fade-up stagger-2">
-        <a href="https://github.com/OneWave-AI/ClaudeCodeUnleashed/releases" class="group w-full sm:w-auto px-6 py-3 sm:px-8 sm:py-4 bg-primary hover:bg-primaryHover text-white rounded-xl font-semibold text-sm sm:text-base transition-all glow-primary flex items-center justify-center gap-2">
-          <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
-          Download Free
+      <!-- CTA Buttons -->
+      <div class="flex flex-col sm:flex-row justify-center gap-4 mb-12 fade-up stagger-3">
+        <a href="https://github.com/OneWave-AI/ClaudeCodeUnleashed/releases" class="btn btn-primary btn-xl glow-primary">
+          <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.81-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M13 3.5c.73-.83 1.94-1.46 2.94-1.5.13 1.17-.34 2.35-1.04 3.19-.69.85-1.83 1.51-2.95 1.42-.15-1.15.41-2.35 1.05-3.11z"/></svg>
+          Download for macOS
         </a>
-        <a href="https://github.com/OneWave-AI/ClaudeCodeUnleashed" class="w-full sm:w-auto px-6 py-3 sm:px-8 sm:py-4 bg-white/5 hover:bg-white/10 border border-white/10 text-white rounded-xl font-semibold text-sm sm:text-base transition-all flex items-center justify-center gap-2">
+        <a href="https://github.com/OneWave-AI/ClaudeCodeUnleashed" class="btn btn-secondary btn-xl">
           <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/></svg>
           View on GitHub
         </a>
       </div>
 
-      <!-- Trust indicators -->
-      <div class="flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-xs text-zinc-500 mb-16 fade-up stagger-3">
-        <span class="flex items-center gap-1.5">
-          <span class="w-1.5 h-1.5 rounded-full bg-green-500"></span>
-          Open Source
-        </span>
-        <span class="flex items-center gap-1.5">
-          <span class="w-1.5 h-1.5 rounded-full bg-green-500"></span>
-          Free Forever
-        </span>
-        <span class="flex items-center gap-1.5">
-          <span class="w-1.5 h-1.5 rounded-full bg-green-500"></span>
-          macOS
-        </span>
-      </div>
-
-      <!-- Screenshot - 3D Floating Effect -->
-      <div class="relative max-w-5xl mx-auto fade-up stagger-3 perspective-container">
-        <!-- Deep shadow underneath -->
-        <div class="absolute -bottom-8 left-[10%] right-[10%] h-24 bg-black/60 rounded-[50%] blur-3xl"></div>
-        <!-- Outer glow -->
-        <div class="absolute -inset-8 bg-gradient-to-b from-primary/15 via-accent/10 to-transparent rounded-3xl blur-3xl opacity-60"></div>
-        <!-- Reflection light -->
-        <div class="absolute -inset-1 bg-gradient-to-b from-white/5 to-transparent rounded-3xl opacity-50"></div>
-        <!-- Main screenshot container -->
-        <div class="relative rounded-2xl overflow-hidden app-frame">
-          <!-- Glass border effect -->
-          <div class="absolute inset-0 rounded-2xl border border-white/10 border-t-white/20 pointer-events-none z-10"></div>
-          <!-- Window chrome -->
-          <div class="flex items-center gap-2 px-4 py-3 bg-gradient-to-b from-zinc-800/90 to-zinc-900/95 border-b border-white/5 relative">
-            <div class="flex gap-1.5">
-              <div class="w-3 h-3 rounded-full bg-red-500 shadow-lg shadow-red-500/30"></div>
-              <div class="w-3 h-3 rounded-full bg-yellow-500 shadow-lg shadow-yellow-500/30"></div>
-              <div class="w-3 h-3 rounded-full bg-green-500 shadow-lg shadow-green-500/30"></div>
-            </div>
-            <span class="mx-auto text-xs text-zinc-500 font-mono">Claude Code Unleashed</span>
-          </div>
-          <img src="dashboard.png" alt="Claude Code Unleashed Dashboard" class="w-full">
+      <!-- Stats -->
+      <div class="flex flex-wrap justify-center gap-6 text-sm text-zinc-400 fade-up stagger-4">
+        <div class="flex items-center gap-2">
+          <svg class="w-5 h-5 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+          <span><strong class="text-white">25</strong> Skills</span>
         </div>
+        <div class="flex items-center gap-2">
+          <svg class="w-5 h-5 text-accent" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+          <span><strong class="text-white">5</strong> Agents</span>
+        </div>
+        <div class="flex items-center gap-2">
+          <svg class="w-5 h-5 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zm0 0h12a2 2 0 002-2v-4a2 2 0 00-2-2h-2.343M11 7.343l1.657-1.657a2 2 0 012.828 0l2.829 2.829a2 2 0 010 2.828l-8.486 8.485M7 17h.01"/></svg>
+          <span><strong class="text-white">8</strong> Themes</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Hero Screenshot -->
+    <div class="max-w-5xl mx-auto mt-16 perspective-container fade-up stagger-5">
+      <div class="app-frame rounded-2xl overflow-hidden border border-white/10">
+        <div class="bg-gradient-to-r from-zinc-800 to-zinc-900 px-4 py-3 flex items-center gap-2">
+          <div class="w-3 h-3 rounded-full bg-red-500"></div>
+          <div class="w-3 h-3 rounded-full bg-yellow-500"></div>
+          <div class="w-3 h-3 rounded-full bg-green-500"></div>
+          <span class="ml-4 text-xs text-zinc-500">Claude Code Unleashed</span>
+        </div>
+        <img src="screenshots/dashboard.png" alt="Claude Code Unleashed Dashboard" class="w-full">
       </div>
     </div>
   </section>
 
-  <!-- What Is This? Explainer -->
-  <section class="py-16 sm:py-24 px-4 sm:px-6 border-b border-white/5">
-    <div class="max-w-4xl mx-auto">
-      <div class="text-center mb-12 fade-up">
-        <p class="text-primary font-semibold mb-3 uppercase text-sm tracking-wide">Wait, what is this exactly?</p>
-        <h2 class="text-4xl md:text-5xl font-bold mb-6">Your AI Assistant,<br>With a <span class="underline decoration-primary decoration-4 underline-offset-8">Real App</span></h2>
-      </div>
-
-      <div class="space-y-8 text-lg text-zinc-400 leading-relaxed fade-up stagger-1">
-        <p>
-          <strong class="text-white">Claude Code</strong> is Anthropic's AI that can actually <em class="text-white">do things</em> on your computer—write files, run commands, analyze data, build websites. It's not just a chatbot. It's an <span class="text-white underline decoration-primary decoration-2 underline-offset-4">AI that works</span>.
-        </p>
-
-        <p>
-          <span class="text-primary font-semibold">The problem?</span> Claude Code runs in a <span class="font-mono bg-zinc-800 px-2 py-1 rounded text-zinc-300">terminal</span>. If you're not a developer, that's intimidating. And even if you <em class="text-white">are</em> a developer, the terminal is limiting—no visual feedback, no file browser, no way to run multiple tasks at once.
-        </p>
-
-        <p>
-          <strong class="text-primary text-xl">Claude Code Unleashed fixes that.</strong> It's a desktop app that wraps Claude Code in a beautiful interface. You get a real file explorer, split terminals, live previews, and the ability to launch <span class="text-white font-semibold">multiple AI agents</span> working in parallel. Same powerful Claude Code underneath—but now <span class="underline decoration-primary decoration-2 underline-offset-4 text-white">anyone</span> can use it.
-        </p>
-      </div>
-
-      <!-- Use Cases Grid -->
-      <div class="grid sm:grid-cols-2 lg:grid-cols-4 gap-4 mt-12 fade-up stagger-2">
-        <div class="glass rounded-xl p-5 text-center group hover:border-primary/30 transition-all">
-          <div class="text-3xl mb-3 group-hover:scale-110 transition-transform">📊</div>
-          <p class="text-sm text-zinc-300">"Analyze this spreadsheet and show me trends"</p>
-        </div>
-        <div class="glass rounded-xl p-5 text-center group hover:border-primary/30 transition-all">
-          <div class="text-3xl mb-3 group-hover:scale-110 transition-transform">🌐</div>
-          <p class="text-sm text-zinc-300">"Build me a landing page for my business"</p>
-        </div>
-        <div class="glass rounded-xl p-5 text-center group hover:border-primary/30 transition-all">
-          <div class="text-3xl mb-3 group-hover:scale-110 transition-transform">📁</div>
-          <p class="text-sm text-zinc-300">"Organize my photos by date and location"</p>
-        </div>
-        <div class="glass rounded-xl p-5 text-center group hover:border-primary/30 transition-all">
-          <div class="text-3xl mb-3 group-hover:scale-110 transition-transform">🔍</div>
-          <p class="text-sm text-zinc-300">"Research competitors and summarize findings"</p>
-        </div>
-      </div>
-
-      <p class="text-center mt-10 fade-up stagger-3">
-        <span class="text-zinc-500">Just tell it what you want.</span> <span class="text-primary font-semibold">Claude Code Unleashed handles the rest.</span>
-      </p>
-    </div>
-  </section>
-
-  <!-- Who Is This For? -->
-  <section class="py-16 sm:py-24 px-4 sm:px-6 bg-surface/50">
+  <!-- Built For Section -->
+  <section class="section bg-surface/50">
     <div class="max-w-6xl mx-auto">
-      <div class="text-center mb-16 fade-up">
-        <h2 class="text-4xl md:text-5xl font-bold mb-4">Built for <span class="text-primary">Everyone</span></h2>
-        <p class="text-xl text-zinc-400 max-w-2xl mx-auto">People use Claude Code for way more than coding—data analysis, research, automation, content creation. Unleashed is for those <span class="text-white">everyday users</span> <em class="text-primary font-semibold not-italic">and</em> the <span class="text-white">power users</span>.</p>
+      <div class="text-center mb-16">
+        <h2 class="text-3xl md:text-4xl font-bold fade-up">Built for Everyone</h2>
+        <p class="text-zinc-400 mt-4 max-w-2xl mx-auto fade-up stagger-1">Whether you're a seasoned developer or just getting started, Unleashed adapts to your workflow.</p>
       </div>
 
       <div class="grid md:grid-cols-2 gap-8">
         <!-- For Developers -->
-        <div id="developers" class="glass rounded-2xl p-8 fade-up stagger-1">
-          <div class="flex items-center gap-3 mb-6">
+        <div class="glass tilt-card rounded-2xl p-8 fade-up stagger-2">
+          <div class="tilt-glare"></div>
+          <div class="flex items-center gap-4 mb-6">
             <div class="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center">
               <svg class="w-6 h-6 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"/></svg>
             </div>
             <h3 class="text-2xl font-bold">For Developers</h3>
           </div>
-          <p class="text-zinc-400 mb-6 text-lg">Stop context switching. Unleashed gives you a native terminal environment that integrates directly with your existing toolchain.</p>
-          <ul class="space-y-4">
-            <li class="flex items-start gap-3">
-              <svg class="w-5 h-5 text-primary mt-0.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
-              <span><strong class="text-white">Full Git Workflow</strong> — Visual commits, one-click PRs, conflict resolution</span>
+
+          <p class="text-zinc-400 mb-6">Stop context switching. Get a native environment that integrates with your existing toolchain.</p>
+
+          <ul class="space-y-3">
+            <li class="flex items-center gap-3 text-sm">
+              <svg class="w-5 h-5 text-green-500 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+              <span>Full Git workflow with visual commit graphs</span>
             </li>
-            <li class="flex items-start gap-3">
-              <svg class="w-5 h-5 text-primary mt-0.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
-              <span><strong class="text-white">Multi-Agent Swarms</strong> — Parallel agents for testing, security, refactoring</span>
+            <li class="flex items-center gap-3 text-sm">
+              <svg class="w-5 h-5 text-green-500 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+              <span>Multi-agent swarms for parallel audits</span>
             </li>
-            <li class="flex items-start gap-3">
-              <svg class="w-5 h-5 text-primary mt-0.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
-              <span><strong class="text-white">Zero Config</strong> — Auto-detects dev servers, linters, package managers</span>
+            <li class="flex items-center gap-3 text-sm">
+              <svg class="w-5 h-5 text-green-500 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+              <span>Zero-config: auto-detects your stack</span>
             </li>
-            <li class="flex items-start gap-3">
-              <svg class="w-5 h-5 text-primary mt-0.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
-              <span><strong class="text-white">MCP Servers</strong> — GitHub, Puppeteer, Slack, Memory, and more</span>
+            <li class="flex items-center gap-3 text-sm">
+              <svg class="w-5 h-5 text-green-500 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+              <span>One-click MCP server management</span>
             </li>
           </ul>
+
+          <a href="use-cases.html#developers" class="inline-flex items-center gap-2 mt-6 text-primary hover:text-primaryHover text-sm font-semibold transition-colors">
+            See developer use cases
+            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+          </a>
         </div>
 
         <!-- For Everyone -->
-        <div id="everyone" class="glass rounded-2xl p-8 fade-up stagger-2">
-          <div class="flex items-center gap-3 mb-6">
+        <div class="glass tilt-card rounded-2xl p-8 fade-up stagger-3">
+          <div class="tilt-glare"></div>
+          <div class="flex items-center gap-4 mb-6">
             <div class="w-12 h-12 rounded-xl bg-accent/10 flex items-center justify-center">
-              <svg class="w-6 h-6 text-accent" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+              <svg class="w-6 h-6 text-accent" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
             </div>
             <h3 class="text-2xl font-bold">For Everyone</h3>
           </div>
-          <p class="text-zinc-400 mb-6 text-lg">You don't need to write code. Claude Code handles data analysis, research, automation—Unleashed makes it even easier.</p>
-          <ul class="space-y-4">
-            <li class="flex items-start gap-3">
-              <svg class="w-5 h-5 text-accent mt-0.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
-              <span><strong class="text-white">Data Analysis</strong> — Crunch spreadsheets, visualize trends, generate reports</span>
+
+          <p class="text-zinc-400 mb-6">You don't need to be a coding expert. Just describe what you want and watch it happen.</p>
+
+          <ul class="space-y-3">
+            <li class="flex items-center gap-3 text-sm">
+              <svg class="w-5 h-5 text-green-500 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+              <span>Build landing pages with natural language</span>
             </li>
-            <li class="flex items-start gap-3">
-              <svg class="w-5 h-5 text-accent mt-0.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
-              <span><strong class="text-white">Natural Language</strong> — Just describe what you want and watch it happen</span>
+            <li class="flex items-center gap-3 text-sm">
+              <svg class="w-5 h-5 text-green-500 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+              <span>Automate spreadsheets and data tasks</span>
             </li>
-            <li class="flex items-start gap-3">
-              <svg class="w-5 h-5 text-accent mt-0.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
-              <span><strong class="text-white">Automate Anything</strong> — Web scraping, file organization, content creation</span>
+            <li class="flex items-center gap-3 text-sm">
+              <svg class="w-5 h-5 text-green-500 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+              <span>Web scraping and research automation</span>
             </li>
-            <li class="flex items-start gap-3">
-              <svg class="w-5 h-5 text-accent mt-0.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
-              <span><strong class="text-white">No Setup Required</strong> — Everything just works out of the box</span>
+            <li class="flex items-center gap-3 text-sm">
+              <svg class="w-5 h-5 text-green-500 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+              <span>See live previews as Claude builds</span>
             </li>
           </ul>
+
+          <a href="use-cases.html#everyone" class="inline-flex items-center gap-2 mt-6 text-accent hover:text-purple-400 text-sm font-semibold transition-colors">
+            See non-developer use cases
+            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+          </a>
         </div>
       </div>
     </div>
   </section>
 
-  <!-- How It Works -->
-  <section class="py-16 sm:py-24 px-4 sm:px-6">
+  <!-- Key Features -->
+  <section class="section">
     <div class="max-w-6xl mx-auto">
-      <div class="text-center mb-16 fade-up">
-        <h2 class="text-4xl md:text-5xl font-bold mb-4">From Idea to Production</h2>
-        <p class="text-xl text-zinc-400">Three steps to ship faster than ever.</p>
+      <div class="text-center mb-16">
+        <h2 class="text-3xl md:text-4xl font-bold fade-up">Powerful Features</h2>
+        <p class="text-zinc-400 mt-4 max-w-2xl mx-auto fade-up stagger-1">Everything you need to code faster, smarter, and with less friction.</p>
       </div>
 
-      <div class="grid md:grid-cols-3 gap-8">
-        <!-- Step 1 -->
-        <div class="text-center fade-up stagger-1">
-          <div class="w-16 h-16 rounded-2xl bg-primary/10 border border-primary/20 flex items-center justify-center mx-auto mb-6 relative">
-            <span class="absolute -top-2 -right-2 w-7 h-7 bg-primary rounded-full flex items-center justify-center text-sm font-bold">1</span>
-            <svg class="w-8 h-8 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/></svg>
+      <!-- Feature Grid -->
+      <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <!-- Super Agent -->
+        <div class="glass feature-card rounded-2xl fade-up stagger-1">
+          <div class="feature-icon feature-icon-primary">
+            <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
           </div>
-          <h3 class="text-xl font-bold mb-2">Describe</h3>
-          <p class="text-zinc-400">Speak naturally about what you want to build, fix, or change.</p>
+          <h3 class="font-bold text-lg mb-2">Super Agent</h3>
+          <p class="text-sm text-zinc-400">Autonomous task execution. Let Claude work independently with time limits and auto-approval.</p>
         </div>
 
-        <!-- Step 2 -->
-        <div class="text-center fade-up stagger-2">
-          <div class="w-16 h-16 rounded-2xl bg-accent/10 border border-accent/20 flex items-center justify-center mx-auto mb-6 relative">
-            <span class="absolute -top-2 -right-2 w-7 h-7 bg-accent rounded-full flex items-center justify-center text-sm font-bold">2</span>
-            <svg class="w-8 h-8 text-accent" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"/></svg>
+        <!-- Agent Hive -->
+        <div class="glass feature-card rounded-2xl fade-up stagger-2">
+          <div class="feature-icon feature-icon-accent">
+            <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
           </div>
-          <h3 class="text-xl font-bold mb-2">Execute</h3>
-          <p class="text-zinc-400">Agent swarms architect, code, and fix errors in parallel.</p>
+          <h3 class="font-bold text-lg mb-2">Agent Hive</h3>
+          <p class="text-sm text-zinc-400">Multi-agent swarms. Run security, testing, and refactoring agents in parallel.</p>
         </div>
 
-        <!-- Step 3 -->
-        <div class="text-center fade-up stagger-3">
-          <div class="w-16 h-16 rounded-2xl bg-green-500/10 border border-green-500/20 flex items-center justify-center mx-auto mb-6 relative">
-            <span class="absolute -top-2 -right-2 w-7 h-7 bg-green-500 rounded-full flex items-center justify-center text-sm font-bold">3</span>
-            <svg class="w-8 h-8 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z"/></svg>
+        <!-- Analytics -->
+        <div class="glass feature-card rounded-2xl fade-up stagger-3">
+          <div class="feature-icon feature-icon-success">
+            <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
           </div>
-          <h3 class="text-xl font-bold mb-2">Ship</h3>
-          <p class="text-zinc-400">One-click deploy to Vercel, GitHub Pages, or create a PR.</p>
+          <h3 class="font-bold text-lg mb-2">Analytics Dashboard</h3>
+          <p class="text-sm text-zinc-400">Track coding time, sessions, and tokens. Perfect for billing and productivity insights.</p>
         </div>
+
+        <!-- Split Terminal -->
+        <div class="glass feature-card rounded-2xl fade-up stagger-4">
+          <div class="feature-icon feature-icon-primary">
+            <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 5a1 1 0 011-1h14a1 1 0 011 1v2a1 1 0 01-1 1H5a1 1 0 01-1-1V5zM4 13a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H5a1 1 0 01-1-1v-6zM16 13a1 1 0 011-1h2a1 1 0 011 1v6a1 1 0 01-1 1h-2a1 1 0 01-1-1v-6z"/></svg>
+          </div>
+          <h3 class="font-bold text-lg mb-2">Split Terminals</h3>
+          <p class="text-sm text-zinc-400">Dual panels with multiple tabs. Watch logs while Claude works. Built-in browser preview.</p>
+        </div>
+
+        <!-- Skills -->
+        <div class="glass feature-card rounded-2xl fade-up stagger-5">
+          <div class="feature-icon feature-icon-accent">
+            <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"/></svg>
+          </div>
+          <h3 class="font-bold text-lg mb-2">Skills & MCP</h3>
+          <p class="text-sm text-zinc-400">25 skills + 5 agents included. One-click MCP server installation. No JSON editing.</p>
+        </div>
+
+        <!-- History -->
+        <div class="glass feature-card rounded-2xl fade-up stagger-6">
+          <div class="feature-icon feature-icon-success">
+            <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+          </div>
+          <h3 class="font-bold text-lg mb-2">Conversation History</h3>
+          <p class="text-sm text-zinc-400">Browse, search, and resume any past conversation. Pin favorites. No more lost context.</p>
+        </div>
+      </div>
+
+      <div class="text-center mt-12 fade-up">
+        <a href="features.html" class="btn btn-secondary">
+          See all 50+ features
+          <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+        </a>
       </div>
     </div>
   </section>
 
-  <!-- Hero Features (Bento Grid) -->
-  <section id="features" class="py-16 sm:py-24 px-4 sm:px-6 bg-surface/50">
+  <!-- Screenshots -->
+  <section class="section bg-surface/50">
     <div class="max-w-6xl mx-auto">
-      <div class="text-center mb-16 fade-up">
-        <h2 class="text-4xl md:text-5xl font-bold mb-4">Powerful Features</h2>
-        <p class="text-xl text-zinc-400">Everything you need to ship faster.</p>
+      <div class="text-center mb-16">
+        <h2 class="text-3xl md:text-4xl font-bold fade-up">See It In Action</h2>
+        <p class="text-zinc-400 mt-4 fade-up stagger-1">A glimpse of the Unleashed experience</p>
       </div>
 
-      <!-- Super Agent + Agent Hive Hero Section -->
-      <div class="grid lg:grid-cols-2 gap-6 mb-6">
-        <!-- Super Agent - Large Card -->
-        <div class="glass rounded-2xl p-8 tilt-card pop-in relative overflow-hidden">
-          <div class="absolute top-0 right-0 w-32 h-32 bg-primary/10 rounded-full blur-3xl"></div>
-          <div class="relative">
-            <div class="flex items-center gap-3 mb-4">
-              <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-primary to-orange-600 flex items-center justify-center shadow-lg shadow-primary/25">
-                <svg class="w-6 h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
-              </div>
-              <div>
-                <h3 class="text-xl font-bold">Super Agent</h3>
-                <p class="text-xs text-primary">Autonomous Mode</p>
-              </div>
+      <div class="grid md:grid-cols-2 gap-8">
+        <div class="fade-up stagger-2">
+          <div class="rounded-2xl overflow-hidden border border-white/10 shadow-2xl">
+            <div class="window-chrome">
+              <div class="window-dot window-dot-red"></div>
+              <div class="window-dot window-dot-yellow"></div>
+              <div class="window-dot window-dot-green"></div>
+              <span class="ml-4 text-xs text-zinc-500">Home Screen</span>
             </div>
-            <p class="text-zinc-400 mb-6">Let Claude work independently. Set time limits, auto-approve tool calls, and watch the AI plan, execute, and self-correct until the job is done.</p>
+            <img src="screenshots/home-screen.png" alt="Home Screen" class="w-full">
+          </div>
+          <p class="text-center text-sm text-zinc-500 mt-4">Beautiful home screen with quick actions</p>
+        </div>
 
-            <!-- Activity Visualization -->
-            <div class="bg-black/40 rounded-xl p-4 border border-white/5">
-              <div class="flex items-center justify-between mb-3">
-                <span class="text-xs text-zinc-500 font-mono">SUPER AGENT ACTIVE</span>
-                <span class="flex items-center gap-1.5 text-xs text-green-400">
-                  <span class="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse"></span>
-                  Running
-                </span>
-              </div>
-              <div class="space-y-2 text-xs font-mono text-zinc-500">
-                <div class="flex items-center gap-2"><span class="text-green-400">✓</span> Analyzing codebase structure...</div>
-                <div class="flex items-center gap-2"><span class="text-green-400">✓</span> Planning implementation steps...</div>
-                <div class="flex items-center gap-2"><span class="text-primary animate-pulse">●</span> Writing auth module...</div>
-              </div>
-              <div class="mt-3 pt-3 border-t border-white/5 flex justify-between text-xs text-zinc-500">
-                <span>Time: 4:32 / 15:00</span>
-                <span>12 tool calls auto-approved</span>
-              </div>
+        <div class="fade-up stagger-3">
+          <div class="rounded-2xl overflow-hidden border border-white/10 shadow-2xl">
+            <div class="window-chrome">
+              <div class="window-dot window-dot-red"></div>
+              <div class="window-dot window-dot-yellow"></div>
+              <div class="window-dot window-dot-green"></div>
+              <span class="ml-4 text-xs text-zinc-500">Agent Hive</span>
             </div>
+            <img src="screenshots/hive-manager.png" alt="Agent Hive" class="w-full">
           </div>
-        </div>
-
-        <!-- Agent Hive - Large Card with Swarm Visualization -->
-        <div class="glass rounded-2xl p-8 tilt-card pop-in stagger-1 relative overflow-hidden">
-          <div class="absolute top-0 right-0 w-32 h-32 bg-accent/10 rounded-full blur-3xl"></div>
-          <div class="relative">
-            <div class="flex items-center gap-3 mb-4">
-              <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-accent to-purple-600 flex items-center justify-center shadow-lg shadow-accent/25">
-                <svg class="w-6 h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/></svg>
-              </div>
-              <div>
-                <h3 class="text-xl font-bold">Agent Hive</h3>
-                <p class="text-xs text-accent">Multi-Agent Swarm</p>
-              </div>
-            </div>
-            <p class="text-zinc-400 mb-6">Deploy specialized agents in parallel. Security auditor, test writer, code reviewer, and refactorer—all working simultaneously on your codebase.</p>
-
-            <!-- Swarm Visualization -->
-            <div class="bg-black/40 rounded-xl p-4 border border-white/5">
-              <div class="flex items-center justify-between mb-4">
-                <span class="text-xs text-zinc-500 font-mono">SWARM ACTIVE • 4 AGENTS</span>
-                <span class="text-xs text-accent">Orchestrating...</span>
-              </div>
-              <div class="grid grid-cols-2 gap-2">
-                <div class="flex items-center gap-2 bg-white/5 rounded-lg px-3 py-2">
-                  <div class="w-2 h-2 rounded-full bg-red-400 animate-pulse"></div>
-                  <span class="text-xs text-zinc-300">Security Auditor</span>
-                </div>
-                <div class="flex items-center gap-2 bg-white/5 rounded-lg px-3 py-2">
-                  <div class="w-2 h-2 rounded-full bg-green-400 animate-pulse" style="animation-delay: 0.2s"></div>
-                  <span class="text-xs text-zinc-300">Test Engineer</span>
-                </div>
-                <div class="flex items-center gap-2 bg-white/5 rounded-lg px-3 py-2">
-                  <div class="w-2 h-2 rounded-full bg-blue-400 animate-pulse" style="animation-delay: 0.4s"></div>
-                  <span class="text-xs text-zinc-300">Code Reviewer</span>
-                </div>
-                <div class="flex items-center gap-2 bg-white/5 rounded-lg px-3 py-2">
-                  <div class="w-2 h-2 rounded-full bg-yellow-400 animate-pulse" style="animation-delay: 0.6s"></div>
-                  <span class="text-xs text-zinc-300">Refactorer</span>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Other Features Grid -->
-      <div class="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
-
-        <!-- Analytics Dashboard -->
-        <div class="glass rounded-2xl p-6 tilt-card pop-in stagger-2">
-          <div class="w-12 h-12 rounded-xl bg-blue-500/10 flex items-center justify-center mb-4">
-            <svg class="w-6 h-6 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
-          </div>
-          <h3 class="text-lg font-bold mb-2">Analytics Dashboard</h3>
-          <p class="text-sm text-zinc-400">Track coding time, token usage, and project hours. Great for billing!</p>
-        </div>
-
-        <!-- Split Terminals -->
-        <div class="glass rounded-2xl p-6 tilt-card pop-in stagger-3">
-          <div class="w-12 h-12 rounded-xl bg-green-500/10 flex items-center justify-center mb-4">
-            <svg class="w-6 h-6 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 9l3 3-3 3m5 0h3M5 20h14a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
-          </div>
-          <h3 class="text-lg font-bold mb-2">Split Terminals</h3>
-          <p class="text-sm text-zinc-400">Dual panels, multiple tabs, 8 themes. Watch logs while Claude works.</p>
-        </div>
-
-        <!-- Skills Marketplace -->
-        <div class="glass rounded-2xl p-6 tilt-card pop-in stagger-4">
-          <div class="w-12 h-12 rounded-xl bg-yellow-500/10 flex items-center justify-center mb-4">
-            <svg class="w-6 h-6 text-yellow-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"/></svg>
-          </div>
-          <h3 class="text-lg font-bold mb-2">Skills Marketplace</h3>
-          <p class="text-sm text-zinc-400">25 starter skills + 5 agents. One-click install. Create your own.</p>
-        </div>
-
-        <!-- Zero Config -->
-        <div class="glass rounded-2xl p-6 tilt-card pop-in stagger-5">
-          <div class="w-12 h-12 rounded-xl bg-pink-500/10 flex items-center justify-center mb-4">
-            <svg class="w-6 h-6 text-pink-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z"/></svg>
-          </div>
-          <h3 class="text-lg font-bold mb-2">Zero Config</h3>
-          <p class="text-sm text-zinc-400">Auto-detects dev servers, skills, agents, MCP servers. Just works.</p>
-        </div>
-      </div>
-    </div>
-  </section>
-
-  <!-- Full Feature Showcase (Expandable) -->
-  <section class="py-16 sm:py-24 px-4 sm:px-6">
-    <div class="max-w-4xl mx-auto">
-      <div class="text-center mb-16 fade-up">
-        <h2 class="text-4xl md:text-5xl font-bold mb-4">All Features</h2>
-        <p class="text-xl text-zinc-400">Everything included in Unleashed.</p>
-      </div>
-
-      <div class="space-y-4 fade-up">
-        <!-- Developer Tools -->
-        <details class="glass rounded-xl overflow-hidden group" open>
-          <summary class="px-6 py-4 flex items-center justify-between cursor-pointer hover:bg-white/5 transition-colors">
-            <div class="flex items-center gap-3">
-              <svg class="w-5 h-5 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"/></svg>
-              <span class="font-semibold">Developer Tools</span>
-            </div>
-            <svg class="w-5 h-5 text-zinc-400 chevron" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
-          </summary>
-          <div class="px-6 pb-4 grid sm:grid-cols-2 gap-3 text-sm text-zinc-400">
-            <div class="flex items-center gap-2"><span class="w-1.5 h-1.5 rounded-full bg-primary"></span>File Explorer with Git status</div>
-            <div class="flex items-center gap-2"><span class="w-1.5 h-1.5 rounded-full bg-primary"></span>Document Viewer (PDF, Word, Excel)</div>
-            <div class="flex items-center gap-2"><span class="w-1.5 h-1.5 rounded-full bg-primary"></span>Localhost auto-preview</div>
-            <div class="flex items-center gap-2"><span class="w-1.5 h-1.5 rounded-full bg-primary"></span>8 Terminal Themes</div>
-            <div class="flex items-center gap-2"><span class="w-1.5 h-1.5 rounded-full bg-primary"></span>Syntax highlighting</div>
-            <div class="flex items-center gap-2"><span class="w-1.5 h-1.5 rounded-full bg-primary"></span>Keyboard shortcuts (Cmd+P, Cmd+O)</div>
-          </div>
-        </details>
-
-        <!-- Git & Deploy -->
-        <details class="glass rounded-xl overflow-hidden">
-          <summary class="px-6 py-4 flex items-center justify-between cursor-pointer hover:bg-white/5 transition-colors">
-            <div class="flex items-center gap-3">
-              <svg class="w-5 h-5 text-accent" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7v8a2 2 0 002 2h6M8 7V5a2 2 0 012-2h4.586a1 1 0 01.707.293l4.414 4.414a1 1 0 01.293.707V15a2 2 0 01-2 2h-2M8 7H6a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2v-2"/></svg>
-              <span class="font-semibold">Git & Deploy</span>
-            </div>
-            <svg class="w-5 h-5 text-zinc-400 chevron" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
-          </summary>
-          <div class="px-6 pb-4 grid sm:grid-cols-2 gap-3 text-sm text-zinc-400">
-            <div class="flex items-center gap-2"><span class="w-1.5 h-1.5 rounded-full bg-accent"></span>One-click commit & push</div>
-            <div class="flex items-center gap-2"><span class="w-1.5 h-1.5 rounded-full bg-accent"></span>Create Pull Requests</div>
-            <div class="flex items-center gap-2"><span class="w-1.5 h-1.5 rounded-full bg-accent"></span>Visual Git status indicators</div>
-            <div class="flex items-center gap-2"><span class="w-1.5 h-1.5 rounded-full bg-accent"></span>Vercel one-click deploy</div>
-            <div class="flex items-center gap-2"><span class="w-1.5 h-1.5 rounded-full bg-accent"></span>GitHub Pages support</div>
-            <div class="flex items-center gap-2"><span class="w-1.5 h-1.5 rounded-full bg-accent"></span>Conflict resolution</div>
-          </div>
-        </details>
-
-        <!-- MCP Servers -->
-        <details class="glass rounded-xl overflow-hidden">
-          <summary class="px-6 py-4 flex items-center justify-between cursor-pointer hover:bg-white/5 transition-colors">
-            <div class="flex items-center gap-3">
-              <svg class="w-5 h-5 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 12h14M5 12a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v4a2 2 0 01-2 2M5 12a2 2 0 00-2 2v4a2 2 0 002 2h14a2 2 0 002-2v-4a2 2 0 00-2-2m-2-4h.01M17 16h.01"/></svg>
-              <span class="font-semibold">MCP Servers</span>
-            </div>
-            <svg class="w-5 h-5 text-zinc-400 chevron" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
-          </summary>
-          <div class="px-6 pb-4 grid sm:grid-cols-2 gap-3 text-sm text-zinc-400">
-            <div class="flex items-center gap-2"><span class="w-1.5 h-1.5 rounded-full bg-blue-500"></span>Filesystem access</div>
-            <div class="flex items-center gap-2"><span class="w-1.5 h-1.5 rounded-full bg-blue-500"></span>GitHub integration</div>
-            <div class="flex items-center gap-2"><span class="w-1.5 h-1.5 rounded-full bg-blue-500"></span>Puppeteer browser automation</div>
-            <div class="flex items-center gap-2"><span class="w-1.5 h-1.5 rounded-full bg-blue-500"></span>Fetch HTTP requests</div>
-            <div class="flex items-center gap-2"><span class="w-1.5 h-1.5 rounded-full bg-blue-500"></span>Slack workspace</div>
-            <div class="flex items-center gap-2"><span class="w-1.5 h-1.5 rounded-full bg-blue-500"></span>Memory persistence</div>
-            <div class="flex items-center gap-2"><span class="w-1.5 h-1.5 rounded-full bg-blue-500"></span>Custom servers supported</div>
-          </div>
-        </details>
-
-        <!-- Conversation History -->
-        <details class="glass rounded-xl overflow-hidden">
-          <summary class="px-6 py-4 flex items-center justify-between cursor-pointer hover:bg-white/5 transition-colors">
-            <div class="flex items-center gap-3">
-              <svg class="w-5 h-5 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-              <span class="font-semibold">Conversation History</span>
-            </div>
-            <svg class="w-5 h-5 text-zinc-400 chevron" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
-          </summary>
-          <div class="px-6 pb-4 grid sm:grid-cols-2 gap-3 text-sm text-zinc-400">
-            <div class="flex items-center gap-2"><span class="w-1.5 h-1.5 rounded-full bg-green-500"></span>Browse past sessions</div>
-            <div class="flex items-center gap-2"><span class="w-1.5 h-1.5 rounded-full bg-green-500"></span>Search and filter</div>
-            <div class="flex items-center gap-2"><span class="w-1.5 h-1.5 rounded-full bg-green-500"></span>Pin favorites</div>
-            <div class="flex items-center gap-2"><span class="w-1.5 h-1.5 rounded-full bg-green-500"></span>Resume any conversation</div>
-            <div class="flex items-center gap-2"><span class="w-1.5 h-1.5 rounded-full bg-green-500"></span>Project organization</div>
-            <div class="flex items-center gap-2"><span class="w-1.5 h-1.5 rounded-full bg-green-500"></span>Message preview</div>
-          </div>
-        </details>
-
-        <!-- Productivity -->
-        <details class="glass rounded-xl overflow-hidden">
-          <summary class="px-6 py-4 flex items-center justify-between cursor-pointer hover:bg-white/5 transition-colors">
-            <div class="flex items-center gap-3">
-              <svg class="w-5 h-5 text-yellow-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
-              <span class="font-semibold">Productivity</span>
-            </div>
-            <svg class="w-5 h-5 text-zinc-400 chevron" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
-          </summary>
-          <div class="px-6 pb-4 grid sm:grid-cols-2 gap-3 text-sm text-zinc-400">
-            <div class="flex items-center gap-2"><span class="w-1.5 h-1.5 rounded-full bg-yellow-500"></span>Command palette (Cmd+P)</div>
-            <div class="flex items-center gap-2"><span class="w-1.5 h-1.5 rounded-full bg-yellow-500"></span>Quick file open (Cmd+O)</div>
-            <div class="flex items-center gap-2"><span class="w-1.5 h-1.5 rounded-full bg-yellow-500"></span>Project switcher</div>
-            <div class="flex items-center gap-2"><span class="w-1.5 h-1.5 rounded-full bg-yellow-500"></span>Toast notifications</div>
-            <div class="flex items-center gap-2"><span class="w-1.5 h-1.5 rounded-full bg-yellow-500"></span>Settings panel</div>
-            <div class="flex items-center gap-2"><span class="w-1.5 h-1.5 rounded-full bg-yellow-500"></span>Error boundaries</div>
-          </div>
-        </details>
-      </div>
-    </div>
-  </section>
-
-  <!-- Screenshot Gallery -->
-  <section class="py-16 sm:py-24 px-4 sm:px-6 bg-surface/50 section-depth">
-    <div class="max-w-7xl mx-auto">
-      <div class="text-center mb-16 fade-up">
-        <p class="text-primary font-semibold mb-3 uppercase text-sm tracking-wide">See It In Action</p>
-        <h2 class="text-4xl md:text-5xl font-bold mb-4">Every Feature, <span class="text-transparent bg-clip-text bg-gradient-to-r from-primary to-orange-400">Visualized</span></h2>
-        <p class="text-xl text-zinc-400 max-w-2xl mx-auto">Click any screenshot to explore the full interface</p>
-      </div>
-
-      <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-8 fade-up">
-        <!-- Skills Manager -->
-        <div class="group cursor-pointer screenshot-card" data-src="screenshots/skills-agents.png" data-title="Skills & Agents Manager">
-          <div class="relative">
-            <!-- Glow effect -->
-            <div class="absolute -inset-2 bg-gradient-to-r from-primary/20 to-accent/20 rounded-2xl blur-xl opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
-            <!-- Window frame -->
-            <div class="relative rounded-xl overflow-hidden border border-white/10 bg-gradient-to-b from-zinc-800/90 to-zinc-900/95 shadow-2xl transform transition-all duration-500 group-hover:scale-[1.02] group-hover:-translate-y-1">
-              <!-- Window chrome -->
-              <div class="flex items-center gap-2 px-3 py-2 bg-gradient-to-b from-zinc-700/50 to-zinc-800/50 border-b border-white/5">
-                <div class="flex gap-1.5">
-                  <div class="w-2.5 h-2.5 rounded-full bg-red-500/80"></div>
-                  <div class="w-2.5 h-2.5 rounded-full bg-yellow-500/80"></div>
-                  <div class="w-2.5 h-2.5 rounded-full bg-green-500/80"></div>
-                </div>
-                <span class="flex-1 text-center text-[10px] text-zinc-500 font-medium">Skills & Agents</span>
-              </div>
-              <!-- Screenshot -->
-              <div class="relative aspect-[16/10] overflow-hidden">
-                <img src="screenshots/skills-agents.png" alt="Skills & Agents Manager" class="w-full h-full object-cover object-top">
-                <div class="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-all duration-300"></div>
-                <div class="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-300">
-                  <div class="flex items-center gap-2 px-4 py-2 bg-white/10 backdrop-blur-sm rounded-full border border-white/20">
-                    <svg class="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM10 7v3m0 0v3m0-3h3m-3 0H7"/></svg>
-                    <span class="text-sm text-white font-medium">View Full Size</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-          <div class="mt-4 text-center">
-            <h3 class="font-semibold text-white mb-1">Skills & Agents</h3>
-            <p class="text-sm text-zinc-500">25+ skills and 5 specialized agents</p>
-          </div>
-        </div>
-
-        <!-- Hive Manager -->
-        <div class="group cursor-pointer screenshot-card" data-src="screenshots/hive-manager.png" data-title="Hive Manager">
-          <div class="relative">
-            <div class="absolute -inset-2 bg-gradient-to-r from-accent/20 to-purple-500/20 rounded-2xl blur-xl opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
-            <div class="relative rounded-xl overflow-hidden border border-white/10 bg-gradient-to-b from-zinc-800/90 to-zinc-900/95 shadow-2xl transform transition-all duration-500 group-hover:scale-[1.02] group-hover:-translate-y-1">
-              <div class="flex items-center gap-2 px-3 py-2 bg-gradient-to-b from-zinc-700/50 to-zinc-800/50 border-b border-white/5">
-                <div class="flex gap-1.5">
-                  <div class="w-2.5 h-2.5 rounded-full bg-red-500/80"></div>
-                  <div class="w-2.5 h-2.5 rounded-full bg-yellow-500/80"></div>
-                  <div class="w-2.5 h-2.5 rounded-full bg-green-500/80"></div>
-                </div>
-                <span class="flex-1 text-center text-[10px] text-zinc-500 font-medium">Hive Manager</span>
-              </div>
-              <div class="relative aspect-[16/10] overflow-hidden">
-                <img src="screenshots/hive-manager.png" alt="Hive Manager" class="w-full h-full object-cover object-top">
-                <div class="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-all duration-300"></div>
-                <div class="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-300">
-                  <div class="flex items-center gap-2 px-4 py-2 bg-white/10 backdrop-blur-sm rounded-full border border-white/20">
-                    <svg class="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM10 7v3m0 0v3m0-3h3m-3 0H7"/></svg>
-                    <span class="text-sm text-white font-medium">View Full Size</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-          <div class="mt-4 text-center">
-            <h3 class="font-semibold text-white mb-1">Agent Hive</h3>
-            <p class="text-sm text-zinc-500">Deploy multi-agent swarms in parallel</p>
-          </div>
-        </div>
-
-        <!-- Super Agent Modal -->
-        <div class="group cursor-pointer screenshot-card" data-src="screenshots/super-agent-modal.png" data-title="Super Agent">
-          <div class="relative">
-            <div class="absolute -inset-2 bg-gradient-to-r from-primary/20 to-orange-500/20 rounded-2xl blur-xl opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
-            <div class="relative rounded-xl overflow-hidden border border-white/10 bg-gradient-to-b from-zinc-800/90 to-zinc-900/95 shadow-2xl transform transition-all duration-500 group-hover:scale-[1.02] group-hover:-translate-y-1">
-              <div class="flex items-center gap-2 px-3 py-2 bg-gradient-to-b from-zinc-700/50 to-zinc-800/50 border-b border-white/5">
-                <div class="flex gap-1.5">
-                  <div class="w-2.5 h-2.5 rounded-full bg-red-500/80"></div>
-                  <div class="w-2.5 h-2.5 rounded-full bg-yellow-500/80"></div>
-                  <div class="w-2.5 h-2.5 rounded-full bg-green-500/80"></div>
-                </div>
-                <span class="flex-1 text-center text-[10px] text-zinc-500 font-medium">Super Agent</span>
-              </div>
-              <div class="relative aspect-[16/10] overflow-hidden">
-                <img src="screenshots/super-agent-modal.png" alt="Super Agent Modal" class="w-full h-full object-cover object-top">
-                <div class="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-all duration-300"></div>
-                <div class="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-300">
-                  <div class="flex items-center gap-2 px-4 py-2 bg-white/10 backdrop-blur-sm rounded-full border border-white/20">
-                    <svg class="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM10 7v3m0 0v3m0-3h3m-3 0H7"/></svg>
-                    <span class="text-sm text-white font-medium">View Full Size</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-          <div class="mt-4 text-center">
-            <h3 class="font-semibold text-white mb-1">Super Agent</h3>
-            <p class="text-sm text-zinc-500">Autonomous AI with time controls</p>
-          </div>
-        </div>
-
-        <!-- Agent Swarm Dropdown -->
-        <div class="group cursor-pointer screenshot-card" data-src="screenshots/agent-swarm-dropdown.png" data-title="Agent Swarm Selection">
-          <div class="relative">
-            <div class="absolute -inset-2 bg-gradient-to-r from-blue-500/20 to-cyan-500/20 rounded-2xl blur-xl opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
-            <div class="relative rounded-xl overflow-hidden border border-white/10 bg-gradient-to-b from-zinc-800/90 to-zinc-900/95 shadow-2xl transform transition-all duration-500 group-hover:scale-[1.02] group-hover:-translate-y-1">
-              <div class="flex items-center gap-2 px-3 py-2 bg-gradient-to-b from-zinc-700/50 to-zinc-800/50 border-b border-white/5">
-                <div class="flex gap-1.5">
-                  <div class="w-2.5 h-2.5 rounded-full bg-red-500/80"></div>
-                  <div class="w-2.5 h-2.5 rounded-full bg-yellow-500/80"></div>
-                  <div class="w-2.5 h-2.5 rounded-full bg-green-500/80"></div>
-                </div>
-                <span class="flex-1 text-center text-[10px] text-zinc-500 font-medium">Swarm Selection</span>
-              </div>
-              <div class="relative aspect-[16/10] overflow-hidden">
-                <img src="screenshots/agent-swarm-dropdown.png" alt="Agent Swarm Dropdown" class="w-full h-full object-cover object-top">
-                <div class="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-all duration-300"></div>
-                <div class="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-300">
-                  <div class="flex items-center gap-2 px-4 py-2 bg-white/10 backdrop-blur-sm rounded-full border border-white/20">
-                    <svg class="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM10 7v3m0 0v3m0-3h3m-3 0H7"/></svg>
-                    <span class="text-sm text-white font-medium">View Full Size</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-          <div class="mt-4 text-center">
-            <h3 class="font-semibold text-white mb-1">Swarm Selection</h3>
-            <p class="text-sm text-zinc-500">Pre-configured agent combinations</p>
-          </div>
-        </div>
-
-        <!-- Super Agent History -->
-        <div class="group cursor-pointer screenshot-card" data-src="screenshots/super-agent-history.png" data-title="Session History">
-          <div class="relative">
-            <div class="absolute -inset-2 bg-gradient-to-r from-green-500/20 to-emerald-500/20 rounded-2xl blur-xl opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
-            <div class="relative rounded-xl overflow-hidden border border-white/10 bg-gradient-to-b from-zinc-800/90 to-zinc-900/95 shadow-2xl transform transition-all duration-500 group-hover:scale-[1.02] group-hover:-translate-y-1">
-              <div class="flex items-center gap-2 px-3 py-2 bg-gradient-to-b from-zinc-700/50 to-zinc-800/50 border-b border-white/5">
-                <div class="flex gap-1.5">
-                  <div class="w-2.5 h-2.5 rounded-full bg-red-500/80"></div>
-                  <div class="w-2.5 h-2.5 rounded-full bg-yellow-500/80"></div>
-                  <div class="w-2.5 h-2.5 rounded-full bg-green-500/80"></div>
-                </div>
-                <span class="flex-1 text-center text-[10px] text-zinc-500 font-medium">Session History</span>
-              </div>
-              <div class="relative aspect-[16/10] overflow-hidden">
-                <img src="screenshots/super-agent-history.png" alt="Super Agent History" class="w-full h-full object-cover object-top">
-                <div class="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-all duration-300"></div>
-                <div class="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-300">
-                  <div class="flex items-center gap-2 px-4 py-2 bg-white/10 backdrop-blur-sm rounded-full border border-white/20">
-                    <svg class="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM10 7v3m0 0v3m0-3h3m-3 0H7"/></svg>
-                    <span class="text-sm text-white font-medium">View Full Size</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-          <div class="mt-4 text-center">
-            <h3 class="font-semibold text-white mb-1">Session History</h3>
-            <p class="text-sm text-zinc-500">Browse and replay past sessions</p>
-          </div>
-        </div>
-
-        <!-- Tools Panel -->
-        <div class="group cursor-pointer screenshot-card" data-src="screenshots/tools-panel.png" data-title="Tools Panel">
-          <div class="relative">
-            <div class="absolute -inset-2 bg-gradient-to-r from-yellow-500/20 to-amber-500/20 rounded-2xl blur-xl opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
-            <div class="relative rounded-xl overflow-hidden border border-white/10 bg-gradient-to-b from-zinc-800/90 to-zinc-900/95 shadow-2xl transform transition-all duration-500 group-hover:scale-[1.02] group-hover:-translate-y-1">
-              <div class="flex items-center gap-2 px-3 py-2 bg-gradient-to-b from-zinc-700/50 to-zinc-800/50 border-b border-white/5">
-                <div class="flex gap-1.5">
-                  <div class="w-2.5 h-2.5 rounded-full bg-red-500/80"></div>
-                  <div class="w-2.5 h-2.5 rounded-full bg-yellow-500/80"></div>
-                  <div class="w-2.5 h-2.5 rounded-full bg-green-500/80"></div>
-                </div>
-                <span class="flex-1 text-center text-[10px] text-zinc-500 font-medium">Tools Panel</span>
-              </div>
-              <div class="relative aspect-[16/10] overflow-hidden">
-                <img src="screenshots/tools-panel.png" alt="Tools Panel" class="w-full h-full object-cover object-top">
-                <div class="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-all duration-300"></div>
-                <div class="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-300">
-                  <div class="flex items-center gap-2 px-4 py-2 bg-white/10 backdrop-blur-sm rounded-full border border-white/20">
-                    <svg class="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM10 7v3m0 0v3m0-3h3m-3 0H7"/></svg>
-                    <span class="text-sm text-white font-medium">View Full Size</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-          <div class="mt-4 text-center">
-            <h3 class="font-semibold text-white mb-1">Tools Panel</h3>
-            <p class="text-sm text-zinc-500">Quick access to all your agents</p>
-          </div>
-        </div>
-      </div>
-    </div>
-  </section>
-
-  <!-- Lightbox -->
-  <div id="lightbox" class="fixed inset-0 z-50 bg-black/95 backdrop-blur-xl hidden items-center justify-center p-4 sm:p-8">
-    <button id="lightbox-close" class="absolute top-4 right-4 sm:top-6 sm:right-6 w-12 h-12 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center transition-all hover:scale-110 z-10 border border-white/10">
-      <svg class="w-6 h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
-    </button>
-    <!-- Navigation arrows -->
-    <button id="lightbox-prev" class="absolute left-4 top-1/2 -translate-y-1/2 w-12 h-12 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center transition-all hover:scale-110 z-10 border border-white/10">
-      <svg class="w-6 h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
-    </button>
-    <button id="lightbox-next" class="absolute right-4 top-1/2 -translate-y-1/2 w-12 h-12 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center transition-all hover:scale-110 z-10 border border-white/10">
-      <svg class="w-6 h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
-    </button>
-    <div class="max-w-6xl w-full">
-      <!-- Window frame in lightbox -->
-      <div class="rounded-2xl overflow-hidden border border-white/10 bg-gradient-to-b from-zinc-800/90 to-zinc-900/95 shadow-2xl">
-        <div class="flex items-center gap-2 px-4 py-3 bg-gradient-to-b from-zinc-700/50 to-zinc-800/50 border-b border-white/5">
-          <div class="flex gap-2">
-            <div class="w-3 h-3 rounded-full bg-red-500 shadow-lg shadow-red-500/30"></div>
-            <div class="w-3 h-3 rounded-full bg-yellow-500 shadow-lg shadow-yellow-500/30"></div>
-            <div class="w-3 h-3 rounded-full bg-green-500 shadow-lg shadow-green-500/30"></div>
-          </div>
-          <span id="lightbox-window-title" class="flex-1 text-center text-xs text-zinc-400 font-medium">Claude Code Unleashed</span>
-        </div>
-        <img id="lightbox-img" src="" alt="" class="w-full">
-      </div>
-      <p id="lightbox-title" class="text-center text-white text-lg mt-6 font-medium"></p>
-      <p class="text-center text-zinc-500 text-sm mt-2">Use arrow keys or click arrows to navigate</p>
-    </div>
-  </div>
-
-  <!-- Starter Kit -->
-  <section class="py-16 sm:py-24 px-4 sm:px-6">
-    <div class="max-w-6xl mx-auto">
-      <div class="text-center mb-16 fade-up">
-        <h2 class="text-4xl md:text-5xl font-bold mb-4">Starter Kit Included</h2>
-        <p class="text-xl text-zinc-400">25 skills + 5 agents ready to use. One-click install.</p>
-      </div>
-
-      <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-3 mb-12 fade-up">
-        <div class="glass rounded-lg px-3 py-2 text-sm text-center">Code Review Pro</div>
-        <div class="glass rounded-lg px-3 py-2 text-sm text-center">API Doc Writer</div>
-        <div class="glass rounded-lg px-3 py-2 text-sm text-center">Git PR Reviewer</div>
-        <div class="glass rounded-lg px-3 py-2 text-sm text-center">Schema Designer</div>
-        <div class="glass rounded-lg px-3 py-2 text-sm text-center">Docker Debugger</div>
-        <div class="glass rounded-lg px-3 py-2 text-sm text-center">Dependency Auditor</div>
-        <div class="glass rounded-lg px-3 py-2 text-sm text-center">React Generator</div>
-        <div class="glass rounded-lg px-3 py-2 text-sm text-center">CSS Animations</div>
-        <div class="glass rounded-lg px-3 py-2 text-sm text-center">Landing Optimizer</div>
-        <div class="glass rounded-lg px-3 py-2 text-sm text-center">A11y Auditor</div>
-        <div class="glass rounded-lg px-3 py-2 text-sm text-center">Test Coverage</div>
-        <div class="glass rounded-lg px-3 py-2 text-sm text-center">Performance</div>
-        <div class="glass rounded-lg px-3 py-2 text-sm text-center text-zinc-500">+13 more skills</div>
-      </div>
-
-      <div class="flex flex-wrap justify-center gap-4 fade-up stagger-1">
-        <div class="glass rounded-xl px-6 py-3 flex items-center gap-3">
-          <div class="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center">
-            <svg class="w-4 h-4 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>
-          </div>
-          <span class="font-medium">Code Reviewer</span>
-        </div>
-        <div class="glass rounded-xl px-6 py-3 flex items-center gap-3">
-          <div class="w-8 h-8 rounded-lg bg-accent/10 flex items-center justify-center">
-            <svg class="w-4 h-4 text-accent" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 12h14M5 12a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v4a2 2 0 01-2 2M5 12a2 2 0 00-2 2v4a2 2 0 002 2h14a2 2 0 002-2v-4a2 2 0 00-2-2"/></svg>
-          </div>
-          <span class="font-medium">Backend Dev</span>
-        </div>
-        <div class="glass rounded-xl px-6 py-3 flex items-center gap-3">
-          <div class="w-8 h-8 rounded-lg bg-blue-500/10 flex items-center justify-center">
-            <svg class="w-4 h-4 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
-          </div>
-          <span class="font-medium">Frontend Dev</span>
-        </div>
-        <div class="glass rounded-xl px-6 py-3 flex items-center gap-3">
-          <div class="w-8 h-8 rounded-lg bg-green-500/10 flex items-center justify-center">
-            <svg class="w-4 h-4 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-          </div>
-          <span class="font-medium">Test Engineer</span>
-        </div>
-        <div class="glass rounded-xl px-6 py-3 flex items-center gap-3">
-          <div class="w-8 h-8 rounded-lg bg-red-500/10 flex items-center justify-center">
-            <svg class="w-4 h-4 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>
-          </div>
-          <span class="font-medium">Security Auditor</span>
+          <p class="text-center text-sm text-zinc-500 mt-4">Multi-agent swarm management</p>
         </div>
       </div>
     </div>
   </section>
 
   <!-- Tech Stack -->
-  <section class="py-12 sm:py-16 px-4 sm:px-6 border-y border-white/5">
-    <div class="max-w-6xl mx-auto">
-      <p class="text-center text-sm text-zinc-500 mb-8">POWERED BY</p>
-      <div class="flex flex-wrap justify-center items-center gap-12 text-zinc-400">
-        <span class="text-xl font-semibold">Anthropic</span>
-        <span class="text-xl font-semibold">React</span>
-        <span class="text-xl font-semibold">Electron</span>
-        <span class="text-xl font-semibold">TypeScript</span>
-        <span class="text-xl font-semibold">Tailwind</span>
+  <section class="py-16 px-6">
+    <div class="max-w-4xl mx-auto">
+      <p class="text-center text-xs uppercase tracking-widest text-zinc-500 mb-8 fade-up">Powered By</p>
+      <div class="flex flex-wrap justify-center items-center gap-8 md:gap-12 text-zinc-400 fade-up stagger-1">
+        <div class="flex items-center gap-2">
+          <svg class="w-6 h-6" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8z"/></svg>
+          <span class="text-sm font-medium">Anthropic</span>
+        </div>
+        <div class="flex items-center gap-2">
+          <svg class="w-6 h-6" viewBox="0 0 24 24" fill="currentColor"><path d="M14.23 12.004a2.236 2.236 0 0 1-2.235 2.236 2.236 2.236 0 0 1-2.236-2.236 2.236 2.236 0 0 1 2.235-2.236 2.236 2.236 0 0 1 2.236 2.236zm2.648-10.69c-1.346 0-3.107.96-4.888 2.622-1.78-1.653-3.542-2.602-4.887-2.602-.41 0-.783.093-1.106.278-1.375.793-1.683 3.264-.973 6.365C1.98 8.917 0 10.42 0 12.004c0 1.59 1.99 3.097 5.043 4.03-.704 3.113-.39 5.588.988 6.38.32.187.69.275 1.102.275 1.345 0 3.107-.96 4.888-2.624 1.78 1.654 3.542 2.603 4.887 2.603.41 0 .783-.09 1.106-.275 1.374-.792 1.683-3.263.973-6.365C22.02 15.096 24 13.59 24 12.004c0-1.59-1.99-3.097-5.043-4.032.704-3.11.39-5.587-.988-6.38-.318-.184-.688-.277-1.092-.278zm-.005 1.09v.006c.225 0 .406.044.558.127.666.382.955 1.835.73 3.704-.054.46-.142.945-.25 1.44-.96-.236-2.006-.417-3.107-.534-.66-.905-1.345-1.727-2.035-2.447 1.592-1.48 3.087-2.292 4.105-2.295zm-9.77.02c1.012 0 2.514.808 4.11 2.28-.686.72-1.37 1.537-2.02 2.442-1.107.117-2.154.298-3.113.538-.112-.49-.195-.964-.254-1.42-.23-1.868.054-3.32.714-3.707.19-.09.4-.127.563-.132zm4.882 3.05c.455.468.91.992 1.36 1.564-.44-.02-.89-.034-1.345-.034-.46 0-.915.01-1.36.034.44-.572.895-1.096 1.345-1.565zM12 8.1c.74 0 1.477.034 2.202.093.406.582.802 1.203 1.183 1.86.372.64.71 1.29 1.018 1.946-.308.655-.646 1.31-1.013 1.95-.38.66-.773 1.288-1.18 1.87-.728.063-1.466.098-2.21.098-.74 0-1.477-.035-2.202-.093-.406-.582-.802-1.204-1.183-1.86-.372-.64-.71-1.29-1.018-1.946.303-.657.646-1.313 1.013-1.954.38-.66.773-1.286 1.18-1.868.728-.064 1.466-.098 2.21-.098zm-3.635.254c-.24.377-.48.763-.704 1.16-.225.39-.435.782-.635 1.174-.265-.656-.49-1.31-.676-1.947.64-.15 1.315-.283 2.015-.386zm7.26 0c.695.103 1.365.23 2.006.387-.18.632-.405 1.282-.66 1.933-.2-.39-.41-.783-.64-1.174-.225-.392-.465-.774-.705-1.146zm3.063.675c.484.15.944.317 1.375.498 1.732.74 2.852 1.708 2.852 2.476-.005.768-1.125 1.74-2.857 2.475-.42.18-.88.342-1.355.493-.28-.958-.646-1.956-1.1-2.98.45-1.017.81-2.01 1.085-2.964zm-13.395.004c.278.96.645 1.957 1.1 2.98-.45 1.017-.812 2.01-1.086 2.964-.484-.15-.944-.318-1.37-.5-1.732-.737-2.852-1.706-2.852-2.474 0-.768 1.12-1.742 2.852-2.476.42-.18.88-.342 1.356-.494zm11.678 4.28c.265.657.49 1.312.676 1.948-.64.157-1.316.29-2.016.39.24-.375.48-.762.705-1.158.225-.39.435-.788.636-1.18zm-9.945.02c.2.392.41.783.64 1.175.23.39.465.772.705 1.143-.695-.102-1.365-.23-2.006-.386.18-.63.406-1.282.66-1.933zM17.92 16.32c.112.493.2.968.254 1.423.23 1.868-.054 3.32-.714 3.708-.147.09-.338.128-.563.128-1.012 0-2.514-.807-4.11-2.28.686-.72 1.37-1.536 2.02-2.44 1.107-.118 2.154-.3 3.113-.54zm-11.83.01c.96.234 2.006.415 3.107.532.66.905 1.345 1.727 2.035 2.446-1.595 1.483-3.092 2.295-4.11 2.295-.22-.005-.406-.05-.553-.132-.666-.38-.955-1.834-.73-3.703.054-.46.142-.944.25-1.438zm4.56.64c.44.02.89.034 1.345.034.46 0 .915-.01 1.36-.034-.44.572-.895 1.095-1.345 1.565-.455-.47-.91-.993-1.36-1.565z"/></svg>
+          <span class="text-sm font-medium">React</span>
+        </div>
+        <div class="flex items-center gap-2">
+          <svg class="w-6 h-6" viewBox="0 0 24 24" fill="currentColor"><path d="M1.125 0C.502 0 0 .502 0 1.125v21.75C0 23.498.502 24 1.125 24h21.75c.623 0 1.125-.502 1.125-1.125V1.125C24 .502 23.498 0 22.875 0zm17.363 9.75c.612 0 1.154.037 1.627.111a6.38 6.38 0 0 1 1.306.34v2.458a3.95 3.95 0 0 0-.643-.361 5.093 5.093 0 0 0-.717-.26 5.453 5.453 0 0 0-1.426-.2c-.3 0-.573.028-.819.086a2.1 2.1 0 0 0-.623.242c-.17.104-.3.229-.393.374a.888.888 0 0 0-.14.49c0 .196.053.373.156.529.104.156.252.304.443.444s.423.276.696.41c.273.135.582.274.926.416.47.197.892.407 1.266.628.374.222.695.473.963.753.268.279.472.598.614.957.142.359.214.776.214 1.253 0 .657-.125 1.21-.373 1.656a3.033 3.033 0 0 1-1.012 1.085 4.38 4.38 0 0 1-1.487.596c-.566.12-1.163.18-1.79.18a9.916 9.916 0 0 1-1.84-.164 5.544 5.544 0 0 1-1.512-.493v-2.63a5.033 5.033 0 0 0 3.237 1.2c.333 0 .624-.03.872-.09.249-.06.456-.144.623-.25.166-.108.29-.234.373-.38a1.023 1.023 0 0 0-.074-1.089 2.12 2.12 0 0 0-.537-.5 5.597 5.597 0 0 0-.807-.444 27.72 27.72 0 0 0-1.007-.436c-.918-.383-1.602-.852-2.053-1.405-.45-.553-.676-1.222-.676-2.005 0-.614.123-1.141.369-1.582.246-.441.58-.804 1.004-1.089a4.494 4.494 0 0 1 1.47-.629 7.536 7.536 0 0 1 1.77-.201zm-15.113.188h9.563v2.166H9.506v9.646H6.789v-9.646H3.375z"/></svg>
+          <span class="text-sm font-medium">TypeScript</span>
+        </div>
+        <div class="flex items-center gap-2">
+          <svg class="w-6 h-6" viewBox="0 0 24 24" fill="currentColor"><path d="M12.001,4.8c-3.2,0-5.2,1.6-6,4.8c1.2-1.6,2.6-2.2,4.2-1.8c0.913,0.228,1.565,0.89,2.288,1.624 C13.666,10.618,15.027,12,18.001,12c3.2,0,5.2-1.6,6-4.8c-1.2,1.6-2.6,2.2-4.2,1.8c-0.913-0.228-1.565-0.89-2.288-1.624 C16.337,6.182,14.976,4.8,12.001,4.8z M6.001,12c-3.2,0-5.2,1.6-6,4.8c1.2-1.6,2.6-2.2,4.2-1.8c0.913,0.228,1.565,0.89,2.288,1.624 c1.177,1.194,2.538,2.576,5.512,2.576c3.2,0,5.2-1.6,6-4.8c-1.2,1.6-2.6,2.2-4.2,1.8c-0.913-0.228-1.565-0.89-2.288-1.624 C10.337,13.382,8.976,12,6.001,12z"/></svg>
+          <span class="text-sm font-medium">Tailwind</span>
+        </div>
+        <div class="flex items-center gap-2">
+          <svg class="w-6 h-6" viewBox="0 0 24 24" fill="currentColor"><path d="M8.291 21.841c1.124.465 2.381.699 3.671.699a9.63 9.63 0 0 0 4.073-.894c-.269-.372-.515-.875-.73-1.478-.233-.654-.44-1.474-.614-2.417a35.64 35.64 0 0 1-.39-2.958 58.316 58.316 0 0 1-.186-3.164 88.02 88.02 0 0 1-.037-2.834c0-1.168.02-2.131.057-2.892.042-.775.118-1.41.227-1.905.112-.499.248-.851.406-1.066.164-.23.397-.345.708-.345a.75.75 0 0 1 .344.096c.119.066.248.173.387.323.074.078.155.175.243.29a.756.756 0 0 0 .624.323.762.762 0 0 0 .608-.302.771.771 0 0 0 .14-.707 3.77 3.77 0 0 0-.416-.853 4.32 4.32 0 0 0-.601-.735 3.02 3.02 0 0 0-.77-.535 2.199 2.199 0 0 0-.975-.205c-.79 0-1.448.247-1.972.736-.518.483-.92 1.119-1.206 1.905a12.15 12.15 0 0 0-.622 2.603 44.96 44.96 0 0 0-.253 3.018 128.49 128.49 0 0 0-.058 3.227c0 1.168.025 2.195.08 3.07.055.875.125 1.658.207 2.353a21.9 21.9 0 0 0 .312 1.922c.118.568.256 1.081.416 1.539.164.465.34.86.525 1.183.191.33.39.57.602.72A9.644 9.644 0 0 1 12 21.54a9.64 9.64 0 0 1-3.709-.7zm-5.604-6.95a9.64 9.64 0 0 1-1.226-4.697c0-1.282.248-2.5.739-3.651A9.603 9.603 0 0 1 4.122 3.99a9.521 9.521 0 0 1 2.968-2.178A9.581 9.581 0 0 1 10.729.98a9.632 9.632 0 0 1 3.63.7 9.603 9.603 0 0 1 2.999 1.912 9.59 9.59 0 0 1 2.071 2.867c.507 1.09.778 2.276.813 3.53a7.66 7.66 0 0 0-.33-.014c-.316 0-.61.027-.878.075a6.406 6.406 0 0 0-.72.178 4.45 4.45 0 0 0-.569.224 2.28 2.28 0 0 0-.447.275 9.64 9.64 0 0 0-.76-3.24 9.56 9.56 0 0 0-1.825-2.82 8.541 8.541 0 0 0-2.693-1.944A8.573 8.573 0 0 0 8.688 1.98c-1.167 0-2.274.231-3.315.685A8.64 8.64 0 0 0 2.76 4.62a8.561 8.561 0 0 0-1.785 2.819A8.625 8.625 0 0 0 .3 10.843c0 1.207.24 2.345.72 3.423.47 1.056 1.12 1.99 1.947 2.793a8.575 8.575 0 0 0 2.894 1.867 8.627 8.627 0 0 0 3.433.712c.28 0 .557-.013.835-.04a22.97 22.97 0 0 1-.21-1.6 14.3 14.3 0 0 1-.108-1.82c0-.082.004-.159.006-.238a9.635 9.635 0 0 1-3.537-.804 9.622 9.622 0 0 1-3.593-2.145z"/></svg>
+          <span class="text-sm font-medium">Electron</span>
+        </div>
       </div>
     </div>
   </section>
 
-  <!-- CTA Section -->
-  <section id="download" class="py-32 px-6 relative overflow-hidden">
-    <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-primary/10 rounded-full blur-[120px] -z-10"></div>
+  <!-- Final CTA -->
+  <section class="section section-depth">
+    <div class="max-w-4xl mx-auto text-center">
+      <h2 class="text-4xl md:text-5xl font-bold mb-6 fade-up">Ready to code with superpowers?</h2>
+      <p class="text-xl text-zinc-400 mb-10 fade-up stagger-1">Join thousands of developers using Claude Code Unleashed.</p>
 
-    <div class="max-w-4xl mx-auto text-center fade-up">
-      <h2 class="text-4xl md:text-6xl font-bold mb-6">Ready to code with superpowers?</h2>
-      <p class="text-xl text-zinc-400 mb-12">Join thousands of developers building faster with Unleashed. Open source and free forever.</p>
-
-      <div class="flex justify-center mb-8">
-        <a href="https://github.com/OneWave-AI/ClaudeCodeUnleashed/releases" class="px-8 py-4 bg-white text-black rounded-xl font-bold text-lg hover:bg-zinc-200 transition-colors flex items-center justify-center gap-2">
-          <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 24 24"><path d="M18.71 19.5C17.88 20.74 17 21.95 15.66 21.97C14.32 22 13.89 21.18 12.37 21.18C10.84 21.18 10.37 21.95 9.1 22C7.79 22.05 6.8 20.68 5.96 19.47C4.25 17 2.94 12.45 4.7 9.39C5.57 7.87 7.13 6.91 8.82 6.88C10.1 6.86 11.32 7.75 12.11 7.75C12.89 7.75 14.37 6.68 15.92 6.84C16.57 6.87 18.39 7.1 19.56 8.82C19.47 8.88 17.39 10.1 17.41 12.63C17.44 15.65 20.06 16.66 20.09 16.67C20.06 16.74 19.67 18.11 18.71 19.5ZM13 3.5C13.73 2.67 14.94 2.04 15.94 2C16.07 3.17 15.6 4.35 14.9 5.19C14.21 6.04 13.07 6.7 11.95 6.61C11.8 5.46 12.36 4.26 13 3.5Z"/></svg>
+      <div class="flex flex-col sm:flex-row justify-center gap-4 fade-up stagger-2">
+        <a href="https://github.com/OneWave-AI/ClaudeCodeUnleashed/releases" class="btn btn-primary btn-xl glow-primary">
+          <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.81-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M13 3.5c.73-.83 1.94-1.46 2.94-1.5.13 1.17-.34 2.35-1.04 3.19-.69.85-1.83 1.51-2.95 1.42-.15-1.15.41-2.35 1.05-3.11z"/></svg>
           Download for macOS
         </a>
+        <a href="https://github.com/OneWave-AI/ClaudeCodeUnleashed" class="btn btn-secondary btn-xl">
+          <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M12 .587l3.668 7.568 8.332 1.151-6.064 5.828 1.48 8.279-7.416-3.967-7.417 3.967 1.481-8.279-6.064-5.828 8.332-1.151z"/></svg>
+          Star on GitHub
+        </a>
       </div>
-
-      <a href="https://github.com/OneWave-AI/ClaudeCodeUnleashed" class="inline-flex items-center gap-2 text-zinc-400 hover:text-white transition-colors">
-        <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/></svg>
-        Star on GitHub
-      </a>
     </div>
   </section>
 
@@ -1191,27 +435,33 @@
   <footer class="py-12 px-6 border-t border-white/5">
     <div class="max-w-6xl mx-auto flex flex-col md:flex-row justify-between items-center gap-6">
       <div class="flex items-center gap-3">
-        <div class="w-8 h-8 rounded-lg bg-gradient-to-b from-zinc-700 to-zinc-900 flex items-center justify-center border border-white/10">
+        <div class="w-8 h-8 rounded-lg bg-gradient-to-b from-zinc-700 to-zinc-900 border border-white/10 flex items-center justify-center">
           <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none">
             <path d="M6 8l4 4-4 4" stroke="#FACC15" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
             <rect x="13" y="14" width="5" height="8" rx="1" fill="#FACC15"/>
           </svg>
         </div>
-        <span class="text-zinc-400 font-medium">Claude Code Unleashed</span>
+        <span class="font-semibold">Claude Code Unleashed</span>
       </div>
-
       <p class="text-zinc-500 text-sm">Made by <a href="https://onewave-ai.com" class="text-zinc-400 hover:text-white transition-colors">OneWave AI</a></p>
-
       <div class="flex gap-6 text-sm text-zinc-500">
+        <a href="features.html" class="hover:text-white transition-colors">Features</a>
+        <a href="docs.html" class="hover:text-white transition-colors">Docs</a>
+        <a href="use-cases.html" class="hover:text-white transition-colors">Use Cases</a>
         <a href="https://github.com/OneWave-AI/ClaudeCodeUnleashed" class="hover:text-white transition-colors">GitHub</a>
-        <a href="#" class="hover:text-white transition-colors">Privacy</a>
-        <a href="#" class="hover:text-white transition-colors">Terms</a>
       </div>
     </div>
   </footer>
 
   <script>
-    // Scroll animations with pop-in effect
+    // Mobile menu toggle
+    const menuBtn = document.getElementById('mobile-menu-btn');
+    const mobileMenu = document.getElementById('mobile-menu');
+    menuBtn?.addEventListener('click', () => {
+      mobileMenu.classList.toggle('hidden');
+    });
+
+    // Scroll animations
     const observer = new IntersectionObserver((entries) => {
       entries.forEach(entry => {
         if (entry.isIntersecting) {
@@ -1219,11 +469,11 @@
           observer.unobserve(entry.target);
         }
       });
-    }, { threshold: 0.1, rootMargin: '0px 0px -50px 0px' });
+    }, { threshold: 0.1 });
 
     document.querySelectorAll('.fade-up, .pop-in').forEach(el => observer.observe(el));
 
-    // Trigger for elements already visible
+    // Initial check for elements already in view
     setTimeout(() => {
       document.querySelectorAll('.fade-up, .pop-in').forEach(el => {
         const rect = el.getBoundingClientRect();
@@ -1231,142 +481,30 @@
       });
     }, 100);
 
-    // 3D Tilt Effect for Cards
-    const tiltCards = document.querySelectorAll('.tilt-card');
-
-    tiltCards.forEach(card => {
-      // Add glare element
-      const glare = document.createElement('div');
-      glare.className = 'tilt-glare';
-      card.appendChild(glare);
-
+    // 3D tilt effect for cards
+    document.querySelectorAll('.tilt-card').forEach(card => {
       card.addEventListener('mousemove', (e) => {
         const rect = card.getBoundingClientRect();
         const x = e.clientX - rect.left;
         const y = e.clientY - rect.top;
         const centerX = rect.width / 2;
         const centerY = rect.height / 2;
+        const rotateX = (y - centerY) / 20;
+        const rotateY = (centerX - x) / 20;
 
-        // Calculate rotation (max 8 degrees)
-        const rotateX = ((y - centerY) / centerY) * -8;
-        const rotateY = ((x - centerX) / centerX) * 8;
-
-        // Apply transform
-        card.style.transform = `perspective(1000px) rotateX(${rotateX}deg) rotateY(${rotateY}deg) translateZ(10px) scale(1.02)`;
+        card.style.transform = `perspective(1000px) rotateX(${rotateX}deg) rotateY(${rotateY}deg) translateY(-6px)`;
 
         // Update glare position
-        const glareX = (x / rect.width) * 100;
-        const glareY = (y / rect.height) * 100;
-        glare.style.setProperty('--glare-x', `${glareX}%`);
-        glare.style.setProperty('--glare-y', `${glareY}%`);
+        const glare = card.querySelector('.tilt-glare');
+        if (glare) {
+          glare.style.setProperty('--glare-x', `${(x / rect.width) * 100}%`);
+          glare.style.setProperty('--glare-y', `${(y / rect.height) * 100}%`);
+        }
       });
 
       card.addEventListener('mouseleave', () => {
-        card.style.transform = 'perspective(1000px) rotateX(0) rotateY(0) translateZ(0) scale(1)';
+        card.style.transform = 'perspective(1000px) rotateX(0) rotateY(0) translateY(0)';
       });
-    });
-
-    // Respect reduced motion
-    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
-      tiltCards.forEach(card => {
-        card.style.transition = 'none';
-        card.addEventListener('mousemove', () => {});
-      });
-    }
-
-    // Mobile menu toggle
-    const mobileMenuBtn = document.getElementById('mobile-menu-btn');
-    const mobileMenu = document.getElementById('mobile-menu');
-    const menuOpen = mobileMenuBtn.querySelector('.menu-open');
-    const menuClose = mobileMenuBtn.querySelector('.menu-close');
-
-    mobileMenuBtn.addEventListener('click', () => {
-      const isOpen = !mobileMenu.classList.contains('hidden');
-      mobileMenu.classList.toggle('hidden');
-      menuOpen.classList.toggle('hidden');
-      menuClose.classList.toggle('hidden');
-      document.body.style.overflow = isOpen ? '' : 'hidden';
-    });
-
-    // Close mobile menu when clicking a link
-    document.querySelectorAll('#mobile-menu a').forEach(link => {
-      link.addEventListener('click', () => {
-        mobileMenu.classList.add('hidden');
-        menuOpen.classList.remove('hidden');
-        menuClose.classList.add('hidden');
-        document.body.style.overflow = '';
-      });
-    });
-
-    // Close menu on resize to desktop
-    window.addEventListener('resize', () => {
-      if (window.innerWidth >= 1024) {
-        mobileMenu.classList.add('hidden');
-        menuOpen.classList.remove('hidden');
-        menuClose.classList.add('hidden');
-        document.body.style.overflow = '';
-      }
-    });
-
-    // Screenshot Lightbox with Navigation
-    const lightbox = document.getElementById('lightbox');
-    const lightboxImg = document.getElementById('lightbox-img');
-    const lightboxTitle = document.getElementById('lightbox-title');
-    const lightboxWindowTitle = document.getElementById('lightbox-window-title');
-    const lightboxClose = document.getElementById('lightbox-close');
-    const lightboxPrev = document.getElementById('lightbox-prev');
-    const lightboxNext = document.getElementById('lightbox-next');
-    const screenshotCards = document.querySelectorAll('.screenshot-card');
-
-    let currentIndex = 0;
-    const screenshots = Array.from(screenshotCards).map(card => ({
-      src: card.dataset.src,
-      title: card.dataset.title
-    }));
-
-    function showScreenshot(index) {
-      currentIndex = index;
-      if (currentIndex < 0) currentIndex = screenshots.length - 1;
-      if (currentIndex >= screenshots.length) currentIndex = 0;
-
-      const screenshot = screenshots[currentIndex];
-      lightboxImg.src = screenshot.src;
-      lightboxImg.alt = screenshot.title;
-      lightboxTitle.textContent = screenshot.title;
-      lightboxWindowTitle.textContent = screenshot.title;
-    }
-
-    function openLightbox(index) {
-      showScreenshot(index);
-      lightbox.classList.remove('hidden');
-      lightbox.classList.add('flex');
-      document.body.style.overflow = 'hidden';
-    }
-
-    function closeLightbox() {
-      lightbox.classList.add('hidden');
-      lightbox.classList.remove('flex');
-      document.body.style.overflow = '';
-    }
-
-    screenshotCards.forEach((card, index) => {
-      card.addEventListener('click', () => openLightbox(index));
-    });
-
-    lightboxClose.addEventListener('click', closeLightbox);
-    lightboxPrev.addEventListener('click', (e) => { e.stopPropagation(); showScreenshot(currentIndex - 1); });
-    lightboxNext.addEventListener('click', (e) => { e.stopPropagation(); showScreenshot(currentIndex + 1); });
-
-    lightbox.addEventListener('click', (e) => {
-      if (e.target === lightbox) closeLightbox();
-    });
-
-    // Keyboard navigation
-    document.addEventListener('keydown', (e) => {
-      if (lightbox.classList.contains('hidden')) return;
-      if (e.key === 'Escape') closeLightbox();
-      if (e.key === 'ArrowLeft') showScreenshot(currentIndex - 1);
-      if (e.key === 'ArrowRight') showScreenshot(currentIndex + 1);
     });
   </script>
 </body>

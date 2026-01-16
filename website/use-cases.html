@@ -1,0 +1,571 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Use Cases - Claude Code Unleashed</title>
+  <meta name="description" content="Discover what you can build with Claude Code Unleashed. Use cases for developers and everyone else.">
+
+  <!-- Favicon -->
+  <link rel="icon" type="image/svg+xml" href="favicon.svg">
+  <link rel="icon" type="image/png" href="favicon.png">
+  <link rel="apple-touch-icon" href="favicon.png">
+
+  <!-- Open Graph -->
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://claudecodeunleashed.com/use-cases">
+  <meta property="og:title" content="Use Cases - Claude Code Unleashed">
+  <meta property="og:description" content="From web development to spreadsheet automation. See what's possible with Claude Code Unleashed.">
+
+  <meta name="theme-color" content="#FF4F18">
+  <link rel="canonical" href="https://claudecodeunleashed.com/use-cases">
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: { sans: ['Inter', 'system-ui', 'sans-serif'] },
+          colors: {
+            bg: '#030303',
+            surface: '#080808',
+            surfaceLight: '#0a0a0a',
+            primary: '#FF4F18',
+            primaryHover: '#FF6A3D',
+            accent: '#A855F7',
+          },
+        }
+      }
+    }
+  </script>
+  <style>
+    .prompt-box {
+      background: linear-gradient(135deg, rgba(255,79,24,0.05) 0%, rgba(168,85,247,0.05) 100%);
+      border: 1px solid rgba(255,79,24,0.2);
+      border-radius: 0.75rem;
+      padding: 1rem;
+      font-style: italic;
+    }
+    .use-case-card {
+      transition: all 0.3s ease;
+    }
+    .use-case-card:hover {
+      transform: translateY(-4px);
+    }
+    .tab-btn {
+      padding: 0.75rem 1.5rem;
+      font-weight: 600;
+      border-radius: 9999px;
+      transition: all 0.2s ease;
+    }
+    .tab-btn.active {
+      background: linear-gradient(135deg, var(--color-primary) 0%, #FF6A3D 100%);
+      color: white;
+    }
+    .tab-btn:not(.active) {
+      background: rgba(255,255,255,0.05);
+      color: #a1a1aa;
+    }
+    .tab-btn:not(.active):hover {
+      background: rgba(255,255,255,0.1);
+      color: white;
+    }
+    .tab-content {
+      display: none;
+    }
+    .tab-content.active {
+      display: block;
+    }
+  </style>
+</head>
+<body class="antialiased bg-bg text-white">
+
+  <!-- Navigation -->
+  <nav class="nav glass-static">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
+      <a href="index.html" class="flex items-center gap-3">
+        <div class="w-9 h-9 rounded-xl bg-gradient-to-b from-zinc-700 to-zinc-900 border border-white/10 flex items-center justify-center shadow-lg">
+          <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none">
+            <path d="M6 8l4 4-4 4" stroke="#FACC15" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+            <rect x="13" y="14" width="5" height="8" rx="1" fill="#FACC15"/>
+          </svg>
+        </div>
+        <span class="font-bold text-lg">Unleashed</span>
+      </a>
+
+      <div class="hidden lg:flex items-center gap-1 text-sm">
+        <a href="features.html" class="nav-link">Features</a>
+        <a href="docs.html" class="nav-link">Docs</a>
+        <a href="use-cases.html" class="nav-link active">Use Cases</a>
+        <a href="why.html" class="nav-link">Why Unleashed?</a>
+        <a href="https://github.com/OneWave-AI/ClaudeCodeUnleashed" class="nav-link flex items-center gap-2">
+          <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/></svg>
+          GitHub
+        </a>
+      </div>
+
+      <div class="flex items-center gap-3">
+        <a href="https://github.com/OneWave-AI/ClaudeCodeUnleashed/releases" class="btn btn-primary">Download</a>
+        <button id="mobile-menu-btn" class="lg:hidden p-2 text-zinc-400 hover:text-white" aria-label="Menu">
+          <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/></svg>
+        </button>
+      </div>
+    </div>
+
+    <!-- Mobile Menu -->
+    <div id="mobile-menu" class="lg:hidden hidden border-t border-white/5 bg-surface/95 backdrop-blur-xl">
+      <div class="px-4 py-4 space-y-1">
+        <a href="features.html" class="block px-4 py-3 text-zinc-300 hover:text-white hover:bg-white/5 rounded-lg">Features</a>
+        <a href="docs.html" class="block px-4 py-3 text-zinc-300 hover:text-white hover:bg-white/5 rounded-lg">Docs</a>
+        <a href="use-cases.html" class="block px-4 py-3 text-white bg-white/5 rounded-lg">Use Cases</a>
+        <a href="why.html" class="block px-4 py-3 text-zinc-300 hover:text-white hover:bg-white/5 rounded-lg">Why Unleashed?</a>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Hero -->
+  <section class="pt-32 pb-16 px-6 relative">
+    <div class="aurora-container">
+      <div class="aurora" style="opacity: 0.5;"></div>
+    </div>
+    <div class="max-w-4xl mx-auto text-center">
+      <h1 class="text-4xl md:text-6xl font-bold mb-6 fade-up">
+        What will <span class="gradient-text">you</span> build?
+      </h1>
+      <p class="text-xl text-zinc-400 max-w-2xl mx-auto fade-up stagger-1">
+        From full-stack web apps to automating spreadsheets. Claude Code Unleashed works the way you do.
+      </p>
+
+      <!-- Tab Switcher -->
+      <div class="flex justify-center gap-4 mt-10 fade-up stagger-2">
+        <button class="tab-btn active" data-tab="developers">
+          <span class="flex items-center gap-2">
+            <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"/></svg>
+            For Developers
+          </span>
+        </button>
+        <button class="tab-btn" data-tab="everyone">
+          <span class="flex items-center gap-2">
+            <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+            For Everyone
+          </span>
+        </button>
+      </div>
+    </div>
+  </section>
+
+  <!-- Developer Use Cases -->
+  <section id="developers" class="tab-content active section">
+    <div class="max-w-6xl mx-auto">
+      <div class="text-center mb-16">
+        <span class="text-primary text-sm font-semibold uppercase tracking-wider">For Developers</span>
+        <h2 class="text-3xl md:text-4xl font-bold mt-2">Build Faster, Ship Smarter</h2>
+        <p class="text-zinc-400 mt-4 max-w-2xl mx-auto">Stop context switching. Get a native environment that integrates with your existing toolchain.</p>
+      </div>
+
+      <div class="grid md:grid-cols-2 gap-8">
+        <!-- Full Stack Development -->
+        <div class="glass use-case-card rounded-2xl p-8 fade-up">
+          <div class="flex items-center gap-4 mb-6">
+            <div class="w-14 h-14 rounded-xl bg-gradient-to-br from-blue-500/20 to-cyan-500/20 flex items-center justify-center">
+              <svg class="w-7 h-7 text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"/></svg>
+            </div>
+            <div>
+              <h3 class="text-xl font-bold">Full Stack Development</h3>
+              <p class="text-zinc-500 text-sm">Build complete web applications</p>
+            </div>
+          </div>
+
+          <p class="text-zinc-400 mb-6">From React frontends to Node.js APIs to database schemas. Claude understands the full stack and builds features end-to-end.</p>
+
+          <div class="prompt-box mb-6">
+            "Build a user authentication system with JWT tokens, password reset flow, and rate limiting. Use PostgreSQL for the database."
+          </div>
+
+          <div class="flex flex-wrap gap-2">
+            <span class="px-3 py-1 bg-white/5 rounded-full text-xs text-zinc-400">React</span>
+            <span class="px-3 py-1 bg-white/5 rounded-full text-xs text-zinc-400">Next.js</span>
+            <span class="px-3 py-1 bg-white/5 rounded-full text-xs text-zinc-400">Node.js</span>
+            <span class="px-3 py-1 bg-white/5 rounded-full text-xs text-zinc-400">PostgreSQL</span>
+          </div>
+        </div>
+
+        <!-- Code Review & Refactoring -->
+        <div class="glass use-case-card rounded-2xl p-8 fade-up stagger-1">
+          <div class="flex items-center gap-4 mb-6">
+            <div class="w-14 h-14 rounded-xl bg-gradient-to-br from-green-500/20 to-emerald-500/20 flex items-center justify-center">
+              <svg class="w-7 h-7 text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/></svg>
+            </div>
+            <div>
+              <h3 class="text-xl font-bold">Code Review & Refactoring</h3>
+              <p class="text-zinc-500 text-sm">Improve code quality at scale</p>
+            </div>
+          </div>
+
+          <p class="text-zinc-400 mb-6">Use Agent Hive to run multiple reviewers in parallel. Security audits, performance checks, and best practice reviews - all at once.</p>
+
+          <div class="prompt-box mb-6">
+            "Review the src/api folder for security vulnerabilities, performance issues, and suggest refactoring opportunities. Focus on OWASP Top 10."
+          </div>
+
+          <div class="flex flex-wrap gap-2">
+            <span class="px-3 py-1 bg-white/5 rounded-full text-xs text-zinc-400">Security Audit</span>
+            <span class="px-3 py-1 bg-white/5 rounded-full text-xs text-zinc-400">Performance</span>
+            <span class="px-3 py-1 bg-white/5 rounded-full text-xs text-zinc-400">Best Practices</span>
+          </div>
+        </div>
+
+        <!-- Test Generation -->
+        <div class="glass use-case-card rounded-2xl p-8 fade-up stagger-2">
+          <div class="flex items-center gap-4 mb-6">
+            <div class="w-14 h-14 rounded-xl bg-gradient-to-br from-purple-500/20 to-pink-500/20 flex items-center justify-center">
+              <svg class="w-7 h-7 text-purple-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+            </div>
+            <div>
+              <h3 class="text-xl font-bold">Test Generation</h3>
+              <p class="text-zinc-500 text-sm">Boost coverage automatically</p>
+            </div>
+          </div>
+
+          <p class="text-zinc-400 mb-6">Generate unit tests, integration tests, and e2e tests. Claude analyzes your code and writes tests that actually catch bugs.</p>
+
+          <div class="prompt-box mb-6">
+            "Write comprehensive tests for the UserService class. Include edge cases, error handling, and mock the database layer."
+          </div>
+
+          <div class="flex flex-wrap gap-2">
+            <span class="px-3 py-1 bg-white/5 rounded-full text-xs text-zinc-400">Jest</span>
+            <span class="px-3 py-1 bg-white/5 rounded-full text-xs text-zinc-400">Playwright</span>
+            <span class="px-3 py-1 bg-white/5 rounded-full text-xs text-zinc-400">Vitest</span>
+          </div>
+        </div>
+
+        <!-- Documentation -->
+        <div class="glass use-case-card rounded-2xl p-8 fade-up stagger-3">
+          <div class="flex items-center gap-4 mb-6">
+            <div class="w-14 h-14 rounded-xl bg-gradient-to-br from-orange-500/20 to-yellow-500/20 flex items-center justify-center">
+              <svg class="w-7 h-7 text-orange-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+            </div>
+            <div>
+              <h3 class="text-xl font-bold">Documentation</h3>
+              <p class="text-zinc-500 text-sm">Keep docs in sync with code</p>
+            </div>
+          </div>
+
+          <p class="text-zinc-400 mb-6">Generate API documentation, README files, and inline comments. Claude reads your code and writes docs that actually make sense.</p>
+
+          <div class="prompt-box mb-6">
+            "Generate OpenAPI documentation for all endpoints in the api/ folder. Include request/response examples and authentication requirements."
+          </div>
+
+          <div class="flex flex-wrap gap-2">
+            <span class="px-3 py-1 bg-white/5 rounded-full text-xs text-zinc-400">OpenAPI</span>
+            <span class="px-3 py-1 bg-white/5 rounded-full text-xs text-zinc-400">JSDoc</span>
+            <span class="px-3 py-1 bg-white/5 rounded-full text-xs text-zinc-400">README</span>
+          </div>
+        </div>
+
+        <!-- Bug Fixing -->
+        <div class="glass use-case-card rounded-2xl p-8 fade-up stagger-4">
+          <div class="flex items-center gap-4 mb-6">
+            <div class="w-14 h-14 rounded-xl bg-gradient-to-br from-red-500/20 to-rose-500/20 flex items-center justify-center">
+              <svg class="w-7 h-7 text-red-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+            </div>
+            <div>
+              <h3 class="text-xl font-bold">Bug Fixing</h3>
+              <p class="text-zinc-500 text-sm">Debug faster with AI</p>
+            </div>
+          </div>
+
+          <p class="text-zinc-400 mb-6">Paste an error message or describe the bug. Claude traces through your code, finds the root cause, and implements the fix.</p>
+
+          <div class="prompt-box mb-6">
+            "Users are reporting that the checkout form submits twice. Find and fix the double-submit bug in the CheckoutForm component."
+          </div>
+
+          <div class="flex flex-wrap gap-2">
+            <span class="px-3 py-1 bg-white/5 rounded-full text-xs text-zinc-400">Debugging</span>
+            <span class="px-3 py-1 bg-white/5 rounded-full text-xs text-zinc-400">Root Cause</span>
+            <span class="px-3 py-1 bg-white/5 rounded-full text-xs text-zinc-400">Hot Fix</span>
+          </div>
+        </div>
+
+        <!-- Database & Migrations -->
+        <div class="glass use-case-card rounded-2xl p-8 fade-up stagger-5">
+          <div class="flex items-center gap-4 mb-6">
+            <div class="w-14 h-14 rounded-xl bg-gradient-to-br from-indigo-500/20 to-violet-500/20 flex items-center justify-center">
+              <svg class="w-7 h-7 text-indigo-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4m0 5c0 2.21-3.582 4-8 4s-8-1.79-8-4"/></svg>
+            </div>
+            <div>
+              <h3 class="text-xl font-bold">Database & Migrations</h3>
+              <p class="text-zinc-500 text-sm">Schema design made easy</p>
+            </div>
+          </div>
+
+          <p class="text-zinc-400 mb-6">Design schemas, write migrations, and optimize queries. Claude understands relationships, indexes, and performance implications.</p>
+
+          <div class="prompt-box mb-6">
+            "Add a subscriptions table with Stripe integration fields. Create a migration that preserves existing user data and adds proper indexes."
+          </div>
+
+          <div class="flex flex-wrap gap-2">
+            <span class="px-3 py-1 bg-white/5 rounded-full text-xs text-zinc-400">Prisma</span>
+            <span class="px-3 py-1 bg-white/5 rounded-full text-xs text-zinc-400">PostgreSQL</span>
+            <span class="px-3 py-1 bg-white/5 rounded-full text-xs text-zinc-400">MongoDB</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Everyone Use Cases -->
+  <section id="everyone" class="tab-content section">
+    <div class="max-w-6xl mx-auto">
+      <div class="text-center mb-16">
+        <span class="text-accent text-sm font-semibold uppercase tracking-wider">For Everyone</span>
+        <h2 class="text-3xl md:text-4xl font-bold mt-2">No Coding Required</h2>
+        <p class="text-zinc-400 mt-4 max-w-2xl mx-auto">You don't need to be a developer to build amazing things. Just describe what you want.</p>
+      </div>
+
+      <div class="grid md:grid-cols-2 gap-8">
+        <!-- Landing Pages -->
+        <div class="glass use-case-card rounded-2xl p-8 fade-up">
+          <div class="flex items-center gap-4 mb-6">
+            <div class="w-14 h-14 rounded-xl bg-gradient-to-br from-pink-500/20 to-rose-500/20 flex items-center justify-center">
+              <svg class="w-7 h-7 text-pink-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 5a1 1 0 011-1h14a1 1 0 011 1v2a1 1 0 01-1 1H5a1 1 0 01-1-1V5zM4 13a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H5a1 1 0 01-1-1v-6zM16 13a1 1 0 011-1h2a1 1 0 011 1v6a1 1 0 01-1 1h-2a1 1 0 01-1-1v-6z"/></svg>
+            </div>
+            <div>
+              <h3 class="text-xl font-bold">Build Landing Pages</h3>
+              <p class="text-zinc-500 text-sm">Launch your idea in minutes</p>
+            </div>
+          </div>
+
+          <p class="text-zinc-400 mb-6">Describe your business and Claude builds a professional landing page. See it come together in the live preview panel.</p>
+
+          <div class="prompt-box mb-6">
+            "Create a landing page for my bakery called 'Sweet Dreams'. Include a hero section, menu showcase, about us, contact form, and Instagram feed. Use warm colors."
+          </div>
+
+          <div class="mt-4 p-4 bg-green-500/5 border border-green-500/20 rounded-lg">
+            <p class="text-sm text-green-300"><strong>What you'll get:</strong> A complete responsive website with HTML, CSS, and JavaScript. Ready to deploy.</p>
+          </div>
+        </div>
+
+        <!-- Spreadsheet Automation -->
+        <div class="glass use-case-card rounded-2xl p-8 fade-up stagger-1">
+          <div class="flex items-center gap-4 mb-6">
+            <div class="w-14 h-14 rounded-xl bg-gradient-to-br from-green-500/20 to-teal-500/20 flex items-center justify-center">
+              <svg class="w-7 h-7 text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+            </div>
+            <div>
+              <h3 class="text-xl font-bold">Spreadsheet Automation</h3>
+              <p class="text-zinc-500 text-sm">Automate repetitive data tasks</p>
+            </div>
+          </div>
+
+          <p class="text-zinc-400 mb-6">Turn messy spreadsheets into organized data. Merge files, clean duplicates, generate reports, and create visualizations.</p>
+
+          <div class="prompt-box mb-6">
+            "I have a folder of CSV files from different months. Combine them, remove duplicate entries, and create a summary with monthly totals and a chart."
+          </div>
+
+          <div class="mt-4 p-4 bg-green-500/5 border border-green-500/20 rounded-lg">
+            <p class="text-sm text-green-300"><strong>What you'll get:</strong> A Python script that processes your data and outputs clean spreadsheets + visualizations.</p>
+          </div>
+        </div>
+
+        <!-- Web Scraping & Research -->
+        <div class="glass use-case-card rounded-2xl p-8 fade-up stagger-2">
+          <div class="flex items-center gap-4 mb-6">
+            <div class="w-14 h-14 rounded-xl bg-gradient-to-br from-blue-500/20 to-indigo-500/20 flex items-center justify-center">
+              <svg class="w-7 h-7 text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+            </div>
+            <div>
+              <h3 class="text-xl font-bold">Web Scraping & Research</h3>
+              <p class="text-zinc-500 text-sm">Gather data automatically</p>
+            </div>
+          </div>
+
+          <p class="text-zinc-400 mb-6">Collect product prices, competitor info, or any public data from websites. Claude builds the scraper and runs it for you.</p>
+
+          <div class="prompt-box mb-6">
+            "Scrape the top 50 products from this category page. Get the name, price, rating, and number of reviews. Save to a spreadsheet."
+          </div>
+
+          <div class="mt-4 p-4 bg-green-500/5 border border-green-500/20 rounded-lg">
+            <p class="text-sm text-green-300"><strong>What you'll get:</strong> A working scraper script and your data exported to CSV or Excel.</p>
+          </div>
+        </div>
+
+        <!-- File Organization -->
+        <div class="glass use-case-card rounded-2xl p-8 fade-up stagger-3">
+          <div class="flex items-center gap-4 mb-6">
+            <div class="w-14 h-14 rounded-xl bg-gradient-to-br from-yellow-500/20 to-orange-500/20 flex items-center justify-center">
+              <svg class="w-7 h-7 text-yellow-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"/></svg>
+            </div>
+            <div>
+              <h3 class="text-xl font-bold">File Organization</h3>
+              <p class="text-zinc-500 text-sm">Tame your digital clutter</p>
+            </div>
+          </div>
+
+          <p class="text-zinc-400 mb-6">Organize thousands of photos, documents, or downloads. Claude can rename, sort, and categorize files based on your rules.</p>
+
+          <div class="prompt-box mb-6">
+            "Organize my Downloads folder. Move documents to Documents, images to Pictures sorted by year, and delete anything older than 6 months."
+          </div>
+
+          <div class="mt-4 p-4 bg-green-500/5 border border-green-500/20 rounded-lg">
+            <p class="text-sm text-green-300"><strong>What you'll get:</strong> A script that organizes your files and can be run again whenever needed.</p>
+          </div>
+        </div>
+
+        <!-- Content Creation -->
+        <div class="glass use-case-card rounded-2xl p-8 fade-up stagger-4">
+          <div class="flex items-center gap-4 mb-6">
+            <div class="w-14 h-14 rounded-xl bg-gradient-to-br from-purple-500/20 to-pink-500/20 flex items-center justify-center">
+              <svg class="w-7 h-7 text-purple-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
+            </div>
+            <div>
+              <h3 class="text-xl font-bold">Content Creation Tools</h3>
+              <p class="text-zinc-500 text-sm">Build your own writing helpers</p>
+            </div>
+          </div>
+
+          <p class="text-zinc-400 mb-6">Create custom tools for your content workflow. Blog post generators, social media schedulers, or newsletter builders.</p>
+
+          <div class="prompt-box mb-6">
+            "Build a tool that takes my blog post draft and generates 10 tweet variations, 3 LinkedIn posts, and an email newsletter version."
+          </div>
+
+          <div class="mt-4 p-4 bg-green-500/5 border border-green-500/20 rounded-lg">
+            <p class="text-sm text-green-300"><strong>What you'll get:</strong> A web interface or command-line tool you can use over and over.</p>
+          </div>
+        </div>
+
+        <!-- Learning to Code -->
+        <div class="glass use-case-card rounded-2xl p-8 fade-up stagger-5">
+          <div class="flex items-center gap-4 mb-6">
+            <div class="w-14 h-14 rounded-xl bg-gradient-to-br from-cyan-500/20 to-blue-500/20 flex items-center justify-center">
+              <svg class="w-7 h-7 text-cyan-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg>
+            </div>
+            <div>
+              <h3 class="text-xl font-bold">Learning to Code</h3>
+              <p class="text-zinc-500 text-sm">Your AI programming tutor</p>
+            </div>
+          </div>
+
+          <p class="text-zinc-400 mb-6">Learn by doing. Ask Claude to explain concepts, build practice projects, or walk you through any code step by step.</p>
+
+          <div class="prompt-box mb-6">
+            "I want to learn Python. Start by explaining variables and loops, then help me build a simple number guessing game. Explain each line as we go."
+          </div>
+
+          <div class="mt-4 p-4 bg-green-500/5 border border-green-500/20 rounded-lg">
+            <p class="text-sm text-green-300"><strong>What you'll get:</strong> Interactive lessons with working code you can modify and experiment with.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- CTA -->
+  <section class="section">
+    <div class="max-w-4xl mx-auto text-center">
+      <h2 class="text-4xl font-bold mb-6 fade-up">Ready to try it?</h2>
+      <p class="text-xl text-zinc-400 mb-8 fade-up stagger-1">Download Unleashed and start building today.</p>
+      <div class="flex flex-col sm:flex-row justify-center gap-4 fade-up stagger-2">
+        <a href="https://github.com/OneWave-AI/ClaudeCodeUnleashed/releases" class="btn btn-primary btn-xl">
+          <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.81-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M13 3.5c.73-.83 1.94-1.46 2.94-1.5.13 1.17-.34 2.35-1.04 3.19-.69.85-1.83 1.51-2.95 1.42-.15-1.15.41-2.35 1.05-3.11z"/></svg>
+          Download for macOS
+        </a>
+        <a href="docs.html" class="btn btn-secondary btn-xl">
+          Read the Docs
+        </a>
+      </div>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer class="py-12 px-6 border-t border-white/5">
+    <div class="max-w-6xl mx-auto flex flex-col md:flex-row justify-between items-center gap-6">
+      <div class="flex items-center gap-3">
+        <div class="w-8 h-8 rounded-lg bg-gradient-to-b from-zinc-700 to-zinc-900 border border-white/10 flex items-center justify-center">
+          <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none">
+            <path d="M6 8l4 4-4 4" stroke="#FACC15" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+            <rect x="13" y="14" width="5" height="8" rx="1" fill="#FACC15"/>
+          </svg>
+        </div>
+        <span class="font-semibold">Claude Code Unleashed</span>
+      </div>
+      <p class="text-zinc-500 text-sm">Made by <a href="https://onewave-ai.com" class="text-zinc-400 hover:text-white transition-colors">OneWave AI</a></p>
+      <div class="flex gap-6 text-sm text-zinc-500">
+        <a href="features.html" class="hover:text-white transition-colors">Features</a>
+        <a href="docs.html" class="hover:text-white transition-colors">Docs</a>
+        <a href="use-cases.html" class="hover:text-white transition-colors">Use Cases</a>
+        <a href="https://github.com/OneWave-AI/ClaudeCodeUnleashed" class="hover:text-white transition-colors">GitHub</a>
+      </div>
+    </div>
+  </footer>
+
+  <script>
+    // Mobile menu toggle
+    const menuBtn = document.getElementById('mobile-menu-btn');
+    const mobileMenu = document.getElementById('mobile-menu');
+    menuBtn?.addEventListener('click', () => {
+      mobileMenu.classList.toggle('hidden');
+    });
+
+    // Tab switching
+    const tabBtns = document.querySelectorAll('.tab-btn');
+    const tabContents = document.querySelectorAll('.tab-content');
+
+    tabBtns.forEach(btn => {
+      btn.addEventListener('click', () => {
+        const tab = btn.dataset.tab;
+
+        // Update button states
+        tabBtns.forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+
+        // Update content visibility
+        tabContents.forEach(content => {
+          content.classList.remove('active');
+          if (content.id === tab) {
+            content.classList.add('active');
+            // Re-trigger animations for newly visible content
+            content.querySelectorAll('.fade-up').forEach(el => {
+              el.classList.remove('visible');
+              setTimeout(() => el.classList.add('visible'), 50);
+            });
+          }
+        });
+      });
+    });
+
+    // Scroll animations
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          entry.target.classList.add('visible');
+          observer.unobserve(entry.target);
+        }
+      });
+    }, { threshold: 0.1 });
+
+    document.querySelectorAll('.fade-up, .pop-in').forEach(el => observer.observe(el));
+
+    // Initial animations
+    setTimeout(() => {
+      document.querySelectorAll('.tab-content.active .fade-up').forEach(el => {
+        const rect = el.getBoundingClientRect();
+        if (rect.top < window.innerHeight) el.classList.add('visible');
+      });
+    }, 100);
+  </script>
+</body>
+</html>

@@ -34,6 +34,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
   <script src="https://cdn.tailwindcss.com"></script>
   <script>
     tailwind.config = {
@@ -80,11 +81,14 @@
             <rect x="13" y="14" width="5" height="8" rx="1" fill="#FACC15"/>
           </svg>
         </div>
-        <span class="font-bold text-lg">Claude Code Unleashed</span>
+        <span class="font-bold text-lg hidden sm:inline">Claude Code Unleashed</span>
       </a>
-      <div class="flex items-center gap-3">
-        <a href="index.html" class="px-4 py-2 text-zinc-400 hover:text-white transition-colors text-sm">Home</a>
-        <a href="index.html#download" class="px-5 py-2 bg-primary hover:bg-orange-600 text-white rounded-lg text-sm font-semibold transition-colors">
+      <div class="flex items-center gap-1 sm:gap-2">
+        <a href="features.html" class="px-3 py-2 text-zinc-400 hover:text-white transition-colors text-sm">Features</a>
+        <a href="docs.html" class="px-3 py-2 text-zinc-400 hover:text-white transition-colors text-sm">Docs</a>
+        <a href="use-cases.html" class="px-3 py-2 text-zinc-400 hover:text-white transition-colors text-sm hidden sm:block">Use Cases</a>
+        <a href="why.html" class="px-3 py-2 text-white transition-colors text-sm font-medium">Why?</a>
+        <a href="index.html#download" class="ml-2 px-4 py-2 bg-primary hover:bg-orange-600 text-white rounded-lg text-sm font-semibold transition-colors">
           Download
         </a>
       </div>
@@ -359,12 +363,25 @@
 
   <!-- Footer -->
   <footer class="py-12 px-6 border-t border-white/5">
-    <div class="max-w-6xl mx-auto flex flex-col md:flex-row justify-between items-center gap-6">
-      <span class="text-zinc-400 font-medium">Claude Code Unleashed</span>
-      <p class="text-zinc-500 text-sm">Made by <a href="https://onewave-ai.com" class="text-zinc-400 hover:text-white transition-colors">OneWave AI</a></p>
-      <div class="flex gap-6 text-sm text-zinc-500">
-        <a href="https://github.com/OneWave-AI/ClaudeCodeUnleashed" class="hover:text-white transition-colors">GitHub</a>
-        <a href="index.html" class="hover:text-white transition-colors">Home</a>
+    <div class="max-w-6xl mx-auto">
+      <div class="flex flex-col md:flex-row justify-between items-center gap-6">
+        <div class="flex items-center gap-3">
+          <div class="w-8 h-8 rounded-lg bg-gradient-to-b from-zinc-700 to-zinc-900 border border-white/10 flex items-center justify-center">
+            <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none">
+              <path d="M6 8l4 4-4 4" stroke="#FACC15" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+              <rect x="13" y="14" width="5" height="8" rx="1" fill="#FACC15"/>
+            </svg>
+          </div>
+          <span class="text-zinc-400 font-medium">Claude Code Unleashed</span>
+        </div>
+        <div class="flex flex-wrap justify-center gap-6 text-sm text-zinc-500">
+          <a href="features.html" class="hover:text-white transition-colors">Features</a>
+          <a href="docs.html" class="hover:text-white transition-colors">Docs</a>
+          <a href="use-cases.html" class="hover:text-white transition-colors">Use Cases</a>
+          <a href="why.html" class="hover:text-white transition-colors text-white">Why?</a>
+          <a href="https://github.com/AmbientELab-MIT/Claude-Code-Unleashed" class="hover:text-white transition-colors">GitHub</a>
+        </div>
+        <p class="text-zinc-500 text-sm">Made by <a href="https://onewave-ai.com" class="text-zinc-400 hover:text-white transition-colors">OneWave AI</a></p>
       </div>
     </div>
   </footer>
