@@ -1,107 +1,76 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024">
   <defs>
-    <!-- Background gradient -->
-    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" style="stop-color:#1a0a2e"/>
-      <stop offset="100%" style="stop-color:#0d0515"/>
+    <!-- Pure black background -->
+    <linearGradient id="bgDark" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#111111"/>
+      <stop offset="100%" style="stop-color:#000000"/>
     </linearGradient>
 
-    <!-- Arena accent gradient -->
-    <linearGradient id="accentGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" style="stop-color:#cc785c"/>
-      <stop offset="100%" style="stop-color:#e8956e"/>
+    <!-- Rich gold gradient -->
+    <linearGradient id="gold" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#FFE14D"/>
+      <stop offset="30%" style="stop-color:#FFD700"/>
+      <stop offset="100%" style="stop-color:#CC9900"/>
     </linearGradient>
 
-    <!-- Purple glow -->
-    <radialGradient id="purpleGlow" cx="50%" cy="50%" r="50%">
-      <stop offset="0%" style="stop-color:#8b5cf6;stop-opacity:0.15"/>
-      <stop offset="100%" style="stop-color:#8b5cf6;stop-opacity:0"/>
-    </radialGradient>
-
-    <!-- Glow filter -->
-    <filter id="glow" x="-50%" y="-50%" width="200%" height="200%">
-      <feGaussianBlur stdDeviation="12" result="blur"/>
+    <!-- Intense gold glow -->
+    <filter id="glow" x="-100%" y="-100%" width="300%" height="300%">
+      <feGaussianBlur stdDeviation="25" result="blur"/>
+      <feFlood flood-color="#FFD700" flood-opacity="0.7"/>
+      <feComposite in2="blur" operator="in"/>
       <feMerge>
-        <feMergeNode in="blur"/>
+        <feMergeNode/>
         <feMergeNode in="SourceGraphic"/>
       </feMerge>
     </filter>
+
+    <!-- Soft ambient glow -->
+    <radialGradient id="ambient" cx="50%" cy="45%" r="50%">
+      <stop offset="0%" style="stop-color:#FFD700;stop-opacity:0.15"/>
+      <stop offset="70%" style="stop-color:#FFD700;stop-opacity:0.03"/>
+      <stop offset="100%" style="stop-color:#FFD700;stop-opacity:0"/>
+    </radialGradient>
   </defs>
 
   <!-- Background -->
-  <rect width="1024" height="1024" rx="220" fill="url(#bgGrad)"/>
+  <rect width="1024" height="1024" rx="220" fill="url(#bgDark)"/>
 
-  <!-- Purple ambient glow -->
-  <circle cx="512" cy="512" r="400" fill="url(#purpleGlow)"/>
+  <!-- Subtle gold border -->
+  <rect width="1024" height="1024" rx="220" fill="none" stroke="url(#gold)" stroke-width="4" opacity="0.15"/>
 
-  <!-- Outer hexagon arena ring -->
-  <polygon
-    points="512,140 820,280 820,744 512,884 204,744 204,280"
-    fill="none"
-    stroke="url(#accentGrad)"
-    stroke-width="8"
-    opacity="0.5"
+  <!-- Ambient glow -->
+  <rect width="1024" height="1024" rx="220" fill="url(#ambient)"/>
+
+  <!-- Large prompt symbol > -->
+  <text
+    x="220"
+    y="620"
+    font-family="SF Mono, Menlo, Monaco, Consolas, monospace"
+    font-size="400"
+    font-weight="700"
+    fill="url(#gold)"
     filter="url(#glow)"
-  />
+  >&gt;</text>
 
-  <!-- Middle hexagon -->
-  <polygon
-    points="512,220 740,330 740,694 512,804 284,694 284,330"
-    fill="none"
-    stroke="url(#accentGrad)"
-    stroke-width="5"
-    opacity="0.35"
-  />
-
-  <!-- Inner hexagon -->
-  <polygon
-    points="512,300 660,380 660,644 512,724 364,644 364,380"
-    fill="none"
-    stroke="url(#accentGrad)"
-    stroke-width="3"
-    opacity="0.25"
-  />
-
-  <!-- Left code bracket { -->
-  <g filter="url(#glow)">
-    <path
-      d="M400,380 L360,400 Q320,512 360,624 L400,644"
-      fill="none"
-      stroke="url(#accentGrad)"
-      stroke-width="32"
-      stroke-linecap="round"
-      stroke-linejoin="round"
-    />
-  </g>
-
-  <!-- Right code bracket } -->
-  <g filter="url(#glow)">
-    <path
-      d="M624,380 L664,400 Q704,512 664,624 L624,644"
-      fill="none"
-      stroke="url(#accentGrad)"
-      stroke-width="32"
-      stroke-linecap="round"
-      stroke-linejoin="round"
-    />
-  </g>
-
-  <!-- Terminal cursor -->
+  <!-- Bold cursor block -->
   <rect
-    x="476"
-    y="440"
-    width="72"
-    height="144"
-    rx="8"
-    fill="url(#accentGrad)"
+    x="580"
+    y="320"
+    width="180"
+    height="320"
+    rx="16"
+    fill="url(#gold)"
     filter="url(#glow)"
   />
 
-  <!-- Subtle corner accents -->
-  <g stroke="url(#accentGrad)" stroke-width="4" stroke-linecap="round" opacity="0.3">
-    <path d="M180,180 L180,240 M180,180 L240,180"/>
-    <path d="M844,180 L844,240 M844,180 L784,180"/>
-    <path d="M180,844 L180,784 M180,844 L240,844"/>
-    <path d="M844,844 L844,784 M844,844 L784,844"/>
-  </g>
+  <!-- Cursor shine/highlight -->
+  <rect
+    x="600"
+    y="340"
+    width="40"
+    height="160"
+    rx="8"
+    fill="#FFFFFF"
+    opacity="0.3"
+  />
 </svg>
