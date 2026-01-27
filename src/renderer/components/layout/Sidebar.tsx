@@ -30,6 +30,8 @@ import {
   Monitor
 } from 'lucide-react'
 import { useContextMenu, type ContextMenuItem } from '../common/ContextMenu'
+import FileTabBar, { type OpenFile } from '../files/FileTabBar'
+import { useAppStore } from '../../store'
 import type { FileNode, FileStats, GitFileStatusMap, GitFileStatusType } from '../../../shared/types'
 
 interface SidebarProps {
@@ -92,6 +94,18 @@ export default function Sidebar({ cwd, onSelectFolder, onPreviewFile, onSendToCh
   const [isLoading, setIsLoading] = useState(false)
   const [createModal, setCreateModal] = useState<{ type: 'file' | 'folder'; path: string } | null>(null)
   const [deleteTarget, setDeleteTarget] = useState<FileNode | null>(null)
+
+  // Open files state from store
+  const {
+    openFiles,
+    activeFilePath,
+    addOpenFile,
+    removeOpenFile,
+    setActiveFile,
+    closeOtherFiles,
+    clearOpenFiles,
+    reorderOpenFiles
+  } = useAppStore()
 
   const { showContextMenu, ContextMenuComponent } = useContextMenu()
   const renameRef = useRef<HTMLInputElement>(null)
@@ -235,7 +249,7 @@ export default function Sidebar({ cwd, onSelectFolder, onPreviewFile, onSendToCh
     }
 
     if (!node.isDirectory && isPreviewable(node.name) && onPreviewFile) {
-      items.push({ id: 'preview', label: 'Preview in App', icon: Monitor, onClick: () => onPreviewFile(node.path) })
+      items.push({ id: 'preview', label: 'Preview in App', icon: Monitor, onClick: () => handleFileClick(node.path) })
     }
 
     if (items.length > 0) {
@@ -308,11 +322,11 @@ export default function Sidebar({ cwd, onSelectFolder, onPreviewFile, onSendToCh
               if (node.isDirectory) {
                 toggle(node.path)
               } else {
-                // Single click: preview if possible, otherwise show context menu
+                // Single click: preview if possible, otherwise open externally
                 if (canPreview && onPreviewFile) {
-                  onPreviewFile(node.path)
+                  handleFileClick(node.path)
                 } else {
-                  // For non-previewable files, show a tooltip hint
+                  // For non-previewable files, open in default app
                   window.api.openFileExternal(node.path)
                 }
               }
@@ -388,7 +402,7 @@ export default function Sidebar({ cwd, onSelectFolder, onPreviewFile, onSendToCh
                 <button
                   onClick={(e) => {
                     e.stopPropagation()
-                    onPreviewFile(node.path)
+                    handleFileClick(node.path)
                   }}
                   className="p-0.5 rounded hover:bg-[#cc785c]/20 text-gray-500 hover:text-[#cc785c] transition-all"
                   title="Preview in App"
@@ -454,8 +468,46 @@ export default function Sidebar({ cwd, onSelectFolder, onPreviewFile, onSendToCh
 
   const projectName = cwd?.split('/').pop() || 'Project'
 
+  // Convert openFiles paths to OpenFile format
+  const openFilesData: OpenFile[] = useMemo(() => {
+    return openFiles.map(path => ({
+      path,
+      name: path.split('/').pop() || path
+    }))
+  }, [openFiles])
+
+  // Handle file tab selection
+  const handleTabSelect = useCallback((path: string) => {
+    setActiveFile(path)
+    onPreviewFile?.(path)
+  }, [setActiveFile, onPreviewFile])
+
+  // Handle file click in tree - opens in tabs and previews
+  const handleFileClick = useCallback((path: string) => {
+    addOpenFile(path)
+    onPreviewFile?.(path)
+  }, [addOpenFile, onPreviewFile])
+
+  // Handle reorder
+  const handleReorderTabs = useCallback((files: OpenFile[]) => {
+    reorderOpenFiles(files.map(f => f.path))
+  }, [reorderOpenFiles])
+
   return (
     <aside className="w-60 h-full flex flex-col bg-[#0f0f11] border-r border-white/[0.06]">
+      {/* Open Files Tabs */}
+      {openFilesData.length > 0 && (
+        <FileTabBar
+          openFiles={openFilesData}
+          activeFilePath={activeFilePath}
+          onSelectFile={handleTabSelect}
+          onCloseFile={removeOpenFile}
+          onCloseOthers={closeOtherFiles}
+          onCloseAll={clearOpenFiles}
+          onReorderFiles={handleReorderTabs}
+        />
+      )}
+
       {/* Header */}
       <div className="p-3 border-b border-white/[0.06]">
         {cwd ? (

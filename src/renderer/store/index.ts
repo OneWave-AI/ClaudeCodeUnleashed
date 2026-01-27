@@ -10,6 +10,10 @@ const debouncedSave = (saveFn: () => Promise<void>) => {
   }, 500) // Wait 500ms after last change before saving
 }
 
+// Open files storage key
+const OPEN_FILES_KEY = 'claudeui_open_files'
+const MAX_OPEN_FILES = 50
+
 interface AppState {
   // Current working directory
   cwd: string
@@ -22,6 +26,16 @@ interface AppState {
   // Terminal tabs
   activeTerminalId: string | null
   setActiveTerminalId: (id: string | null) => void
+
+  // Open files (file tab bar)
+  openFiles: string[]
+  activeFilePath: string | null
+  addOpenFile: (path: string) => void
+  removeOpenFile: (path: string) => void
+  setActiveFile: (path: string | null) => void
+  closeOtherFiles: (keepPath: string) => void
+  clearOpenFiles: () => void
+  reorderOpenFiles: (files: string[]) => void
 
   // All settings
   settings: AppSettings
@@ -98,6 +112,81 @@ export const useAppStore = create<AppState>((set, get) => ({
 
   activeTerminalId: null,
   setActiveTerminalId: (id) => set({ activeTerminalId: id }),
+
+  // Open files management
+  openFiles: (() => {
+    try {
+      const stored = localStorage.getItem(OPEN_FILES_KEY)
+      return stored ? JSON.parse(stored) : []
+    } catch {
+      return []
+    }
+  })(),
+  activeFilePath: null,
+
+  addOpenFile: (path) => {
+    const current = get().openFiles
+    // Don't add duplicates, just activate it
+    if (current.includes(path)) {
+      set({ activeFilePath: path })
+      return
+    }
+    // Add to end, limit to max
+    const newFiles = [...current, path].slice(-MAX_OPEN_FILES)
+    set({ openFiles: newFiles, activeFilePath: path })
+    try {
+      localStorage.setItem(OPEN_FILES_KEY, JSON.stringify(newFiles))
+    } catch { /* ignore */ }
+  },
+
+  removeOpenFile: (path) => {
+    const current = get().openFiles
+    const newFiles = current.filter(f => f !== path)
+    const wasActive = get().activeFilePath === path
+
+    // If closing active file, activate the previous one or next one
+    let newActive = get().activeFilePath
+    if (wasActive) {
+      const closedIndex = current.indexOf(path)
+      if (newFiles.length > 0) {
+        // Prefer the file before, otherwise the file after
+        newActive = newFiles[Math.min(closedIndex, newFiles.length - 1)] || null
+      } else {
+        newActive = null
+      }
+    }
+
+    set({ openFiles: newFiles, activeFilePath: newActive })
+    try {
+      localStorage.setItem(OPEN_FILES_KEY, JSON.stringify(newFiles))
+    } catch { /* ignore */ }
+  },
+
+  setActiveFile: (path) => {
+    set({ activeFilePath: path })
+  },
+
+  closeOtherFiles: (keepPath) => {
+    const newFiles = get().openFiles.filter(f => f === keepPath)
+    set({ openFiles: newFiles, activeFilePath: keepPath })
+    try {
+      localStorage.setItem(OPEN_FILES_KEY, JSON.stringify(newFiles))
+    } catch { /* ignore */ }
+  },
+
+  clearOpenFiles: () => {
+    set({ openFiles: [], activeFilePath: null })
+    try {
+      localStorage.removeItem(OPEN_FILES_KEY)
+    } catch { /* ignore */ }
+  },
+
+  reorderOpenFiles: (files) => {
+    set({ openFiles: files })
+    try {
+      localStorage.setItem(OPEN_FILES_KEY, JSON.stringify(files))
+    } catch { /* ignore */ }
+  },
 
   settings: DEFAULT_SETTINGS,
   setSettings: (settings) => {

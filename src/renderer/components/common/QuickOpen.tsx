@@ -78,48 +78,137 @@ const getFileIcon = (fileName: string) => {
   return iconMap[ext] || File
 }
 
-// Simple fuzzy match scoring
-const fuzzyMatch = (query: string, target: string): { match: boolean; score: number } => {
-  if (!query) return { match: true, score: 0 }
+// Check if character is a word boundary
+const isWordBoundary = (char: string): boolean => {
+  return /[\/\\\-_.\s]/.test(char)
+}
+
+// Check if character is uppercase (for camelCase detection)
+const isUpperCase = (char: string): boolean => {
+  return char >= 'A' && char <= 'Z'
+}
+
+// Advanced fuzzy match scoring with word boundary awareness
+const fuzzyMatch = (query: string, target: string, fullPath?: string): { match: boolean; score: number; matchedIndices: number[] } => {
+  if (!query) return { match: true, score: 0, matchedIndices: [] }
 
   const queryLower = query.toLowerCase()
   const targetLower = target.toLowerCase()
+  const pathLower = (fullPath || target).toLowerCase()
 
-  // Exact match gets highest score
-  if (targetLower === queryLower) return { match: true, score: 100 }
+  // Extract filename from path for scoring
+  const fileName = target.split('/').pop() || target
+  const fileNameLower = fileName.toLowerCase()
 
-  // Starts with query
-  if (targetLower.startsWith(queryLower)) return { match: true, score: 80 }
-
-  // Contains query as substring
-  if (targetLower.includes(queryLower)) return { match: true, score: 60 }
-
-  // Fuzzy character matching
-  let queryIndex = 0
   let score = 0
-  let consecutiveBonus = 0
+  const matchedIndices: number[] = []
 
-  for (let i = 0; i < targetLower.length && queryIndex < queryLower.length; i++) {
-    if (targetLower[i] === queryLower[queryIndex]) {
-      score += 10 + consecutiveBonus
-      consecutiveBonus += 5
-      queryIndex++
-    } else {
-      consecutiveBonus = 0
+  // Exact match on filename gets highest score
+  if (fileNameLower === queryLower) {
+    return { match: true, score: 1000, matchedIndices: Array.from({ length: fileName.length }, (_, i) => i) }
+  }
+
+  // Filename starts with query - very high score
+  if (fileNameLower.startsWith(queryLower)) {
+    return { match: true, score: 900, matchedIndices: Array.from({ length: query.length }, (_, i) => i) }
+  }
+
+  // Check if query matches a path segment exactly
+  const pathSegments = pathLower.split('/')
+  for (const segment of pathSegments) {
+    if (segment === queryLower) {
+      return { match: true, score: 800, matchedIndices: [] }
+    }
+    if (segment.startsWith(queryLower)) {
+      score = Math.max(score, 700)
     }
   }
 
-  if (queryIndex === queryLower.length) {
-    // Normalize score by query length
-    return { match: true, score: Math.min(50, score / queryLower.length) }
+  // Contains query as substring in filename
+  const substringIndex = fileNameLower.indexOf(queryLower)
+  if (substringIndex !== -1) {
+    // Bonus if at word boundary
+    const atBoundary = substringIndex === 0 || isWordBoundary(fileNameLower[substringIndex - 1]) || isUpperCase(fileName[substringIndex])
+    return {
+      match: true,
+      score: atBoundary ? 650 : 600,
+      matchedIndices: Array.from({ length: query.length }, (_, i) => substringIndex + i)
+    }
   }
 
-  return { match: false, score: 0 }
+  // Contains query in full path
+  if (pathLower.includes(queryLower)) {
+    return { match: true, score: 500, matchedIndices: [] }
+  }
+
+  // Fuzzy character matching with advanced scoring
+  let queryIndex = 0
+  let consecutiveCount = 0
+  let lastMatchIndex = -1
+  let wordBoundaryMatches = 0
+  let startOfWordMatches = 0
+
+  for (let i = 0; i < targetLower.length && queryIndex < queryLower.length; i++) {
+    if (targetLower[i] === queryLower[queryIndex]) {
+      matchedIndices.push(i)
+
+      // Base score for match
+      score += 10
+
+      // Consecutive match bonus (increases with each consecutive)
+      if (lastMatchIndex === i - 1) {
+        consecutiveCount++
+        score += consecutiveCount * 8
+      } else {
+        consecutiveCount = 0
+      }
+
+      // Word boundary bonus (start of word, after separator, camelCase)
+      const isAtBoundary = i === 0 || isWordBoundary(targetLower[i - 1]) || isUpperCase(target[i])
+      if (isAtBoundary) {
+        wordBoundaryMatches++
+        score += 15
+
+        // Extra bonus for matching first char of word
+        if (i === 0) {
+          startOfWordMatches++
+          score += 10
+        }
+      }
+
+      lastMatchIndex = i
+      queryIndex++
+    }
+  }
+
+  // All query characters matched?
+  if (queryIndex === queryLower.length) {
+    // Bonus for shorter targets (prefer more specific matches)
+    const lengthBonus = Math.max(0, 50 - (targetLower.length - queryLower.length))
+    score += lengthBonus
+
+    // Bonus for high ratio of word boundary matches
+    if (wordBoundaryMatches >= queryLower.length * 0.5) {
+      score += 30
+    }
+
+    // Penalty for sparse matches (characters spread too far apart)
+    const spread = matchedIndices.length > 1
+      ? matchedIndices[matchedIndices.length - 1] - matchedIndices[0]
+      : 0
+    if (spread > queryLower.length * 3) {
+      score -= Math.min(50, (spread - queryLower.length * 3) * 2)
+    }
+
+    return { match: true, score: Math.max(1, score), matchedIndices }
+  }
+
+  return { match: false, score: 0, matchedIndices: [] }
 }
 
 // Recent files storage key
 const RECENT_FILES_KEY = 'quickopen_recent_files'
-const MAX_RECENT_FILES = 5
+const MAX_RECENT_FILES = 20
 
 export default function QuickOpen({ isOpen, onClose, cwd, onSelectFile }: QuickOpenProps) {
   const [query, setQuery] = useState('')
@@ -205,18 +294,26 @@ export default function QuickOpen({ isOpen, onClose, cwd, onSelectFile }: QuickO
   const filteredFiles = useMemo(() => {
     if (!query.trim()) {
       // Show all files sorted alphabetically when no query
-      return [...files].sort((a, b) => a.name.localeCompare(b.name)).slice(0, 50)
+      return [...files]
+        .sort((a, b) => a.name.localeCompare(b.name))
+        .slice(0, 50)
+        .map(file => ({ file, matchedIndices: [] as number[] }))
     }
 
     return files
-      .map(file => ({
-        file,
-        ...fuzzyMatch(query, file.name)
-      }))
+      .map(file => {
+        const result = fuzzyMatch(query, file.name, file.path)
+        return {
+          file,
+          score: result.score,
+          match: result.match,
+          matchedIndices: result.matchedIndices
+        }
+      })
       .filter(item => item.match)
       .sort((a, b) => b.score - a.score)
       .slice(0, 50)
-      .map(item => item.file)
+      .map(item => ({ file: item.file, matchedIndices: item.matchedIndices }))
   }, [files, query])
 
   // Reset selection when filtered results change
@@ -279,7 +376,7 @@ export default function QuickOpen({ isOpen, onClose, cwd, onSelectFile }: QuickO
         } else {
           const fileIndex = query ? selectedIndex : selectedIndex - recentFiles.length
           if (filteredFiles[fileIndex]) {
-            handleSelect(filteredFiles[fileIndex].path)
+            handleSelect(filteredFiles[fileIndex].file.path)
           }
         }
         break
@@ -542,10 +639,26 @@ export default function QuickOpen({ isOpen, onClose, cwd, onSelectFile }: QuickO
                           </span>
                         </div>
                       )}
-                      {filteredFiles.map((file, index) => {
+                      {filteredFiles.map(({ file, matchedIndices }, index) => {
                         const adjustedIndex = query ? index : index + recentFiles.length
                         const isSelected = selectedIndex === adjustedIndex
                         const FileIcon = getFileIcon(file.name)
+
+                        // Render filename with match highlighting
+                        const renderHighlightedName = () => {
+                          if (!query || matchedIndices.length === 0) {
+                            return file.name
+                          }
+                          const chars = file.name.split('')
+                          return chars.map((char, i) => (
+                            <span
+                              key={i}
+                              className={matchedIndices.includes(i) ? 'text-[#cc785c] font-semibold' : ''}
+                            >
+                              {char}
+                            </span>
+                          ))
+                        }
 
                         return (
                           <button
@@ -578,7 +691,7 @@ export default function QuickOpen({ isOpen, onClose, cwd, onSelectFile }: QuickO
                               <div className={`text-sm truncate transition-colors duration-150 ${
                                 isSelected ? 'text-white' : 'text-gray-300'
                               }`}>
-                                {file.name}
+                                {renderHighlightedName()}
                               </div>
                               <div className="text-xs text-gray-600 truncate">
                                 {getRelativePath(getDirectory(file.path))}
