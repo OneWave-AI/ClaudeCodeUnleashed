@@ -398,6 +398,18 @@ body {
   border-color: var(--color-border-light);
 }
 
+.btn-ghost {
+  background: transparent;
+  color: var(--color-text-muted);
+  border: none;
+  padding: 0.5rem 1rem;
+}
+
+.btn-ghost:hover {
+  color: var(--color-text);
+  background: rgba(255,255,255,0.05);
+}
+
 .btn-lg {
   padding: 1rem 2rem;
   font-size: 1rem;
