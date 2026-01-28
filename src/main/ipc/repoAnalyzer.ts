@@ -91,7 +91,15 @@ export interface RepoAnalysis {
   }
 }
 
-async function countLines(filePath: string): Promise<number> {
+// Only count lines for smaller files to avoid hanging on large codebases
+const MAX_FILE_SIZE_FOR_LINE_COUNT = 100 * 1024 // 100KB
+const MAX_FILES_TO_ANALYZE = 5000 // Stop after this many files to prevent hanging
+
+async function countLines(filePath: string, fileSize: number): Promise<number> {
+  // Skip line counting for large files
+  if (fileSize > MAX_FILE_SIZE_FOR_LINE_COUNT) {
+    return 0
+  }
   try {
     const content = await fs.readFile(filePath, 'utf-8')
     return content.split('\n').length
@@ -100,11 +108,18 @@ async function countLines(filePath: string): Promise<number> {
   }
 }
 
+// Context object to track state across recursive calls
+interface AnalysisContext {
+  fileCount: number
+  stopped: boolean
+}
+
 async function analyzeDirectory(
   dirPath: string,
   basePath: string,
   depth: number = 0,
-  maxDepth: number = 10
+  maxDepth: number = 10,
+  context: AnalysisContext = { fileCount: 0, stopped: false }
 ): Promise<{ node: FileNode; stats: Partial<RepoStats> }> {
   const name = dirPath === basePath ? basePath.split('/').pop()! : dirPath.split('/').pop()!
   const relativePath = relative(basePath, dirPath) || '.'
@@ -129,7 +144,7 @@ async function analyzeDirectory(
     maxDepth: depth
   }
 
-  if (depth >= maxDepth) {
+  if (depth >= maxDepth || context.stopped) {
     return { node, stats }
   }
 
@@ -137,12 +152,17 @@ async function analyzeDirectory(
     const entries = await fs.readdir(dirPath, { withFileTypes: true })
 
     for (const entry of entries) {
+      // Early exit if we've hit limits
+      if (context.stopped) break
+
       const entryPath = join(dirPath, entry.name)
 
       if (entry.isDirectory()) {
         if (IGNORE_DIRS.has(entry.name)) continue
+        // Skip symlinks to prevent infinite loops
+        if (entry.isSymbolicLink()) continue
 
-        const result = await analyzeDirectory(entryPath, basePath, depth + 1, maxDepth)
+        const result = await analyzeDirectory(entryPath, basePath, depth + 1, maxDepth, context)
         node.children!.push(result.node)
         node.size += result.node.size
 
@@ -172,6 +192,14 @@ async function analyzeDirectory(
         }
       } else if (entry.isFile()) {
         if (IGNORE_FILES.has(entry.name)) continue
+        // Skip symlinks to prevent infinite loops
+        if (entry.isSymbolicLink()) continue
+        // Stop if we've hit the file limit
+        if (context.fileCount >= MAX_FILES_TO_ANALYZE) {
+          context.stopped = true
+          break
+        }
+        context.fileCount++
 
         try {
           const fileStat = await fs.stat(entryPath)
@@ -179,10 +207,10 @@ async function analyzeDirectory(
           const category = FILE_CATEGORIES[ext] || 'Other'
           const fileRelativePath = relative(basePath, entryPath)
 
-          // Count lines for text files
+          // Count lines for text files (only small files to avoid hanging)
           let lineCount = 0
           if (FILE_CATEGORIES[ext]) {
-            lineCount = await countLines(entryPath)
+            lineCount = await countLines(entryPath, fileStat.size)
           }
 
           const fileNode: FileNode = {
