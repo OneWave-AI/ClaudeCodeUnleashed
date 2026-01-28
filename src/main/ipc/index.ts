@@ -11,6 +11,9 @@ import { registerSettingsHandlers, initializeSettings } from './settings'
 import { registerMCPHandlers } from './mcp'
 import { registerSuperAgentHandlers } from './superagent'
 import { registerHiveHandlers } from './hives'
+import { registerMemoryHandlers } from './memory'
+import { registerBackgroundAgentHandlers } from './backgroundAgents'
+import { registerRepoAnalyzerHandlers } from './repoAnalyzer'
 
 export function registerIpcHandlers(): void {
   // Terminal handlers
@@ -39,6 +42,15 @@ export function registerIpcHandlers(): void {
 
   // Hive handlers
   registerHiveHandlers()
+
+  // Memory handlers
+  registerMemoryHandlers()
+
+  // Background Agent handlers
+  registerBackgroundAgentHandlers()
+
+  // Repository Analyzer handlers
+  registerRepoAnalyzerHandlers()
 
   // Initialize settings (apply window opacity, etc.)
   initializeSettings()

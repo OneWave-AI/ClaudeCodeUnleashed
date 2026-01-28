@@ -89,6 +89,8 @@ const api: IpcApi = {
   searchConversations: (query) => ipcRenderer.invoke('search-conversations', query),
   getCurrentSessionTodos: (projectFolder: string) =>
     ipcRenderer.invoke('get-current-session-todos', projectFolder),
+  getDetailedUsageStats: (days?: number) =>
+    ipcRenderer.invoke('get-detailed-usage-stats', days),
 
   // Claude CLI
   checkClaudeInstalled: () => ipcRenderer.invoke('check-claude-installed'),
@@ -155,7 +157,68 @@ const api: IpcApi = {
   windowMaximize: () => ipcRenderer.invoke('window-maximize'),
 
   // Terminal Session State
-  setTerminalSessionActive: (active: boolean) => ipcRenderer.send('terminal-session-active', active)
+  setTerminalSessionActive: (active: boolean) => ipcRenderer.send('terminal-session-active', active),
+
+  // Background Agents
+  backgroundAgentList: () => ipcRenderer.invoke('background-agent-list'),
+  backgroundAgentAdd: (task: { name: string; prompt: string; projectPath: string; priority?: 'low' | 'normal' | 'high' }) =>
+    ipcRenderer.invoke('background-agent-add', task),
+  backgroundAgentRemove: (taskId: string) => ipcRenderer.invoke('background-agent-remove', taskId),
+  backgroundAgentCancel: (taskId: string) => ipcRenderer.invoke('background-agent-cancel', taskId),
+  backgroundAgentStartQueue: () => ipcRenderer.invoke('background-agent-start-queue'),
+  backgroundAgentPauseQueue: () => ipcRenderer.invoke('background-agent-pause-queue'),
+  backgroundAgentQueueStatus: () => ipcRenderer.invoke('background-agent-queue-status'),
+  backgroundAgentSetMaxConcurrent: (max: number) => ipcRenderer.invoke('background-agent-set-max-concurrent', max),
+  backgroundAgentGetOutput: (taskId: string) => ipcRenderer.invoke('background-agent-get-output', taskId),
+  backgroundAgentClearCompleted: () => ipcRenderer.invoke('background-agent-clear-completed'),
+  backgroundAgentRetry: (taskId: string) => ipcRenderer.invoke('background-agent-retry', taskId),
+  backgroundAgentReorder: (taskId: string, newIndex: number) => ipcRenderer.invoke('background-agent-reorder', taskId, newIndex),
+  backgroundAgentSetPriority: (taskId: string, priority: 'low' | 'normal' | 'high') =>
+    ipcRenderer.invoke('background-agent-set-priority', taskId, priority),
+  onBackgroundAgentUpdate: (callback: (task: import('../shared/types').BackgroundAgentTask) => void) => {
+    const handler = (_: Electron.IpcRendererEvent, task: import('../shared/types').BackgroundAgentTask) => callback(task)
+    ipcRenderer.on('background-agent-update', handler)
+    return () => ipcRenderer.removeListener('background-agent-update', handler)
+  },
+  onBackgroundAgentOutput: (callback: (data: { taskId: string; data: string }) => void) => {
+    const handler = (_: Electron.IpcRendererEvent, data: { taskId: string; data: string }) => callback(data)
+    ipcRenderer.on('background-agent-output', handler)
+    return () => ipcRenderer.removeListener('background-agent-output', handler)
+  },
+
+  // Repository Visualization
+  repoAnalyze: (basePath: string) => ipcRenderer.invoke('repo-analyze', basePath),
+  repoGetFileContent: (filePath: string) => ipcRenderer.invoke('repo-get-file-content', filePath),
+
+  // Memory (CLAUDE.md based system)
+  memoryList: (projectPath: string) => ipcRenderer.invoke('memory-list', projectPath),
+  memoryGetRaw: (projectPath: string, type: 'main' | 'local' | 'user') =>
+    ipcRenderer.invoke('memory-get-raw', projectPath, type),
+  memorySaveRaw: (projectPath: string, type: 'main' | 'local' | 'user', content: string) =>
+    ipcRenderer.invoke('memory-save-raw', projectPath, type, content),
+  memoryAdd: (projectPath: string, item: { category: string; content: string; target: string }) =>
+    ipcRenderer.invoke('memory-add', projectPath, item),
+  memoryInit: (projectPath: string) =>
+    ipcRenderer.invoke('memory-init', projectPath),
+  memoryCheck: (projectPath: string) =>
+    ipcRenderer.invoke('memory-check', projectPath),
+  memoryOpenEditor: (projectPath: string, type: 'main' | 'local' | 'user') =>
+    ipcRenderer.invoke('memory-open-editor', projectPath, type),
+  memoryStats: (projectPath: string) =>
+    ipcRenderer.invoke('memory-stats', projectPath),
+  memoryDelete: (projectPath: string, type: 'main' | 'local' | 'rules') =>
+    ipcRenderer.invoke('memory-delete', projectPath, type),
+  // Legacy methods (backward compatibility)
+  memoryGetContext: (projectPath: string) =>
+    ipcRenderer.invoke('memory-get-context', projectPath),
+  memorySetGlobalContext: (projectPath: string, context: string) =>
+    ipcRenderer.invoke('memory-set-global-context', projectPath, context),
+  memoryGetGlobalContext: (projectPath: string) =>
+    ipcRenderer.invoke('memory-get-global-context', projectPath),
+  memoryClear: (projectPath: string) =>
+    ipcRenderer.invoke('memory-clear', projectPath),
+  memoryListProjects: () =>
+    ipcRenderer.invoke('memory-list-projects')
 }
 
 contextBridge.exposeInMainWorld('api', api)

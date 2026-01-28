@@ -70,6 +70,7 @@ interface HomeScreenProps {
   onOpenSuperAgent?: () => void
   onOpenAnalytics?: () => void
   onOpenHive?: () => void
+  onOpenMemory?: () => void
 }
 
 interface RecentProject {
@@ -117,7 +118,8 @@ export default function HomeScreen({
   onOpenSettings,
   onOpenSuperAgent,
   onOpenAnalytics,
-  onOpenHive
+  onOpenHive,
+  onOpenMemory
 }: HomeScreenProps) {
   // Get setCwd from store to keep it in sync when clicking projects
   const setCwd = useAppStore((state) => state.setCwd)
@@ -870,6 +872,7 @@ export default function HomeScreen({
                 { id: 'folder', label: 'Projects', onClick: onSelectFolder, gradient: ['#3b82f6', '#1d4ed8'], icon: 'folder' },
                 { id: 'tools', label: 'Tools', onClick: onOpenSkills, gradient: ['#f97316', '#dc2626'], icon: 'sparkle', badge: stats.skills + stats.agents || undefined },
                 { id: 'hive', label: 'Hive', onClick: onOpenHive || onOpenSuperAgent || (() => {}), gradient: ['#fbbf24', '#f59e0b'], icon: 'bee' },
+                { id: 'memory', label: 'Memory', onClick: onOpenMemory || (() => {}), gradient: ['#a855f7', '#9333ea'], icon: 'brain' },
                 { id: 'history', label: 'History', onClick: onOpenHistory, gradient: ['#a855f7', '#7c3aed'], icon: 'clock', badge: stats.conversations || undefined },
                 { id: 'analytics', label: 'Stats', onClick: onOpenAnalytics || (() => {}), gradient: ['#06b6d4', '#0891b2'], icon: 'chart' },
                 { id: 'settings', label: 'Config', onClick: onOpenSettings || (() => {}), gradient: ['#6b7280', '#4b5563'], icon: 'gear' },
@@ -1404,6 +1407,30 @@ const CommandIcons = {
       <circle cx="14" cy="14" r="2.5" fill="#1a1a1a"/>
       {/* Shine */}
       <path d="M10 10C11 9 13 8 16 10" stroke="white" strokeWidth="1.5" strokeOpacity="0.4" strokeLinecap="round"/>
+    </svg>
+  ),
+  brain: ({ color }: { color: string }) => (
+    <svg width="28" height="28" viewBox="0 0 28 28" fill="none">
+      {/* Brain outline - left hemisphere */}
+      <path d="M14 4C10 4 7 6 6 9C5 11 5 14 6 16C5 17 5 19 6 21C7 23 9 24 11 24C12 24 13 24 14 23" fill={color} fillOpacity="0.3"/>
+      {/* Brain outline - right hemisphere */}
+      <path d="M14 4C18 4 21 6 22 9C23 11 23 14 22 16C23 17 23 19 22 21C21 23 19 24 17 24C16 24 15 24 14 23" fill={color} fillOpacity="0.3"/>
+      {/* Left hemisphere details */}
+      <path d="M14 5C10.5 5 8 7 7 9.5C6 12 6.5 14.5 7.5 16.5C6.5 17.5 6 19.5 7 21.5C8 23 10 23.5 12 23.5" stroke={color} strokeWidth="1.5" strokeLinecap="round"/>
+      {/* Right hemisphere details */}
+      <path d="M14 5C17.5 5 20 7 21 9.5C22 12 21.5 14.5 20.5 16.5C21.5 17.5 22 19.5 21 21.5C20 23 18 23.5 16 23.5" stroke={color} strokeWidth="1.5" strokeLinecap="round"/>
+      {/* Brain folds - left */}
+      <path d="M8 11C9 11 10 12 10 13" stroke="white" strokeWidth="1" strokeOpacity="0.5" strokeLinecap="round"/>
+      <path d="M9 15C10 14.5 11 15 11 16" stroke="white" strokeWidth="1" strokeOpacity="0.5" strokeLinecap="round"/>
+      {/* Brain folds - right */}
+      <path d="M20 11C19 11 18 12 18 13" stroke="white" strokeWidth="1" strokeOpacity="0.5" strokeLinecap="round"/>
+      <path d="M19 15C18 14.5 17 15 17 16" stroke="white" strokeWidth="1" strokeOpacity="0.5" strokeLinecap="round"/>
+      {/* Center connection */}
+      <path d="M14 8V20" stroke={color} strokeWidth="1.5" strokeLinecap="round"/>
+      {/* Glow effect dots */}
+      <circle cx="10" cy="10" r="1.5" fill={color}/>
+      <circle cx="18" cy="10" r="1.5" fill={color}/>
+      <circle cx="14" cy="14" r="2" fill="white" fillOpacity="0.6"/>
     </svg>
   )
 }

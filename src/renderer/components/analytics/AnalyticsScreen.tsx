@@ -23,13 +23,14 @@ import {
   X
 } from 'lucide-react'
 import type { Conversation } from '../../../shared/types'
+import UsageDashboard from './UsageDashboard'
 
 interface AnalyticsScreenProps {
   onBack: () => void
 }
 
 type Period = '7days' | '30days' | 'all'
-type Tab = 'overview' | 'projects' | 'activity'
+type Tab = 'overview' | 'projects' | 'activity' | 'usage'
 
 interface ProjectDetail {
   folder: string
@@ -461,7 +462,7 @@ export default function AnalyticsScreen({ onBack }: AnalyticsScreenProps) {
 
       {/* Tabs */}
       <div className="flex gap-1 px-6 py-2 border-b border-white/[0.06]">
-        {(['overview', 'projects', 'activity'] as Tab[]).map((tab) => (
+        {(['overview', 'usage', 'projects', 'activity'] as Tab[]).map((tab) => (
           <button
             key={tab}
             onClick={() => { setActiveTab(tab); setSelectedProject(null) }}
@@ -512,6 +513,9 @@ export default function AnalyticsScreen({ onBack }: AnalyticsScreenProps) {
             )}
             {activeTab === 'activity' && (
               <ActivityTab analytics={analytics} />
+            )}
+            {activeTab === 'usage' && (
+              <UsageDashboard />
             )}
           </>
         ) : (

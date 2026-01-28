@@ -621,6 +621,272 @@ export function registerConversationHandlers(): void {
   )
 }
 
+// Usage Statistics Handler
+interface UsageEntry {
+  date: string
+  model: string
+  inputTokens: number
+  outputTokens: number
+  cacheCreationInputTokens: number
+  cacheReadInputTokens: number
+  totalTokens: number
+  cost: number
+  sessions: number
+}
+
+interface DetailedUsageStats {
+  daily: UsageEntry[]
+  byModel: {
+    model: string
+    inputTokens: number
+    outputTokens: number
+    totalTokens: number
+    cost: number
+    sessions: number
+  }[]
+  totals: {
+    inputTokens: number
+    outputTokens: number
+    cacheCreationInputTokens: number
+    cacheReadInputTokens: number
+    totalTokens: number
+    cost: number
+    sessions: number
+  }
+  predictions: {
+    dailyAverage: number
+    weeklyProjection: number
+    monthlyProjection: number
+    costPerSession: number
+  }
+}
+
+// Pricing per 1M tokens (as of 2025)
+const MODEL_PRICING: Record<string, { input: number; output: number; cacheCreation: number; cacheRead: number }> = {
+  'claude-3-5-sonnet': { input: 3, output: 15, cacheCreation: 3.75, cacheRead: 0.3 },
+  'claude-sonnet-4': { input: 3, output: 15, cacheCreation: 3.75, cacheRead: 0.3 },
+  'claude-3-opus': { input: 15, output: 75, cacheCreation: 18.75, cacheRead: 1.5 },
+  'claude-opus-4': { input: 15, output: 75, cacheCreation: 18.75, cacheRead: 1.5 },
+  'claude-3-5-haiku': { input: 0.8, output: 4, cacheCreation: 1, cacheRead: 0.08 },
+  'claude-3-haiku': { input: 0.25, output: 1.25, cacheCreation: 0.3, cacheRead: 0.03 }
+}
+
+function getModelPricing(model: string): { input: number; output: number; cacheCreation: number; cacheRead: number } {
+  // Normalize model name
+  const normalized = model.toLowerCase()
+
+  if (normalized.includes('opus')) {
+    return MODEL_PRICING['claude-opus-4']
+  } else if (normalized.includes('haiku')) {
+    return MODEL_PRICING['claude-3-5-haiku']
+  } else {
+    // Default to Sonnet pricing
+    return MODEL_PRICING['claude-sonnet-4']
+  }
+}
+
+function calculateCost(
+  inputTokens: number,
+  outputTokens: number,
+  cacheCreationInputTokens: number,
+  cacheReadInputTokens: number,
+  model: string
+): number {
+  const pricing = getModelPricing(model)
+
+  // Cost per 1M tokens, so divide by 1,000,000
+  const inputCost = (inputTokens / 1_000_000) * pricing.input
+  const outputCost = (outputTokens / 1_000_000) * pricing.output
+  const cacheCreationCost = (cacheCreationInputTokens / 1_000_000) * pricing.cacheCreation
+  const cacheReadCost = (cacheReadInputTokens / 1_000_000) * pricing.cacheRead
+
+  return inputCost + outputCost + cacheCreationCost + cacheReadCost
+}
+
+ipcMain.handle('get-detailed-usage-stats', async (_, days: number = 30): Promise<DetailedUsageStats> => {
+  const usageByDate = new Map<string, UsageEntry>()
+  const usageByModel = new Map<string, { inputTokens: number; outputTokens: number; totalTokens: number; cost: number; sessions: number }>()
+  const cutoffDate = new Date()
+  cutoffDate.setDate(cutoffDate.getDate() - days)
+
+  const totals = {
+    inputTokens: 0,
+    outputTokens: 0,
+    cacheCreationInputTokens: 0,
+    cacheReadInputTokens: 0,
+    totalTokens: 0,
+    cost: 0,
+    sessions: 0
+  }
+
+  try {
+    const projectsDir = join(CLAUDE_DIR, 'projects')
+    const projectDirs = await fs.readdir(projectsDir).catch(() => [])
+
+    for (const projectDir of projectDirs) {
+      const projectPath = join(projectsDir, projectDir)
+      const stat = await fs.stat(projectPath).catch(() => null)
+
+      if (stat?.isDirectory()) {
+        const files = await fs.readdir(projectPath).catch(() => [])
+        const jsonlFiles = files.filter(f => f.endsWith('.jsonl') && !f.startsWith('agent-'))
+
+        for (const file of jsonlFiles) {
+          const filePath = join(projectPath, file)
+          const fileStat = await fs.stat(filePath).catch(() => null)
+
+          if (!fileStat || fileStat.mtimeMs < cutoffDate.getTime()) continue
+
+          try {
+            const content = await fs.readFile(filePath, 'utf-8')
+            const lines = content.split('\n').filter(line => line.trim())
+
+            let sessionInputTokens = 0
+            let sessionOutputTokens = 0
+            let sessionCacheCreation = 0
+            let sessionCacheRead = 0
+            let sessionModel = 'claude-sonnet-4'
+            let sessionDate = new Date(fileStat.mtimeMs).toISOString().split('T')[0]
+
+            for (const line of lines) {
+              try {
+                const parsed = JSON.parse(line)
+
+                // Extract timestamp if available
+                if (parsed.timestamp) {
+                  const lineDate = new Date(parsed.timestamp)
+                  if (lineDate >= cutoffDate) {
+                    sessionDate = lineDate.toISOString().split('T')[0]
+                  }
+                }
+
+                // Extract model info
+                if (parsed.model) {
+                  sessionModel = parsed.model
+                }
+
+                // Extract usage from various message formats
+                // Format 1: usage field in assistant messages
+                if (parsed.message?.usage) {
+                  const usage = parsed.message.usage
+                  sessionInputTokens += usage.input_tokens || 0
+                  sessionOutputTokens += usage.output_tokens || 0
+                  sessionCacheCreation += usage.cache_creation_input_tokens || 0
+                  sessionCacheRead += usage.cache_read_input_tokens || 0
+                }
+
+                // Format 2: usage in result field
+                if (parsed.result?.usage) {
+                  const usage = parsed.result.usage
+                  sessionInputTokens += usage.input_tokens || 0
+                  sessionOutputTokens += usage.output_tokens || 0
+                  sessionCacheCreation += usage.cache_creation_input_tokens || 0
+                  sessionCacheRead += usage.cache_read_input_tokens || 0
+                }
+
+                // Format 3: costUSD direct field (convert back to estimate tokens)
+                if (parsed.costUSD && !parsed.message?.usage && !parsed.result?.usage) {
+                  // Rough estimate: $0.009 per 1K tokens average
+                  const estimatedTokens = Math.round((parsed.costUSD / 0.009) * 1000)
+                  sessionInputTokens += Math.round(estimatedTokens * 0.3)
+                  sessionOutputTokens += Math.round(estimatedTokens * 0.7)
+                }
+              } catch {
+                // Skip invalid JSON
+              }
+            }
+
+            // Only count if we found token usage
+            if (sessionInputTokens > 0 || sessionOutputTokens > 0) {
+              const sessionCost = calculateCost(
+                sessionInputTokens,
+                sessionOutputTokens,
+                sessionCacheCreation,
+                sessionCacheRead,
+                sessionModel
+              )
+
+              // Update daily totals
+              const existing = usageByDate.get(sessionDate) || {
+                date: sessionDate,
+                model: sessionModel,
+                inputTokens: 0,
+                outputTokens: 0,
+                cacheCreationInputTokens: 0,
+                cacheReadInputTokens: 0,
+                totalTokens: 0,
+                cost: 0,
+                sessions: 0
+              }
+              existing.inputTokens += sessionInputTokens
+              existing.outputTokens += sessionOutputTokens
+              existing.cacheCreationInputTokens += sessionCacheCreation
+              existing.cacheReadInputTokens += sessionCacheRead
+              existing.totalTokens += sessionInputTokens + sessionOutputTokens
+              existing.cost += sessionCost
+              existing.sessions += 1
+              usageByDate.set(sessionDate, existing)
+
+              // Update model totals
+              const modelKey = sessionModel.includes('opus') ? 'Opus' :
+                             sessionModel.includes('haiku') ? 'Haiku' : 'Sonnet'
+              const modelExisting = usageByModel.get(modelKey) || {
+                inputTokens: 0,
+                outputTokens: 0,
+                totalTokens: 0,
+                cost: 0,
+                sessions: 0
+              }
+              modelExisting.inputTokens += sessionInputTokens
+              modelExisting.outputTokens += sessionOutputTokens
+              modelExisting.totalTokens += sessionInputTokens + sessionOutputTokens
+              modelExisting.cost += sessionCost
+              modelExisting.sessions += 1
+              usageByModel.set(modelKey, modelExisting)
+
+              // Update totals
+              totals.inputTokens += sessionInputTokens
+              totals.outputTokens += sessionOutputTokens
+              totals.cacheCreationInputTokens += sessionCacheCreation
+              totals.cacheReadInputTokens += sessionCacheRead
+              totals.totalTokens += sessionInputTokens + sessionOutputTokens
+              totals.cost += sessionCost
+              totals.sessions += 1
+            }
+          } catch {
+            // Skip files that can't be parsed
+          }
+        }
+      }
+    }
+  } catch (err) {
+    console.error('Failed to get usage stats:', err)
+  }
+
+  // Convert maps to sorted arrays
+  const daily = Array.from(usageByDate.values()).sort((a, b) => a.date.localeCompare(b.date))
+  const byModel = Array.from(usageByModel.entries()).map(([model, data]) => ({
+    model,
+    ...data
+  })).sort((a, b) => b.totalTokens - a.totalTokens)
+
+  // Calculate predictions
+  const activeDays = daily.length || 1
+  const dailyAverage = totals.totalTokens / activeDays
+
+  return {
+    daily,
+    byModel,
+    totals,
+    predictions: {
+      dailyAverage: Math.round(dailyAverage),
+      weeklyProjection: Math.round(dailyAverage * 7),
+      monthlyProjection: Math.round(dailyAverage * 30),
+      costPerSession: totals.sessions > 0 ? totals.cost / totals.sessions : 0
+    }
+  }
+})
+
 function formatDuration(ms: number): string {
   if (ms < 60000) {
     return `${Math.round(ms / 1000)}s`

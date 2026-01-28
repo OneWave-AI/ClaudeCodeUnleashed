@@ -26,7 +26,10 @@ import {
   Layers,
   Route,
   Server,
-  Link2
+  Link2,
+  Brain,
+  ListTodo,
+  FolderTree
 } from 'lucide-react'
 
 // Custom Bee Icon for Swarm
@@ -81,6 +84,9 @@ interface HeaderProps {
   onNavigate?: (screen: string) => void
   onOpenPreview?: (url: string) => void
   onOpenSuperAgent?: () => void
+  onOpenMemory?: () => void
+  onOpenBackgroundAgents?: () => void
+  onOpenRepoVisualization?: () => void
 }
 
 export default function Header({
@@ -92,7 +98,10 @@ export default function Header({
   screen,
   onNavigate,
   onOpenPreview,
-  onOpenSuperAgent
+  onOpenSuperAgent,
+  onOpenMemory,
+  onOpenBackgroundAgents,
+  onOpenRepoVisualization
 }: HeaderProps) {
   const folderName = cwd ? cwd.split('/').pop() : 'No folder'
   const [mcpCount, setMcpCount] = useState(0)
@@ -1041,6 +1050,42 @@ Begin researching now. Start with a WebSearch for the most relevant query based 
         )}
 
         <div className="w-px h-4 bg-white/[0.08] mx-0.5" />
+
+        {/* Memory - Only on terminal */}
+        {screen === 'terminal' && (
+          <button
+            onClick={onOpenMemory}
+            className="flex items-center gap-1.5 px-2 py-1.5 rounded-lg hover:bg-purple-500/10 text-gray-400 hover:text-purple-400 transition-colors"
+            title="Project Memory"
+          >
+            <Brain size={14} />
+            <span className="text-xs">Memory</span>
+          </button>
+        )}
+
+        {/* Background Agents - Only on terminal */}
+        {screen === 'terminal' && (
+          <button
+            onClick={onOpenBackgroundAgents}
+            className="flex items-center gap-1.5 px-2 py-1.5 rounded-lg hover:bg-orange-500/10 text-gray-400 hover:text-orange-400 transition-colors"
+            title="Background Agent Queue"
+          >
+            <ListTodo size={14} />
+            <span className="text-xs">Queue</span>
+          </button>
+        )}
+
+        {/* Repo Visualization - Only on terminal */}
+        {screen === 'terminal' && (
+          <button
+            onClick={onOpenRepoVisualization}
+            className="flex items-center gap-1.5 px-2 py-1.5 rounded-lg hover:bg-emerald-500/10 text-gray-400 hover:text-emerald-400 transition-colors"
+            title="Repository Visualization"
+          >
+            <FolderTree size={14} />
+            <span className="text-xs">Repo</span>
+          </button>
+        )}
 
         {/* MCP Status */}
         <button

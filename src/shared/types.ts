@@ -120,6 +120,46 @@ export interface ProjectStats {
   messageCount: number
 }
 
+// Detailed Usage Statistics
+export interface UsageEntry {
+  date: string
+  model: string
+  inputTokens: number
+  outputTokens: number
+  cacheCreationInputTokens: number
+  cacheReadInputTokens: number
+  totalTokens: number
+  cost: number
+  sessions: number
+}
+
+export interface DetailedUsageStats {
+  daily: UsageEntry[]
+  byModel: {
+    model: string
+    inputTokens: number
+    outputTokens: number
+    totalTokens: number
+    cost: number
+    sessions: number
+  }[]
+  totals: {
+    inputTokens: number
+    outputTokens: number
+    cacheCreationInputTokens: number
+    cacheReadInputTokens: number
+    totalTokens: number
+    cost: number
+    sessions: number
+  }
+  predictions: {
+    dailyAverage: number
+    weeklyProjection: number
+    monthlyProjection: number
+    costPerSession: number
+  }
+}
+
 export interface AnalyticsData {
   // Overview
   totalSessions: number
@@ -317,6 +357,7 @@ export interface IpcApi {
   pinConversation: (id: string, projectFolder: string, pinned: boolean) => Promise<{ success: boolean; error?: string }>
   searchConversations: (query: string) => Promise<Conversation[]>
   getCurrentSessionTodos: (projectFolder: string) => Promise<Array<{ id: string; content: string; status: string; activeForm?: string; createdAt: Date }>>
+  getDetailedUsageStats: (days?: number) => Promise<DetailedUsageStats>
 
   // Claude CLI
   checkClaudeInstalled: () => Promise<boolean>
@@ -380,6 +421,100 @@ export interface IpcApi {
 
   // Terminal Session State
   setTerminalSessionActive: (active: boolean) => void
+
+  // Background Agents
+  backgroundAgentList: () => Promise<BackgroundAgentTask[]>
+  backgroundAgentAdd: (task: { name: string; prompt: string; projectPath: string; priority?: 'low' | 'normal' | 'high' }) => Promise<BackgroundAgentTask>
+  backgroundAgentRemove: (taskId: string) => Promise<{ success: boolean }>
+  backgroundAgentCancel: (taskId: string) => Promise<{ success: boolean }>
+  backgroundAgentStartQueue: () => Promise<{ success: boolean }>
+  backgroundAgentPauseQueue: () => Promise<{ success: boolean }>
+  backgroundAgentQueueStatus: () => Promise<BackgroundAgentQueueStatus>
+  backgroundAgentSetMaxConcurrent: (max: number) => Promise<{ success: boolean }>
+  backgroundAgentGetOutput: (taskId: string) => Promise<string[]>
+  backgroundAgentClearCompleted: () => Promise<{ success: boolean }>
+  backgroundAgentRetry: (taskId: string) => Promise<{ success: boolean }>
+  backgroundAgentReorder: (taskId: string, newIndex: number) => Promise<{ success: boolean }>
+  backgroundAgentSetPriority: (taskId: string, priority: 'low' | 'normal' | 'high') => Promise<{ success: boolean }>
+  onBackgroundAgentUpdate: (callback: (task: BackgroundAgentTask) => void) => (() => void) | void
+  onBackgroundAgentOutput: (callback: (data: { taskId: string; data: string }) => void) => (() => void) | void
+
+  // Repository Visualization
+  repoAnalyze: (basePath: string) => Promise<RepoAnalysis>
+  repoGetFileContent: (filePath: string) => Promise<string>
+
+  // Memory (CLAUDE.md based system)
+  memoryList: (projectPath: string) => Promise<MemoryListResult>
+  memoryGetRaw: (projectPath: string, type: 'main' | 'local' | 'user') => Promise<string>
+  memorySaveRaw: (projectPath: string, type: 'main' | 'local' | 'user', content: string) => Promise<{ success: boolean }>
+  memoryAdd: (projectPath: string, item: MemoryAddItem) => Promise<{ success: boolean }>
+  memoryInit: (projectPath: string) => Promise<{ success: boolean; path: string }>
+  memoryCheck: (projectPath: string) => Promise<MemoryCheckResult>
+  memoryOpenEditor: (projectPath: string, type: 'main' | 'local' | 'user') => Promise<{ success: boolean; path: string }>
+  memoryStats: (projectPath: string) => Promise<MemoryStats>
+  memoryDelete: (projectPath: string, type: 'main' | 'local' | 'rules') => Promise<{ success: boolean }>
+  // Legacy methods (backward compatibility)
+  memoryGetContext: (projectPath: string) => Promise<string>
+  memorySetGlobalContext: (projectPath: string, context: string) => Promise<{ success: boolean }>
+  memoryGetGlobalContext: (projectPath: string) => Promise<string>
+  memoryClear: (projectPath: string) => Promise<{ success: boolean }>
+  memoryListProjects: () => Promise<{ projectPath: string; hasMemory: boolean }[]>
+}
+
+// Memory types (CLAUDE.md based system)
+export type MemoryCategory = 'architecture' | 'conventions' | 'commands' | 'preferences' | 'decisions' | 'context'
+export type MemoryFileType = 'main' | 'local' | 'user' | 'rules'
+
+export interface MemorySection {
+  category: MemoryCategory
+  title: string
+  items: string[]
+}
+
+export interface MemoryListResult {
+  main: MemorySection[]
+  rules: Record<MemoryCategory, string[]>
+  local: MemorySection[]
+  user: MemorySection[]
+}
+
+export interface MemoryCheckResult {
+  hasMain: boolean
+  hasLocal: boolean
+  hasUser: boolean
+  hasRules: boolean
+  mainPath: string | null
+}
+
+export interface MemoryStats {
+  hasMemory: boolean
+  mainSize: number
+  localSize: number
+  userSize: number
+  rulesCount: number
+}
+
+export interface MemoryAddItem {
+  category: MemoryCategory
+  content: string
+  target: MemoryFileType
+}
+
+// Legacy Memory types (for backward compatibility)
+export interface MemoryItem {
+  id: string
+  projectPath: string
+  type: 'context' | 'decision' | 'preference' | 'pattern' | 'note'
+  content: string
+  summary?: string
+  importance: 'low' | 'medium' | 'high' | 'critical'
+  tags: string[]
+  createdAt: number
+  updatedAt: number
+  accessCount: number
+  lastAccessed?: number
+  source?: 'auto' | 'manual' | 'conversation'
+  conversationId?: string
 }
 
 // Super Agent types
@@ -433,6 +568,74 @@ export interface SuperAgentSession {
   activityLog: ActivityLogEntry[]
   provider: LLMProvider
   projectFolder: string
+}
+
+// Background Agent types
+export interface BackgroundAgentTask {
+  id: string
+  name: string
+  prompt: string
+  projectPath: string
+  status: 'queued' | 'running' | 'completed' | 'failed' | 'cancelled'
+  createdAt: number
+  startedAt?: number
+  completedAt?: number
+  output: string[]
+  error?: string
+  priority: 'low' | 'normal' | 'high'
+}
+
+export interface BackgroundAgentQueueStatus {
+  isRunning: boolean
+  maxConcurrent: number
+  totalTasks: number
+  queuedTasks: number
+  runningTasks: number
+  completedTasks: number
+  failedTasks: number
+}
+
+// Repository Visualization types
+export interface RepoFileNode {
+  name: string
+  path: string
+  relativePath: string
+  type: 'file' | 'directory'
+  size: number
+  extension?: string
+  category?: string
+  children?: RepoFileNode[]
+  lineCount?: number
+}
+
+export interface RepoStats {
+  totalFiles: number
+  totalDirectories: number
+  totalSize: number
+  totalLines: number
+  filesByType: Record<string, { count: number; size: number; lines: number }>
+  largestFiles: { path: string; size: number; lines: number }[]
+  deepestPath: string
+  maxDepth: number
+}
+
+export interface RepoAnalysis {
+  tree: RepoFileNode
+  stats: RepoStats
+  dependencies: {
+    name: string
+    version: string
+    type: 'dependency' | 'devDependency'
+  }[]
+  structure: {
+    hasPackageJson: boolean
+    hasTsConfig: boolean
+    hasGitIgnore: boolean
+    hasReadme: boolean
+    hasSrc: boolean
+    hasTests: boolean
+    framework?: string
+  }
 }
 
 declare global {

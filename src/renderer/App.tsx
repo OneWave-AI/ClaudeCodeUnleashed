@@ -14,6 +14,9 @@ import { useAppStore } from './store'
 import { SuperAgentModal, SuperAgentStatusBar } from './components/superagent'
 import { useSuperAgent } from './hooks/useSuperAgent'
 import HiveManager from './components/hives/HiveManager'
+import MemoryPanel from './components/memory/MemoryPanel'
+import BackgroundAgentsPanel from './components/agents/BackgroundAgentsPanel'
+import RepoVisualization from './components/repo/RepoVisualization'
 
 type Screen = 'home' | 'terminal' | 'skills' | 'history' | 'analytics' | 'hive'
 
@@ -25,6 +28,9 @@ function App() {
   const [settingsOpen, setSettingsOpen] = useState(false)
   const [terminalMounted, setTerminalMounted] = useState(false)
   const [superAgentModalOpen, setSuperAgentModalOpen] = useState(false)
+  const [memoryPanelOpen, setMemoryPanelOpen] = useState(false)
+  const [backgroundAgentsPanelOpen, setBackgroundAgentsPanelOpen] = useState(false)
+  const [repoVisualizationOpen, setRepoVisualizationOpen] = useState(false)
   const [activeTerminalId, setActiveTerminalId] = useState<string | null>(null)
   const [previewUrl, setPreviewUrl] = useState<string | null>(null)
   const pendingSuperAgentOpen = useRef(false) // Flag to open modal when terminal is ready
@@ -91,6 +97,9 @@ function App() {
           onNavigate={handleNavigate}
           onOpenPreview={(url) => setPreviewUrl(url)}
           onOpenSuperAgent={() => setSuperAgentModalOpen(true)}
+          onOpenMemory={() => setMemoryPanelOpen(true)}
+          onOpenBackgroundAgents={() => setBackgroundAgentsPanelOpen(true)}
+          onOpenRepoVisualization={() => setRepoVisualizationOpen(true)}
         />
 
         <div className="flex flex-1 overflow-hidden">
@@ -134,6 +143,7 @@ function App() {
                   }
                 }}
                 onOpenHive={() => navigateTo('hive')}
+                onOpenMemory={() => setMemoryPanelOpen(true)}
               />
             )}
 
@@ -196,6 +206,26 @@ function App() {
           onClose={() => setSuperAgentModalOpen(false)}
           terminalId={activeTerminalId || ''}
           onStart={() => setSuperAgentModalOpen(false)}
+        />
+
+        {/* Memory Panel */}
+        <MemoryPanel
+          projectPath={cwd}
+          isOpen={memoryPanelOpen}
+          onClose={() => setMemoryPanelOpen(false)}
+        />
+
+        {/* Background Agents Panel */}
+        <BackgroundAgentsPanel
+          isOpen={backgroundAgentsPanelOpen}
+          onClose={() => setBackgroundAgentsPanelOpen(false)}
+        />
+
+        {/* Repository Visualization */}
+        <RepoVisualization
+          isOpen={repoVisualizationOpen}
+          onClose={() => setRepoVisualizationOpen(false)}
+          projectPath={cwd}
         />
 
         {/* Welcome/Updates Screen */}

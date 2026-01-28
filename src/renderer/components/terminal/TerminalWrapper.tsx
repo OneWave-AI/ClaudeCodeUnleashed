@@ -37,6 +37,7 @@ import Terminal, { TerminalRef } from './Terminal'
 import PreviewBar from './PreviewBar'
 import TaskTimeline, { TimelineAction, ActionType, ActionStatus } from './TaskTimeline'
 import PlanPanel, { PlanItem } from './PlanPanel'
+import VoiceInput from './VoiceInput'
 import { useAppStore } from '../../store'
 
 interface Tab {
@@ -563,6 +564,14 @@ export default function TerminalWrapper({
       activeRef.copyAll()
     }
   }, [activeTab?.id])
+
+  // Voice input handler - sends transcribed text to terminal
+  const handleVoiceTranscript = useCallback((text: string) => {
+    if (activeTerminalId && text.trim()) {
+      // Send the transcribed text to the terminal
+      window.api.terminalSendText(text.trim(), activeTerminalId)
+    }
+  }, [activeTerminalId])
 
   // Token and cost tracking from terminal output
   const trackTokensAndCost = useCallback((data: string) => {
@@ -1825,6 +1834,12 @@ export default function TerminalWrapper({
               </span>
             )}
           </button>
+
+          {/* Voice Input Button */}
+          <VoiceInput
+            onTranscript={handleVoiceTranscript}
+            disabled={!activeTerminalId}
+          />
 
           {/* Upload Button */}
           <div className="relative" ref={uploadMenuRef}>
