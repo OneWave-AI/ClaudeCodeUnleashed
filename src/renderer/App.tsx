@@ -14,7 +14,7 @@ import { useAppStore } from './store'
 import { SuperAgentModal, SuperAgentStatusBar } from './components/superagent'
 import { useSuperAgent } from './hooks/useSuperAgent'
 import HiveManager from './components/hives/HiveManager'
-import MemoryPanel from './components/memory/MemoryPanel'
+import MemoryPanelNatural from './components/memory/MemoryPanelNatural'
 import BackgroundAgentsPanel from './components/agents/BackgroundAgentsPanel'
 import RepoVisualization from './components/repo/RepoVisualization'
 
@@ -209,7 +209,7 @@ function App() {
         />
 
         {/* Memory Panel */}
-        <MemoryPanel
+        <MemoryPanelNatural
           projectPath={cwd}
           isOpen={memoryPanelOpen}
           onClose={() => setMemoryPanelOpen(false)}
