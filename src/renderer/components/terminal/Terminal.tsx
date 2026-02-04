@@ -478,7 +478,8 @@ const Terminal = forwardRef<TerminalRef, TerminalProps>(({ onResize, scanLinesEn
       cursorBlink: true,
       cursorStyle: 'block',
       theme: themeConfig,
-      allowProposedApi: true
+      allowProposedApi: true,
+      scrollback: 5000 // Limit scrollback to prevent memory leaks (was unlimited)
     })
 
     const fitAddon = new FitAddon()
@@ -501,8 +502,8 @@ const Terminal = forwardRef<TerminalRef, TerminalProps>(({ onResize, scanLinesEn
     terminal.open(containerRef.current)
     fitAddon.fit()
 
-    // Update scroll state on scroll
-    terminal.onScroll(() => updateScrollState())
+    // Update scroll state on scroll - store disposable for cleanup
+    const scrollDisposable = terminal.onScroll(() => updateScrollState())
 
     // Register terminal data handler - returns cleanup function
     const cleanupDataHandler = window.api.onTerminalData((data: string, id: string) => {
@@ -570,8 +571,8 @@ const Terminal = forwardRef<TerminalRef, TerminalProps>(({ onResize, scanLinesEn
       terminal.writeln(`\x1b[31mFailed to create terminal: ${err.message || 'Unknown error'}\x1b[0m`)
     })
 
-    // Handle user input
-    terminal.onData((data) => {
+    // Handle user input - store disposable for cleanup
+    const inputDisposable = terminal.onData((data) => {
       if (terminalIdRef.current) {
         window.api.terminalInput(data, terminalIdRef.current)
       }
@@ -592,6 +593,9 @@ const Terminal = forwardRef<TerminalRef, TerminalProps>(({ onResize, scanLinesEn
     return () => {
       // Clean up the data handler first
       cleanupDataHandler?.()
+      // Dispose xterm event listeners to prevent memory leaks
+      scrollDisposable?.dispose()
+      inputDisposable?.dispose()
       resizeObserver.disconnect()
       terminal.dispose()
       if (terminalIdRef.current) {

@@ -92,33 +92,39 @@ export const useSuperAgentStore = create<SuperAgentState>((set, get) => ({
   togglePause: () => {
     const state = get()
     const newPaused = !state.isPaused
-    // Log the pause/resume action
+    // Log the pause/resume action - limit to 500 entries
     set((s) => ({
       isPaused: newPaused,
       activityLog: [
-        ...s.activityLog,
+        ...s.activityLog.slice(-499),
         { timestamp: Date.now(), type: newPaused ? 'stop' : 'start', message: newPaused ? 'Agent paused' : 'Agent resumed' }
       ]
     }))
   },
 
-  // Output handling
+  // Output handling - cap buffer at 100KB to prevent memory leaks
   appendOutput: (data) =>
-    set((state) => ({
-      outputBuffer: state.outputBuffer + data,
-      lastOutputTime: Date.now(),
-      isIdle: false
-    })),
+    set((state) => {
+      const MAX_BUFFER = 100_000 // 100KB max
+      const newBuffer = state.outputBuffer + data
+      return {
+        outputBuffer: newBuffer.length > MAX_BUFFER
+          ? newBuffer.slice(-MAX_BUFFER)
+          : newBuffer,
+        lastOutputTime: Date.now(),
+        isIdle: false
+      }
+    }),
 
   clearOutput: () => set({ outputBuffer: '', isIdle: false }),
 
   setIdle: (idle) => set({ isIdle: idle }),
 
-  // Logging
+  // Logging - limit to 500 entries to prevent memory leaks
   addLog: (type, message) =>
     set((state) => ({
       activityLog: [
-        ...state.activityLog,
+        ...state.activityLog.slice(-499), // Keep last 499 + new = 500 max
         { timestamp: Date.now(), type, message }
       ]
     })),
