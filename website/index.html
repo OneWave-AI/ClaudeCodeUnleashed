@@ -46,7 +46,7 @@
             surfaceLight: '#0a0a0a',
             primary: '#FF4F18',
             primaryHover: '#FF6A3D',
-            accent: '#A855F7',
+            accent: '#10B981',
           },
         }
       }
@@ -54,6 +54,9 @@
   </script>
 </head>
 <body class="antialiased bg-bg text-white">
+
+  <!-- Scroll Progress Bar -->
+  <div id="scroll-progress" class="scroll-progress"></div>
 
   <!-- Navigation -->
   <nav class="nav glass-static">
@@ -113,7 +116,7 @@
   </nav>
 
   <!-- Hero Section -->
-  <section class="pt-28 pb-16 sm:pt-36 sm:pb-20 md:pt-44 md:pb-28 px-4 sm:px-6 relative overflow-hidden">
+  <section id="hero" class="pt-28 pb-16 sm:pt-36 sm:pb-20 md:pt-44 md:pb-28 px-4 sm:px-6 relative overflow-hidden">
     <!-- Aurora Background -->
     <div class="aurora-container">
       <div class="aurora"></div>
@@ -122,24 +125,31 @@
       <div class="orb orb-2"></div>
       <div class="orb orb-3"></div>
       <div class="wave-line"></div>
+      <!-- Floating particles -->
+      <div class="particle" style="left:10%;animation-duration:18s"></div>
+      <div class="particle" style="left:25%;animation-duration:22s;animation-delay:-4s"></div>
+      <div class="particle" style="left:45%;animation-duration:20s;animation-delay:-8s"></div>
+      <div class="particle" style="left:65%;animation-duration:25s;animation-delay:-2s"></div>
+      <div class="particle" style="left:80%;animation-duration:19s;animation-delay:-12s"></div>
+      <div class="particle" style="left:92%;animation-duration:23s;animation-delay:-6s"></div>
     </div>
 
     <div class="max-w-5xl mx-auto text-center">
       <!-- Badge -->
-      <div class="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/5 border border-white/10 text-sm text-zinc-300 mb-8 fade-up">
-        <span class="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span>
-        Free & Open Source
+      <div class="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-sm text-emerald-300 mb-8 fade-up">
+        <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+        Open Source Desktop App for Claude Code
       </div>
 
       <!-- Headline -->
       <h1 class="text-5xl sm:text-6xl md:text-7xl lg:text-8xl font-extrabold tracking-tight mb-6 fade-up stagger-1 leading-[1.05]">
-        Claude.<br>
+        Claude Code.<br>
         <span class="gradient-text">Unleashed.</span>
       </h1>
 
       <!-- Subhead -->
       <p class="text-lg sm:text-xl text-zinc-400 max-w-2xl mx-auto mb-10 leading-relaxed fade-up stagger-2">
-        A powerful desktop app for Claude Code. Run multiple AI agents in parallel, track your coding sessions with analytics, browse conversation history, and access 25+ skills—all without touching the terminal.
+        Claude Code is the best AI coding agent on the planet&mdash;but it lives in your terminal. Unleashed gives it a visual desktop app with agent swarms, session analytics, conversation history, and 25+ built-in skills. Same Claude, 10x the workflow.
       </p>
 
       <!-- CTA Buttons -->
@@ -149,12 +159,12 @@
           Download for macOS
         </a>
         <a href="https://github.com/OneWave-AI/ClaudeCodeUnleashed/releases" class="btn btn-secondary btn-xl">
-          <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M12.504 0c-.155 0-.311.002-.465.006C7.622.069 3.67 2.754 1.727 6.619.168 9.782-.076 13.509.553 16.95c.251 1.374.63 2.717 1.144 3.998.098.245.202.486.31.725.012.027.023.055.036.082.048.111.097.221.148.33.089.19.18.378.276.564.083.161.169.319.257.477.032.058.065.115.098.173.073.127.147.252.223.377.04.065.081.129.122.193.083.13.167.258.253.385.043.064.086.127.13.19.065.092.131.183.198.273.095.127.191.252.29.376.026.032.051.065.077.097.1.122.202.242.306.36.09.101.18.2.273.298.052.056.105.11.158.165.096.098.193.194.291.289.06.058.12.115.181.171.089.082.179.162.269.241.074.065.148.128.223.191.075.063.15.125.227.185.091.072.183.142.276.21.054.04.108.08.163.119.12.085.241.167.364.247.023.015.045.031.068.046.135.087.271.171.409.252.019.011.037.023.056.034.145.084.291.164.439.241l.034.018c.158.081.317.159.478.232.036.016.073.032.109.048.128.056.257.11.387.16.062.025.125.048.188.071.112.041.224.08.337.117.076.025.152.049.229.072.1.03.2.058.301.084.088.023.177.045.266.065.088.02.176.039.265.056.099.019.198.036.298.052.077.012.154.024.232.034.114.014.228.026.343.036.062.005.124.011.186.015.129.009.258.015.388.019.043.001.086.003.13.004.155.003.31.004.466.004 5.427 0 10.032-3.414 11.754-8.195.862-2.394.987-5.071.356-7.59-.63-2.518-2.034-4.793-3.975-6.472C17.852 1.612 15.247.396 12.504 0zm.23 2.007c2.152.075 4.212.923 5.839 2.418 1.69 1.554 2.783 3.645 3.097 5.899.314 2.255-.057 4.585-.995 6.59-1.542 3.295-4.825 5.54-8.455 5.756-.232.014-.463.02-.693.02-2.345 0-4.593-.754-6.442-2.163-1.794-1.367-3.132-3.288-3.818-5.492-.686-2.204-.654-4.588.088-6.776C2.973 5.073 5.393 2.57 8.474 1.45c1.378-.483 2.857-.597 4.26-.443z"/></svg>
+          <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M12.504 0c-.155 0-.311.002-.465.006C7.622.069 3.67 2.754 1.727 6.619.168 9.782-.076 13.509.553 16.95c.251 1.374.63 2.717 1.144 3.998.098.245.202.486.31.725.012.027.023.055.036.082.048.111.097.221.148.33.089.19.18.378.276.564.083.161.169.319.257.477.032.058.065.115.098.173.073.127.147.252.223.377.04.065.081.129.122.193.083.13.167.258.253.385.043.064.086.127.13.19.065.092.131.183.198.273.095.127.191.252.29.376.026.032.051.065.077.097.1.122.202.242.306.36.09.101.18.2.273.298.052.056.105.11.158.165.096.098.193.194.291.289.06.058.12.115.181.171.089.082.179.162.269.241.074.065.148.128.223.191.075.063.15.125.227.185.091.072.183.142.276.21.054.04.108.08.163.119.12.085.241.167.364.247.023.015.045.031.068.046.135.087.271.171.409.252.019.011.037.023.056.034.145.084.291.164.439.241l.034.018c.158.081.317.159.478.232.036.016.073.032.109.048.128.056.257.11.387.16.062.025.125.048.188.071.112.041.224.08.337.117.076.025.152.049.229.072.1.03.2.058.301.084.088.023.177.045.266.065.088.02.176.039.265.056.099.019.198.036.298.052.077.012.154.024.232.034.114.014.228.026.343.036.062.005.124.011.186.015.129.009.258.015.388.019.043.001.086.003.13.004.155.003.31.004.466.004 5.427 0 10.032-3.414 11.754-8.195.862-2.394.987-5.071.356-7.59-.63-2.518-2.034-4.793-3.975-6.472C17.852 1.612 15.247.396 12.504 0z"/></svg>
           Linux / Chromebook
         </a>
       </div>
       <p class="text-xs text-zinc-500 mb-4 fade-up stagger-3">
-        <span class="text-zinc-400">Chromebook users:</span> Enable Linux (Settings → Developers → Linux) first
+        <span class="text-zinc-400">Chromebook users:</span> Enable Linux (Settings &rarr; Developers &rarr; Linux) first
       </p>
       <div class="flex justify-center gap-4 mb-12 fade-up stagger-3">
         <a href="https://github.com/OneWave-AI/ClaudeCodeUnleashed" class="btn btn-ghost text-sm">
@@ -170,7 +180,7 @@
           <span><strong class="text-white">25</strong> Skills</span>
         </div>
         <div class="flex items-center gap-2">
-          <svg class="w-5 h-5 text-accent" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+          <svg class="w-5 h-5 text-emerald-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
           <span><strong class="text-white">5</strong> Agents</span>
         </div>
         <div class="flex items-center gap-2">
@@ -189,7 +199,42 @@
           <div class="w-3 h-3 rounded-full bg-green-500"></div>
           <span class="ml-4 text-xs text-zinc-500">Claude Unleashed</span>
         </div>
-        <img src="screenshots/dashboard.png" alt="Claude Unleashed Dashboard" class="w-full">
+        <img src="screenshots/dashboard.png" alt="Claude Unleashed Dashboard showing analytics, session tracking, and project activity" class="w-full">
+      </div>
+    </div>
+  </section>
+
+  <!-- How It Works -->
+  <section class="section">
+    <div class="max-w-6xl mx-auto">
+      <div class="text-center mb-16">
+        <h2 class="text-3xl md:text-4xl font-bold fade-up">Three Steps. Zero Config.</h2>
+        <p class="text-zinc-400 mt-4 max-w-2xl mx-auto fade-up stagger-1">From download to building&mdash;in under a minute.</p>
+      </div>
+
+      <div class="grid md:grid-cols-3 gap-8">
+        <!-- Step 1 -->
+        <div class="glass rounded-2xl p-8 text-center relative fade-up stagger-1">
+          <div class="step-connector"></div>
+          <div class="step-number bg-primary/10 text-primary mx-auto">1</div>
+          <h3 class="font-bold text-lg mb-3">Download & Open</h3>
+          <p class="text-sm text-zinc-400">One-click install. Point it at any project folder. Unleashed auto-detects your stack&mdash;no config files, no setup scripts.</p>
+        </div>
+
+        <!-- Step 2 -->
+        <div class="glass rounded-2xl p-8 text-center relative fade-up stagger-2">
+          <div class="step-connector"></div>
+          <div class="step-number bg-emerald-500/10 text-emerald-500 mx-auto">2</div>
+          <h3 class="font-bold text-lg mb-3">Talk, Don't Type Commands</h3>
+          <p class="text-sm text-zinc-400">Describe what you want in plain English. "Add authentication to my app." "Find security bugs." "Build me a landing page." Claude does the rest.</p>
+        </div>
+
+        <!-- Step 3 -->
+        <div class="glass rounded-2xl p-8 text-center relative fade-up stagger-3">
+          <div class="step-number bg-green-500/10 text-green-500 mx-auto">3</div>
+          <h3 class="font-bold text-lg mb-3">Watch It Build</h3>
+          <p class="text-sm text-zinc-400">See code changes in real time. Split terminals, live browser preview, visual git diffs. Review and ship when you're ready.</p>
+        </div>
       </div>
     </div>
   </section>
@@ -198,8 +243,8 @@
   <section class="section bg-surface/50">
     <div class="max-w-6xl mx-auto">
       <div class="text-center mb-16">
-        <h2 class="text-3xl md:text-4xl font-bold fade-up">Built for Everyone</h2>
-        <p class="text-zinc-400 mt-4 max-w-2xl mx-auto fade-up stagger-1">Claude Unleashed wraps Claude Code in a beautiful desktop app. No terminal experience needed—just describe what you want and watch it happen.</p>
+        <h2 class="text-3xl md:text-4xl font-bold fade-up">Built for Builders</h2>
+        <p class="text-zinc-400 mt-4 max-w-2xl mx-auto fade-up stagger-1">Claude Code is incredible&mdash;but the terminal is a wall for most people. Unleashed tears it down. Whether you write code daily or have never opened a terminal, this is your way in.</p>
       </div>
 
       <div class="grid md:grid-cols-2 gap-8">
@@ -213,7 +258,7 @@
             <h3 class="text-2xl font-bold">For Developers</h3>
           </div>
 
-          <p class="text-zinc-400 mb-6">Stop context switching. Get a native environment that integrates with your existing toolchain.</p>
+          <p class="text-zinc-400 mb-6">Your IDE stays open. Your terminal stays yours. Unleashed runs alongside your workflow&mdash;adding agent swarms for parallel audits, visual git operations, MCP server management, and analytics you can't get from a CLI.</p>
 
           <ul class="space-y-3">
             <li class="flex items-center gap-3 text-sm">
@@ -222,7 +267,7 @@
             </li>
             <li class="flex items-center gap-3 text-sm">
               <svg class="w-5 h-5 text-green-500 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
-              <span>Multi-agent swarms for parallel audits</span>
+              <span>Multi-agent swarms&mdash;run specialized agents in parallel</span>
             </li>
             <li class="flex items-center gap-3 text-sm">
               <svg class="w-5 h-5 text-green-500 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
@@ -244,13 +289,13 @@
         <div class="glass tilt-card rounded-2xl p-8 fade-up stagger-3">
           <div class="tilt-glare"></div>
           <div class="flex items-center gap-4 mb-6">
-            <div class="w-12 h-12 rounded-xl bg-accent/10 flex items-center justify-center">
-              <svg class="w-6 h-6 text-accent" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+            <div class="w-12 h-12 rounded-xl bg-emerald-500/10 flex items-center justify-center">
+              <svg class="w-6 h-6 text-emerald-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
             </div>
             <h3 class="text-2xl font-bold">For Everyone</h3>
           </div>
 
-          <p class="text-zinc-400 mb-6">You don't need to be a coding expert. Just describe what you want and watch it happen.</p>
+          <p class="text-zinc-400 mb-6">You don't need to know what a terminal is. Describe what you want&mdash;"make a website for my bakery" or "organize this spreadsheet"&mdash;and watch Claude build it in front of you. Live preview included.</p>
 
           <ul class="space-y-3">
             <li class="flex items-center gap-3 text-sm">
@@ -271,7 +316,7 @@
             </li>
           </ul>
 
-          <a href="use-cases.html#everyone" class="inline-flex items-center gap-2 mt-6 text-accent hover:text-purple-400 text-sm font-semibold transition-colors">
+          <a href="use-cases.html#everyone" class="inline-flex items-center gap-2 mt-6 text-emerald-500 hover:text-emerald-400 text-sm font-semibold transition-colors">
             See non-developer use cases
             <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
           </a>
@@ -284,8 +329,8 @@
   <section class="section">
     <div class="max-w-6xl mx-auto">
       <div class="text-center mb-16">
-        <h2 class="text-3xl md:text-4xl font-bold fade-up">Powerful Features</h2>
-        <p class="text-zinc-400 mt-4 max-w-2xl mx-auto fade-up stagger-1">Claude Code is Anthropic's AI coding agent. Claude Unleashed gives you a visual interface to harness its full power.</p>
+        <h2 class="text-3xl md:text-4xl font-bold fade-up">Everything You Need</h2>
+        <p class="text-zinc-400 mt-4 max-w-2xl mx-auto fade-up stagger-1">Claude Code is Anthropic's AI coding agent. Unleashed wraps it in a native app so you can actually see what it's doing&mdash;and control it.</p>
       </div>
 
       <!-- Feature Grid -->
@@ -296,7 +341,7 @@
             <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
           </div>
           <h3 class="font-bold text-lg mb-2">Super Agent</h3>
-          <p class="text-sm text-zinc-400">Autonomous task execution. Let Claude work independently with time limits and auto-approval.</p>
+          <p class="text-sm text-zinc-400">Set a task, set a time limit, walk away. Super Agent runs Claude autonomously&mdash;writing code, running tests, fixing errors&mdash;and stops when done or when time's up.</p>
         </div>
 
         <!-- Agent Hive -->
@@ -305,7 +350,7 @@
             <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
           </div>
           <h3 class="font-bold text-lg mb-2">Agent Hive</h3>
-          <p class="text-sm text-zinc-400">Multi-agent swarms. Run security, testing, and refactoring agents in parallel.</p>
+          <p class="text-sm text-zinc-400">Run multiple Claude agents in parallel. Security audit, refactoring, and test generation&mdash;all at once. Each agent gets its own terminal.</p>
         </div>
 
         <!-- Analytics -->
@@ -314,7 +359,7 @@
             <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
           </div>
           <h3 class="font-bold text-lg mb-2">Analytics Dashboard</h3>
-          <p class="text-sm text-zinc-400">Track coding time, sessions, and tokens. Perfect for billing and productivity insights.</p>
+          <p class="text-sm text-zinc-400">See where your time goes. Track sessions, tokens, coding hours, and project activity. Know your peak hours and which projects eat the most tokens.</p>
         </div>
 
         <!-- Split Terminal -->
@@ -323,7 +368,7 @@
             <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 5a1 1 0 011-1h14a1 1 0 011 1v2a1 1 0 01-1 1H5a1 1 0 01-1-1V5zM4 13a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H5a1 1 0 01-1-1v-6zM16 13a1 1 0 011-1h2a1 1 0 011 1v6a1 1 0 01-1 1h-2a1 1 0 01-1-1v-6z"/></svg>
           </div>
           <h3 class="font-bold text-lg mb-2">Split Terminals</h3>
-          <p class="text-sm text-zinc-400">Dual panels with multiple tabs. Watch logs while Claude works. Built-in browser preview.</p>
+          <p class="text-sm text-zinc-400">Watch Claude work in one panel while you run your dev server in another. Side-by-side terminals with tabs, plus a built-in browser preview.</p>
         </div>
 
         <!-- Skills -->
@@ -332,7 +377,7 @@
             <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"/></svg>
           </div>
           <h3 class="font-bold text-lg mb-2">Skills & MCP</h3>
-          <p class="text-sm text-zinc-400">25 skills + 5 agents included. One-click MCP server installation. No JSON editing.</p>
+          <p class="text-sm text-zinc-400">25 skills and 5 agents ship with the app. Install MCP servers with one click&mdash;no JSON editing, no config files, no restarts.</p>
         </div>
 
         <!-- History -->
@@ -341,7 +386,7 @@
             <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
           </div>
           <h3 class="font-bold text-lg mb-2">Conversation History</h3>
-          <p class="text-sm text-zinc-400">Browse, search, and resume any past conversation. Pin favorites. No more lost context.</p>
+          <p class="text-sm text-zinc-400">Every conversation saved, searchable, resumable. Pin important sessions. Pick up exactly where you left off, even weeks later.</p>
         </div>
       </div>
 
@@ -354,29 +399,40 @@
     </div>
   </section>
 
-  <!-- Screenshots -->
+  <!-- Screenshot Showcase -->
   <section class="section bg-surface/50">
     <div class="max-w-6xl mx-auto">
-      <div class="text-center mb-16">
+      <div class="text-center mb-12">
         <h2 class="text-3xl md:text-4xl font-bold fade-up">See It In Action</h2>
-        <p class="text-zinc-400 mt-4 fade-up stagger-1">A glimpse of the Unleashed experience</p>
+        <p class="text-zinc-400 mt-4 fade-up stagger-1">Explore every corner of the Unleashed experience</p>
       </div>
 
-      <div class="grid md:grid-cols-2 gap-8">
-        <div class="fade-up stagger-2">
+      <!-- Tab Buttons -->
+      <div class="flex flex-wrap justify-center gap-2 mb-8 fade-up stagger-2">
+        <button class="tab-btn active" data-tab="dashboard">Dashboard</button>
+        <button class="tab-btn" data-tab="hive">Agent Hive</button>
+        <button class="tab-btn" data-tab="super-agent">Super Agent</button>
+        <button class="tab-btn" data-tab="skills">Skills & Agents</button>
+        <button class="tab-btn" data-tab="history">History</button>
+        <button class="tab-btn" data-tab="tools">Tools Panel</button>
+      </div>
+
+      <!-- Tab Panels -->
+      <div class="fade-up stagger-3">
+        <div class="tab-panel active" id="tab-dashboard">
           <div class="rounded-2xl overflow-hidden border border-white/10 shadow-2xl">
             <div class="window-chrome">
               <div class="window-dot window-dot-red"></div>
               <div class="window-dot window-dot-yellow"></div>
               <div class="window-dot window-dot-green"></div>
-              <span class="ml-4 text-xs text-zinc-500">Home Screen</span>
+              <span class="ml-4 text-xs text-zinc-500">Analytics Dashboard</span>
             </div>
-            <img src="screenshots/home-screen.png" alt="Home Screen" class="w-full">
+            <img src="screenshots/dashboard.png" alt="Analytics Dashboard" class="w-full">
           </div>
-          <p class="text-center text-sm text-zinc-500 mt-4">Beautiful home screen with quick actions</p>
+          <p class="text-center text-sm text-zinc-500 mt-4">Track coding time, tokens, and project activity with real-time analytics</p>
         </div>
 
-        <div class="fade-up stagger-3">
+        <div class="tab-panel" id="tab-hive">
           <div class="rounded-2xl overflow-hidden border border-white/10 shadow-2xl">
             <div class="window-chrome">
               <div class="window-dot window-dot-red"></div>
@@ -384,9 +440,100 @@
               <div class="window-dot window-dot-green"></div>
               <span class="ml-4 text-xs text-zinc-500">Agent Hive</span>
             </div>
-            <img src="screenshots/hive-manager.png" alt="Agent Hive" class="w-full">
+            <img src="screenshots/hive-manager.png" alt="Agent Hive - multi-agent swarm management" class="w-full" loading="lazy">
           </div>
-          <p class="text-center text-sm text-zinc-500 mt-4">Multi-agent swarm management</p>
+          <p class="text-center text-sm text-zinc-500 mt-4">Manage specialized agent swarms for audit, action, design, and more</p>
+        </div>
+
+        <div class="tab-panel" id="tab-super-agent">
+          <div class="rounded-2xl overflow-hidden border border-white/10 shadow-2xl">
+            <div class="window-chrome">
+              <div class="window-dot window-dot-red"></div>
+              <div class="window-dot window-dot-yellow"></div>
+              <div class="window-dot window-dot-green"></div>
+              <span class="ml-4 text-xs text-zinc-500">Super Agent</span>
+            </div>
+            <img src="screenshots/super-agent-modal.png" alt="Super Agent - autonomous task execution" class="w-full" loading="lazy">
+          </div>
+          <p class="text-center text-sm text-zinc-500 mt-4">Launch autonomous tasks with time limits, safety levels, and provider choice</p>
+        </div>
+
+        <div class="tab-panel" id="tab-skills">
+          <div class="rounded-2xl overflow-hidden border border-white/10 shadow-2xl">
+            <div class="window-chrome">
+              <div class="window-dot window-dot-red"></div>
+              <div class="window-dot window-dot-yellow"></div>
+              <div class="window-dot window-dot-green"></div>
+              <span class="ml-4 text-xs text-zinc-500">Skills & Agents</span>
+            </div>
+            <img src="screenshots/skills-agents.png" alt="Skills and agents marketplace" class="w-full" loading="lazy">
+          </div>
+          <p class="text-center text-sm text-zinc-500 mt-4">Browse 25 skills and 5 agents&mdash;search, filter, and deploy in one click</p>
+        </div>
+
+        <div class="tab-panel" id="tab-history">
+          <div class="rounded-2xl overflow-hidden border border-white/10 shadow-2xl">
+            <div class="window-chrome">
+              <div class="window-dot window-dot-red"></div>
+              <div class="window-dot window-dot-yellow"></div>
+              <div class="window-dot window-dot-green"></div>
+              <span class="ml-4 text-xs text-zinc-500">Conversation History</span>
+            </div>
+            <img src="screenshots/super-agent-history.png" alt="Conversation and agent history" class="w-full" loading="lazy">
+          </div>
+          <p class="text-center text-sm text-zinc-500 mt-4">Full conversation and agent history with event logs and search</p>
+        </div>
+
+        <div class="tab-panel" id="tab-tools">
+          <div class="rounded-2xl overflow-hidden border border-white/10 shadow-2xl">
+            <div class="window-chrome">
+              <div class="window-dot window-dot-red"></div>
+              <div class="window-dot window-dot-yellow"></div>
+              <div class="window-dot window-dot-green"></div>
+              <span class="ml-4 text-xs text-zinc-500">Tools Panel</span>
+            </div>
+            <img src="screenshots/tools-panel.png" alt="Tools and MCP panel" class="w-full" loading="lazy">
+          </div>
+          <p class="text-center text-sm text-zinc-500 mt-4">Quick access to tools, agents, and skills from any screen</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- What You Can Build -->
+  <section class="section">
+    <div class="max-w-6xl mx-auto">
+      <div class="text-center mb-16">
+        <h2 class="text-3xl md:text-4xl font-bold fade-up">What You Can Build</h2>
+        <p class="text-zinc-400 mt-4 max-w-2xl mx-auto fade-up stagger-1">If you can describe it, Claude can build it. Here's what people are using Unleashed for.</p>
+      </div>
+
+      <div class="grid md:grid-cols-3 gap-6">
+        <!-- Full-Stack Apps -->
+        <div class="glass rounded-2xl p-8 fade-up stagger-1">
+          <div class="feature-icon bg-primary/10 text-primary">
+            <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/></svg>
+          </div>
+          <h3 class="font-bold text-lg mb-2">Full-Stack Apps</h3>
+          <p class="text-sm text-zinc-400">Go from idea to deployed app. Unleashed handles the code, tests, git, and deployment&mdash;you just describe what you want.</p>
+        </div>
+
+        <!-- Security Audits -->
+        <div class="glass rounded-2xl p-8 fade-up stagger-2">
+          <div class="feature-icon bg-emerald-500/10 text-emerald-500">
+            <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg>
+          </div>
+          <h3 class="font-bold text-lg mb-2">Security Audits</h3>
+          <p class="text-sm text-zinc-400">Deploy agent swarms to scan your codebase. Find vulnerabilities, fix them, and verify the fixes&mdash;all in one session.</p>
+        </div>
+
+        <!-- Automate Anything -->
+        <div class="glass rounded-2xl p-8 fade-up stagger-3">
+          <div class="feature-icon bg-green-500/10 text-green-500">
+            <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+          </div>
+          <h3 class="font-bold text-lg mb-2">Automate Anything</h3>
+          <p class="text-sm text-zinc-400">Scrape websites, process spreadsheets, generate reports, build dashboards. If you can describe it, Claude can build it.</p>
         </div>
       </div>
     </div>
@@ -424,21 +571,21 @@
   <!-- Final CTA -->
   <section class="section section-depth">
     <div class="max-w-4xl mx-auto text-center">
-      <h2 class="text-4xl md:text-5xl font-bold mb-6 fade-up">Ready to code with superpowers?</h2>
-      <p class="text-xl text-zinc-400 mb-10 fade-up stagger-1">Stop wrestling with the terminal. Start building with Claude Unleashed.</p>
+      <h2 class="text-4xl md:text-5xl font-bold mb-6 fade-up">Stop copy-pasting between your terminal and everything else.</h2>
+      <p class="text-xl text-zinc-400 mb-10 fade-up stagger-1">Unleashed is free, open source, and installs in under a minute. Give Claude Code the interface it deserves.</p>
 
       <div class="flex flex-col sm:flex-row justify-center gap-4 fade-up stagger-2">
         <a href="https://github.com/OneWave-AI/ClaudeCodeUnleashed/releases" class="btn btn-primary btn-xl glow-primary">
           <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.81-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M13 3.5c.73-.83 1.94-1.46 2.94-1.5.13 1.17-.34 2.35-1.04 3.19-.69.85-1.83 1.51-2.95 1.42-.15-1.15.41-2.35 1.05-3.11z"/></svg>
-          Download for macOS
+          Download Free
         </a>
-        <a href="https://github.com/OneWave-AI/ClaudeCodeUnleashed/releases" class="btn btn-secondary btn-xl">
-          <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M12.504 0c-.155 0-.311.002-.465.006C7.622.069 3.67 2.754 1.727 6.619.168 9.782-.076 13.509.553 16.95c.251 1.374.63 2.717 1.144 3.998.098.245.202.486.31.725.012.027.023.055.036.082.048.111.097.221.148.33.089.19.18.378.276.564.083.161.169.319.257.477.032.058.065.115.098.173.073.127.147.252.223.377.04.065.081.129.122.193.083.13.167.258.253.385.043.064.086.127.13.19.065.092.131.183.198.273.095.127.191.252.29.376.026.032.051.065.077.097.1.122.202.242.306.36.09.101.18.2.273.298.052.056.105.11.158.165.096.098.193.194.291.289.06.058.12.115.181.171.089.082.179.162.269.241.074.065.148.128.223.191.075.063.15.125.227.185.091.072.183.142.276.21.054.04.108.08.163.119.12.085.241.167.364.247.023.015.045.031.068.046.135.087.271.171.409.252.019.011.037.023.056.034.145.084.291.164.439.241l.034.018c.158.081.317.159.478.232.036.016.073.032.109.048.128.056.257.11.387.16.062.025.125.048.188.071.112.041.224.08.337.117.076.025.152.049.229.072.1.03.2.058.301.084.088.023.177.045.266.065.088.02.176.039.265.056.099.019.198.036.298.052.077.012.154.024.232.034.114.014.228.026.343.036.062.005.124.011.186.015.129.009.258.015.388.019.043.001.086.003.13.004.155.003.31.004.466.004 5.427 0 10.032-3.414 11.754-8.195.862-2.394.987-5.071.356-7.59-.63-2.518-2.034-4.793-3.975-6.472C17.852 1.612 15.247.396 12.504 0z"/></svg>
-          Linux / Chromebook
+        <a href="https://github.com/OneWave-AI/ClaudeCodeUnleashed" class="btn btn-secondary btn-xl">
+          <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/></svg>
+          View on GitHub
         </a>
       </div>
       <p class="text-xs text-zinc-500 mt-4">
-        <span class="text-zinc-400">Chromebook:</span> Enable Linux in Settings → Developers first
+        Works on <span class="text-zinc-400">macOS</span>, <span class="text-zinc-400">Linux</span>, and <span class="text-zinc-400">Chromebook</span>
       </p>
     </div>
   </section>
@@ -464,6 +611,18 @@
       </div>
     </div>
   </footer>
+
+  <!-- Sticky Bottom CTA -->
+  <div id="sticky-cta" class="sticky-cta">
+    <div class="bg-surface/95 backdrop-blur-xl border-t border-white/10 px-4 py-3">
+      <div class="max-w-6xl mx-auto flex items-center justify-between">
+        <p class="text-sm text-zinc-400 hidden sm:block">Free & open source. Ready in 60 seconds.</p>
+        <a href="https://github.com/OneWave-AI/ClaudeCodeUnleashed/releases" class="btn btn-primary text-sm">
+          Download Unleashed
+        </a>
+      </div>
+    </div>
+  </div>
 
   <script>
     // Mobile menu toggle
@@ -506,7 +665,6 @@
 
         card.style.transform = `perspective(1000px) rotateX(${rotateX}deg) rotateY(${rotateY}deg) translateY(-6px)`;
 
-        // Update glare position
         const glare = card.querySelector('.tilt-glare');
         if (glare) {
           glare.style.setProperty('--glare-x', `${(x / rect.width) * 100}%`);
@@ -518,6 +676,35 @@
         card.style.transform = 'perspective(1000px) rotateX(0) rotateY(0) translateY(0)';
       });
     });
+
+    // Tab switching for screenshot showcase
+    document.querySelectorAll('.tab-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+        document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+        btn.classList.add('active');
+        document.getElementById('tab-' + btn.dataset.tab).classList.add('active');
+      });
+    });
+
+    // Scroll progress bar
+    const scrollProgress = document.getElementById('scroll-progress');
+    window.addEventListener('scroll', () => {
+      const pct = (window.scrollY / (document.body.scrollHeight - window.innerHeight)) * 100;
+      scrollProgress.style.width = pct + '%';
+    }, { passive: true });
+
+    // Sticky CTA bar - show after scrolling past hero
+    const stickyCta = document.getElementById('sticky-cta');
+    const heroSection = document.getElementById('hero');
+    const ctaObserver = new IntersectionObserver(([entry]) => {
+      if (entry.isIntersecting) {
+        stickyCta.classList.remove('visible');
+      } else {
+        stickyCta.classList.add('visible');
+      }
+    }, { threshold: 0 });
+    ctaObserver.observe(heroSection);
   </script>
 </body>
 </html>

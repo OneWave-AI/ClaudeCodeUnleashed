@@ -15,8 +15,8 @@
   --color-primary-hover: #FF6A3D;
   --color-primary-glow: rgba(255, 79, 24, 0.4);
 
-  --color-accent: #A855F7;
-  --color-accent-hover: #9333EA;
+  --color-accent: #10B981;
+  --color-accent-hover: #059669;
 
   --color-success: #22C55E;
   --color-error: #EF4444;
@@ -182,7 +182,7 @@ body {
 }
 
 .glow-accent {
-  box-shadow: 0 0 60px -15px rgba(168,85,247,0.4);
+  box-shadow: 0 0 60px -15px rgba(16,185,129,0.4);
 }
 
 /* ================================
@@ -240,7 +240,7 @@ body {
   left: -50%;
   background:
     radial-gradient(ellipse 80% 50% at 20% 40%, rgba(255,79,24,0.15) 0%, transparent 50%),
-    radial-gradient(ellipse 60% 40% at 70% 60%, rgba(168,85,247,0.12) 0%, transparent 50%),
+    radial-gradient(ellipse 60% 40% at 70% 60%, rgba(16,185,129,0.12) 0%, transparent 50%),
     radial-gradient(ellipse 70% 50% at 50% 30%, rgba(255,120,50,0.1) 0%, transparent 50%);
   animation: aurora-drift 20s ease-in-out infinite;
 }
@@ -284,7 +284,7 @@ body {
 .orb-2 {
   width: 350px;
   height: 350px;
-  background: radial-gradient(circle, rgba(168,85,247,0.2) 0%, transparent 70%);
+  background: radial-gradient(circle, rgba(16,185,129,0.2) 0%, transparent 70%);
   top: 20%;
   right: 15%;
   animation-delay: -5s;
@@ -304,7 +304,7 @@ body {
 .orb-4 {
   width: 250px;
   height: 250px;
-  background: radial-gradient(circle, rgba(139,92,246,0.15) 0%, transparent 70%);
+  background: radial-gradient(circle, rgba(5,150,105,0.15) 0%, transparent 70%);
   bottom: 30%;
   right: 20%;
   animation-delay: -3s;
@@ -325,7 +325,7 @@ body {
   left: 0;
   right: 0;
   height: 2px;
-  background: linear-gradient(90deg, transparent, rgba(255,79,24,0.3), rgba(168,85,247,0.3), transparent);
+  background: linear-gradient(90deg, transparent, rgba(255,79,24,0.3), rgba(16,185,129,0.3), transparent);
   animation: wave-pulse 4s ease-in-out infinite;
 }
 
@@ -507,7 +507,7 @@ body {
 }
 
 .gradient-text-accent {
-  background: linear-gradient(135deg, var(--color-accent), #C084FC, var(--color-accent));
+  background: linear-gradient(135deg, var(--color-accent), #34D399, var(--color-accent));
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
@@ -537,7 +537,7 @@ body {
 }
 
 .feature-icon-accent {
-  background: rgba(168, 85, 247, 0.1);
+  background: rgba(16, 185, 129, 0.1);
   color: var(--color-accent);
 }
 
@@ -658,4 +658,135 @@ details[open] summary .chevron {
 
 .text-balance {
   text-wrap: balance;
+}
+
+/* ================================
+   Tab Navigation (Screenshots)
+   ================================ */
+.tab-btn {
+  padding: 0.5rem 1.25rem;
+  border-radius: 9999px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--color-text-muted);
+  background: rgba(255,255,255,0.05);
+  border: 1px solid transparent;
+  cursor: pointer;
+  transition: all var(--transition-base);
+  font-family: var(--font-sans);
+}
+
+.tab-btn:hover {
+  color: var(--color-text);
+  background: rgba(255,255,255,0.08);
+}
+
+.tab-btn.active {
+  color: #10B981;
+  background: rgba(16,185,129,0.1);
+  border-color: rgba(16,185,129,0.3);
+}
+
+.tab-panel {
+  display: none;
+}
+
+.tab-panel.active {
+  display: block;
+  animation: tabFadeIn 0.3s ease;
+}
+
+@keyframes tabFadeIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* ================================
+   Scroll Progress Bar
+   ================================ */
+.scroll-progress {
+  position: fixed;
+  top: 0;
+  left: 0;
+  height: 2px;
+  width: 0%;
+  background: linear-gradient(90deg, var(--color-primary), #10B981);
+  z-index: 100;
+  transition: width 80ms linear;
+}
+
+/* ================================
+   Sticky CTA Bar
+   ================================ */
+.sticky-cta {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 40;
+  transform: translateY(100%);
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.sticky-cta.visible {
+  transform: translateY(0);
+}
+
+/* ================================
+   Step Cards (How It Works)
+   ================================ */
+.step-number {
+  width: 3rem;
+  height: 3rem;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 1.125rem;
+  margin-bottom: 1.25rem;
+  flex-shrink: 0;
+}
+
+.step-connector {
+  display: none;
+}
+
+@media (min-width: 768px) {
+  .step-connector {
+    display: block;
+    position: absolute;
+    top: 1.5rem;
+    left: calc(100% + 0.5rem);
+    width: calc(100% - 1rem);
+    height: 2px;
+    background: linear-gradient(90deg, rgba(255,79,24,0.3), rgba(16,185,129,0.3));
+  }
+}
+
+/* ================================
+   Floating Particles
+   ================================ */
+.particle {
+  position: absolute;
+  width: 2px;
+  height: 2px;
+  background: rgba(16,185,129,0.4);
+  border-radius: 50%;
+  animation: particle-rise linear infinite;
+  pointer-events: none;
+}
+
+@keyframes particle-rise {
+  0% { transform: translateY(0) translateX(0); opacity: 0; }
+  10% { opacity: 1; }
+  90% { opacity: 0.6; }
+  100% { transform: translateY(-100vh) translateX(30px); opacity: 0; }
+}
+
+/* ================================
+   Feature card hover enhancement
+   ================================ */
+.feature-card:hover {
+  border-color: rgba(16,185,129,0.15);
 }
