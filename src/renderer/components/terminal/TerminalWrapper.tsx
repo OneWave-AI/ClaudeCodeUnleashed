@@ -28,12 +28,14 @@ import {
   Brain,
   Hammer,
   Database,
-  LayoutGrid
+  LayoutGrid,
+  ListOrdered
 } from 'lucide-react'
 
 import Terminal, { TerminalRef } from './Terminal'
 import PreviewBar from './PreviewBar'
 import PlanPanel, { PlanItem } from './PlanPanel'
+import TaskTimeline, { TimelineAction, ActionType, ActionStatus } from './TaskTimeline'
 import VoiceInput from './VoiceInput'
 import { useAppStore } from '../../store'
 import { CLI_PROVIDERS } from '../../../shared/providers'
@@ -131,6 +133,12 @@ export default function TerminalWrapper({
   const [showUploadMenu, setShowUploadMenu] = useState(false)
   const uploadMenuRef = useRef<HTMLDivElement>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
+
+  // Task timeline state
+  const [timelineActions, setTimelineActions] = useState<TimelineAction[]>([])
+  const [showTimeline, setShowTimeline] = useState(false)
+  const [timelineCollapsed, setTimelineCollapsed] = useState(false)
+  const currentActionRef = useRef<string | null>(null)
 
   // Claude status
   const [claudeStatus, setClaudeStatus] = useState<'working' | 'waiting' | 'idle'>('idle')
@@ -1156,6 +1164,121 @@ export default function TerminalWrapper({
     e.target.value = ''
   }, [activeTerminalId])
 
+  // Timeline action tracking - with debouncing
+  const lastActionRef = useRef<{ type: ActionType; title: string; time: number } | null>(null)
+  const DEBOUNCE_MS = 1500
+
+  const addTimelineAction = useCallback((
+    type: ActionType,
+    title: string,
+    options?: {
+      description?: string
+      file?: string
+      details?: string
+      status?: ActionStatus
+    }
+  ) => {
+    const now = Date.now()
+    if (lastActionRef.current) {
+      const { type: lastType, title: lastTitle, time: lastTime } = lastActionRef.current
+      if (lastType === type && lastTitle === title && (now - lastTime) < DEBOUNCE_MS) {
+        return null
+      }
+    }
+
+    const id = `action-${now}-${Math.random().toString(36).slice(2, 7)}`
+    const action: TimelineAction = {
+      id,
+      type,
+      title,
+      description: options?.description,
+      file: options?.file,
+      details: options?.details,
+      timestamp: new Date(),
+      status: options?.status || 'running'
+    }
+    setTimelineActions(prev => [...prev, action])
+    currentActionRef.current = id
+    lastActionRef.current = { type, title, time: now }
+    return id
+  }, [])
+
+  const completeTimelineAction = useCallback((id: string, success: boolean = true, details?: string) => {
+    setTimelineActions(prev => prev.map(action => {
+      if (action.id !== id) return action
+      return {
+        ...action,
+        status: success ? 'success' : 'error',
+        duration: Date.now() - action.timestamp.getTime(),
+        details: details || action.details
+      }
+    }))
+    if (currentActionRef.current === id) {
+      currentActionRef.current = null
+    }
+  }, [])
+
+  const clearTimeline = useCallback(() => {
+    setTimelineActions([])
+    currentActionRef.current = null
+  }, [])
+
+  // Parse terminal output for Claude actions - enhanced with more patterns
+  const parseClaudeAction = useCallback((data: string) => {
+    const toolPatterns = [
+      // Spinner-prefixed tool invocations
+      { pattern: /⏳.*?(?:Read|Reading)\s+([^\s\n]+)/i, type: 'read' as ActionType, getTitle: (m: RegExpMatchArray) => `Reading ${m[1].split('/').pop()}`, getFile: (m: RegExpMatchArray) => m[1] },
+      { pattern: /⏳.*?(?:Write|Writing)\s+([^\s\n]+)/i, type: 'write' as ActionType, getTitle: (m: RegExpMatchArray) => `Writing ${m[1].split('/').pop()}`, getFile: (m: RegExpMatchArray) => m[1] },
+      { pattern: /⏳.*?(?:Edit|Editing)\s+([^\s\n]+)/i, type: 'edit' as ActionType, getTitle: (m: RegExpMatchArray) => `Editing ${m[1].split('/').pop()}`, getFile: (m: RegExpMatchArray) => m[1] },
+      { pattern: /⏳.*?Bash\s*(?:\(([^)]*)\))?/i, type: 'bash' as ActionType, getTitle: (m: RegExpMatchArray) => m[1] ? `Running: ${m[1].slice(0, 40)}` : 'Running command' },
+      { pattern: /⏳.*?(?:Glob|Grep)\s*(?:\(([^)]*)\))?/i, type: 'search' as ActionType, getTitle: (m: RegExpMatchArray) => m[1] ? `Searching: ${m[1].slice(0, 40)}` : 'Searching files' },
+      { pattern: /⏳.*?(?:WebFetch|WebSearch)/i, type: 'browser' as ActionType, getTitle: () => 'Fetching web' },
+      { pattern: /⏳.*?TodoWrite/i, type: 'tool' as ActionType, getTitle: () => 'Updating tasks' },
+      { pattern: /⏳.*?Task\s*(?:\(([^)]*)\))?/i, type: 'tool' as ActionType, getTitle: (m: RegExpMatchArray) => m[1] ? `Agent: ${m[1].slice(0, 40)}` : 'Running agent' },
+      { pattern: /⏳.*?(?:NotebookEdit|NotebookRead)/i, type: 'tool' as ActionType, getTitle: () => 'Editing notebook' },
+      // Line-start tool names
+      { pattern: /^(?:│\s*)?Read\s+(\/[^\s]+)/m, type: 'read' as ActionType, getTitle: (m: RegExpMatchArray) => `Reading ${m[1].split('/').pop()}`, getFile: (m: RegExpMatchArray) => m[1] },
+      { pattern: /^(?:│\s*)?Write\s+(\/[^\s]+)/m, type: 'write' as ActionType, getTitle: (m: RegExpMatchArray) => `Writing ${m[1].split('/').pop()}`, getFile: (m: RegExpMatchArray) => m[1] },
+      { pattern: /^(?:│\s*)?Edit\s+(\/[^\s]+)/m, type: 'edit' as ActionType, getTitle: (m: RegExpMatchArray) => `Editing ${m[1].split('/').pop()}`, getFile: (m: RegExpMatchArray) => m[1] },
+      { pattern: /^(?:│\s*)?Bash\s*\(([^)]*)\)/m, type: 'bash' as ActionType, getTitle: (m: RegExpMatchArray) => `Running: ${m[1].slice(0, 50)}` },
+      // Test results
+      { pattern: /(\d+)\s+(?:tests?\s+)?passed/i, type: 'tool' as ActionType, getTitle: (m: RegExpMatchArray) => `${m[1]} tests passed`, getFile: undefined },
+      { pattern: /(\d+)\s+(?:tests?\s+)?failed/i, type: 'tool' as ActionType, getTitle: (m: RegExpMatchArray) => `${m[1]} tests failed`, getFile: undefined },
+      // Git operations
+      { pattern: /^(?:│\s*)?(?:git\s+(?:commit|push|pull|merge|checkout|branch))\b/im, type: 'bash' as ActionType, getTitle: (m: RegExpMatchArray) => `Git: ${m[0].trim().slice(0, 40)}` },
+      // npm/package operations
+      { pattern: /(?:npm|yarn|pnpm|bun)\s+(?:install|build|run|test)\b/i, type: 'bash' as ActionType, getTitle: (m: RegExpMatchArray) => m[0].trim().slice(0, 50) },
+    ]
+
+    const successPattern = /✓|✔|Done|Completed successfully|Successfully/
+    const errorPattern = /✗|✘|Error:|Failed:|error\[/
+
+    for (const { pattern, type, getTitle, getFile } of toolPatterns) {
+      const match = data.match(pattern)
+      if (match) {
+        if (currentActionRef.current) {
+          const isSuccess = successPattern.test(data)
+          const isError = errorPattern.test(data)
+          if (isSuccess || isError) {
+            completeTimelineAction(currentActionRef.current, isSuccess)
+          }
+        }
+        addTimelineAction(type, getTitle(match), {
+          file: getFile?.(match)
+        })
+        return
+      }
+    }
+
+    if (currentActionRef.current) {
+      if (successPattern.test(data)) {
+        completeTimelineAction(currentActionRef.current, true)
+      } else if (errorPattern.test(data)) {
+        completeTimelineAction(currentActionRef.current, false)
+      }
+    }
+  }, [addTimelineAction, completeTimelineAction])
+
   // Update browser tab URL
   const updateBrowserUrl = useCallback((panelId: string, tabId: string, url: string) => {
     setPanels(prev => prev.map(panel => {
@@ -1437,6 +1560,7 @@ export default function TerminalWrapper({
                   if (tab.id === panel.activeTabId) {
                     detectClaudeStatus(data)
                     detectHtmlFile(data)
+                    parseClaudeAction(data)
                     trackTokensAndCost(data)
                     parsePlanItems(data)
                     detectContextUsage(data)
@@ -1590,7 +1714,7 @@ export default function TerminalWrapper({
       />
 
       {/* Panels Container */}
-      <div className={`flex-1 relative ${layoutMode === 'grid' ? 'grid grid-cols-3 grid-rows-2 gap-px bg-[#1a1a1a]' : 'flex'}`}>
+      <div className={`flex-1 min-h-0 relative ${layoutMode === 'grid' ? 'grid grid-cols-3 grid-rows-2 gap-px bg-[#1a1a1a]' : 'flex'}`}>
         {/* Drop zone indicators when dragging */}
         {draggedTab && panels.length < 2 && layoutMode === 'default' && (
           <>
@@ -1709,6 +1833,22 @@ export default function TerminalWrapper({
               </div>
             </div>
           </div>
+        )}
+
+        {/* Task Timeline Panel */}
+        {showTimeline && (
+          <TaskTimeline
+            actions={timelineActions}
+            onClear={clearTimeline}
+            isCollapsed={timelineCollapsed}
+            onToggleCollapse={() => {
+              if (timelineCollapsed) {
+                setTimelineCollapsed(false)
+              } else {
+                setShowTimeline(false)
+              }
+            }}
+          />
         )}
 
         {/* Plan Panel */}
@@ -1851,6 +1991,30 @@ export default function TerminalWrapper({
 
         {/* Center: Actions */}
         <div className="flex items-center gap-0.5">
+          <button
+            onClick={() => {
+              if (showTimeline) {
+                setShowTimeline(false)
+                setTimelineCollapsed(false)
+              } else {
+                setShowTimeline(true)
+              }
+            }}
+            className={`p-1.5 rounded-md transition-all relative ${
+              showTimeline
+                ? 'bg-[#cc785c]/15 text-[#cc785c]'
+                : 'text-gray-500 hover:text-gray-300 hover:bg-white/[0.06]'
+            }`}
+            title="Activity Timeline"
+          >
+            <ListOrdered size={13} />
+            {timelineActions.length > 0 && (
+              <span className="absolute -top-0.5 -right-0.5 w-3.5 h-3.5 bg-[#cc785c] text-white text-[8px] font-bold rounded-full flex items-center justify-center">
+                {timelineActions.length > 99 ? '+' : timelineActions.length}
+              </span>
+            )}
+          </button>
+
           <VoiceInput
             onTranscript={handleVoiceTranscript}
             disabled={!activeTerminalId}

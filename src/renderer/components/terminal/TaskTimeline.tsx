@@ -69,6 +69,20 @@ const ACTION_ICONS: Record<ActionType, typeof Clock> = {
   message: MessageSquare
 }
 
+// Labels for each action type
+const ACTION_LABELS: Record<ActionType, string> = {
+  read: 'Read',
+  write: 'Write',
+  edit: 'Edit',
+  bash: 'Command',
+  search: 'Search',
+  git: 'Git',
+  browser: 'Web',
+  tool: 'Tool',
+  thinking: 'Thinking',
+  message: 'Message'
+}
+
 // Colors matching app's palette
 const ACTION_COLORS: Record<ActionType, string> = {
   read: '#60a5fa',     // blue-400
@@ -100,6 +114,14 @@ const getRelativeTime = (date: Date): string => {
   return date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false })
 }
 
+// Live elapsed for running actions
+const getElapsed = (date: Date): string => {
+  const diff = Date.now() - date.getTime()
+  if (diff < 1000) return '<1s'
+  if (diff < 60000) return `${Math.floor(diff / 1000)}s`
+  return `${Math.floor(diff / 60000)}m ${Math.floor((diff % 60000) / 1000)}s`
+}
+
 export default function TaskTimeline({
   actions,
   onClear,
@@ -120,11 +142,12 @@ export default function TaskTimeline({
     }
   }, [actions.length])
 
-  // Update relative times
+  // Update relative times + running elapsed every second
   useEffect(() => {
-    const interval = setInterval(() => forceUpdate(n => n + 1), 10000)
+    const hasRunning = actions.some(a => a.status === 'running')
+    const interval = setInterval(() => forceUpdate(n => n + 1), hasRunning ? 1000 : 10000)
     return () => clearInterval(interval)
-  }, [])
+  }, [actions])
 
   // Filter actions
   const filteredActions = filter === 'all'
@@ -135,12 +158,13 @@ export default function TaskTimeline({
   const runningCount = actions.filter(a => a.status === 'running').length
   const successCount = actions.filter(a => a.status === 'success').length
   const errorCount = actions.filter(a => a.status === 'error').length
+  const totalDuration = actions.reduce((sum, a) => sum + (a.duration || 0), 0)
 
   // Get unique action types for filter
   const actionTypes = [...new Set(actions.map(a => a.type))]
 
   return (
-    <div className="w-64 h-full flex flex-col bg-[#0d0d0d] border-l border-white/[0.06] relative">
+    <div className="w-72 h-full min-h-0 flex flex-col bg-[#0d0d0d] border-l border-white/[0.06] relative">
       {/* Subtle gradient accent */}
       <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-radial from-[#cc785c]/5 to-transparent pointer-events-none" />
 
@@ -177,7 +201,7 @@ export default function TaskTimeline({
         </div>
       </div>
 
-      {/* Stats summary - only show if there are actions */}
+      {/* Stats summary */}
       {actions.length > 0 && (
         <div className="flex items-center justify-between px-3 py-2 border-b border-white/[0.06] bg-white/[0.01]">
           <div className="flex items-center gap-3">
@@ -197,6 +221,12 @@ export default function TaskTimeline({
               <div className="flex items-center gap-1">
                 <XCircle size={10} className="text-red-400" />
                 <span className="text-[10px] text-red-400">{errorCount}</span>
+              </div>
+            )}
+            {totalDuration > 0 && (
+              <div className="flex items-center gap-1">
+                <Clock size={10} className="text-gray-500" />
+                <span className="text-[10px] text-gray-500">{formatDuration(totalDuration)}</span>
               </div>
             )}
           </div>
@@ -246,7 +276,8 @@ export default function TaskTimeline({
                 }`}
               >
                 <Icon size={9} style={{ color }} />
-                <span>{count}</span>
+                <span>{ACTION_LABELS[type]}</span>
+                <span className="text-gray-600">{count}</span>
               </button>
             )
           })}
@@ -261,7 +292,7 @@ export default function TaskTimeline({
               <Clock size={24} className="text-gray-700" />
             </div>
             <p className="text-xs text-gray-500 mb-1">No activity yet</p>
-            <p className="text-[10px] text-gray-600">Claude's actions will appear here</p>
+            <p className="text-[10px] text-gray-600">Claude's actions will appear here as it works</p>
           </div>
         ) : (
           <div className="py-2">
@@ -271,6 +302,7 @@ export default function TaskTimeline({
               const isExpanded = expandedId === action.id
               const isLast = index === filteredActions.length - 1
               const hasDetails = action.details || action.file
+              const isRunning = action.status === 'running'
 
               return (
                 <div key={action.id} className="relative px-3">
@@ -284,34 +316,49 @@ export default function TaskTimeline({
 
                   {/* Action item */}
                   <div
-                    className={`relative flex gap-2.5 py-2 rounded-lg transition-colors ${
+                    className={`relative flex gap-2.5 py-2 px-1 rounded-lg transition-colors ${
                       hasDetails ? 'cursor-pointer' : ''
-                    } ${isExpanded ? 'bg-white/[0.03]' : hasDetails ? 'hover:bg-white/[0.02]' : ''}`}
+                    } ${isExpanded ? 'bg-white/[0.03]' : hasDetails ? 'hover:bg-white/[0.02]' : ''} ${
+                      isRunning ? 'bg-white/[0.01]' : ''
+                    }`}
                     onClick={() => hasDetails && setExpandedId(isExpanded ? null : action.id)}
                   >
                     {/* Icon with status ring */}
                     <div className="relative flex-shrink-0">
                       <div
-                        className="w-5 h-5 rounded-md flex items-center justify-center"
+                        className={`w-5 h-5 rounded-md flex items-center justify-center ${isRunning ? 'ring-1 ring-amber-400/30' : ''}`}
                         style={{ backgroundColor: `${color}15` }}
                       >
-                        <Icon size={10} style={{ color }} />
+                        {isRunning ? (
+                          <Loader2 size={10} style={{ color }} className="animate-spin" />
+                        ) : (
+                          <Icon size={10} style={{ color }} />
+                        )}
                       </div>
                       {/* Status indicator dot */}
-                      <div className={`absolute -bottom-0.5 -right-0.5 w-2 h-2 rounded-full border border-[#0d0d0d] ${
-                        action.status === 'running' ? 'bg-amber-400 animate-pulse' :
-                        action.status === 'success' ? 'bg-green-400' :
-                        action.status === 'error' ? 'bg-red-400' :
-                        'bg-gray-500'
-                      }`} />
+                      {!isRunning && (
+                        <div className={`absolute -bottom-0.5 -right-0.5 w-2 h-2 rounded-full border border-[#0d0d0d] ${
+                          action.status === 'success' ? 'bg-green-400' :
+                          action.status === 'error' ? 'bg-red-400' :
+                          'bg-gray-500'
+                        }`} />
+                      )}
                     </div>
 
                     {/* Content */}
                     <div className="flex-1 min-w-0 pt-0.5">
                       <div className="flex items-start justify-between gap-2">
-                        <span className="text-[11px] text-gray-200 leading-tight">
-                          {action.title}
-                        </span>
+                        <div className="min-w-0">
+                          <span className="text-[11px] text-gray-200 leading-tight block">
+                            {action.title}
+                          </span>
+                          {/* Show file path inline when present */}
+                          {action.file && !isExpanded && (
+                            <span className="text-[9px] text-gray-600 font-mono truncate block mt-0.5">
+                              {action.file.length > 40 ? '...' + action.file.slice(-37) : action.file}
+                            </span>
+                          )}
+                        </div>
                         {hasDetails && (
                           <ChevronRight
                             size={10}
@@ -332,13 +379,24 @@ export default function TaskTimeline({
                         <span className="text-[9px] text-gray-600">
                           {getRelativeTime(action.timestamp)}
                         </span>
-                        {action.duration !== undefined && action.duration > 0 && (
+                        {isRunning && (
                           <>
-                            <span className="text-gray-700">•</span>
-                            <span className="text-[9px] text-gray-600">
+                            <span className="text-gray-700">-</span>
+                            <span className="text-[9px] text-amber-400/70">
+                              {getElapsed(action.timestamp)} elapsed
+                            </span>
+                          </>
+                        )}
+                        {!isRunning && action.duration !== undefined && action.duration > 0 && (
+                          <>
+                            <span className="text-gray-700">-</span>
+                            <span className={`text-[9px] ${action.status === 'error' ? 'text-red-400/70' : 'text-gray-600'}`}>
                               {formatDuration(action.duration)}
                             </span>
                           </>
+                        )}
+                        {action.status === 'error' && (
+                          <span className="text-[9px] text-red-400 font-medium">failed</span>
                         )}
                       </div>
 
@@ -367,10 +425,13 @@ export default function TaskTimeline({
         )}
       </div>
 
-      {/* Footer hint */}
+      {/* Footer */}
       {actions.length > 0 && (
         <div className="px-3 py-2 border-t border-white/[0.06] text-[9px] text-gray-600 text-center">
-          Click actions to expand details
+          {filteredActions.length !== actions.length
+            ? `Showing ${filteredActions.length} of ${actions.length} actions`
+            : 'Click actions to expand details'
+          }
         </div>
       )}
     </div>
