@@ -790,3 +790,45 @@ details[open] summary .chevron {
 .feature-card:hover {
   border-color: rgba(16,185,129,0.15);
 }
+
+/* ================================
+   Screenshot Labels
+   ================================ */
+.ss-label {
+  position: absolute;
+  padding: 0.25rem 0.625rem;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  font-family: var(--font-sans);
+  color: white;
+  background: rgba(0,0,0,0.7);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border: 1px solid rgba(255,255,255,0.15);
+  border-radius: 9999px;
+  white-space: nowrap;
+  pointer-events: none;
+  opacity: 0;
+  transform: translateY(4px);
+  transition: opacity 0.3s ease, transform 0.3s ease;
+  z-index: 10;
+  letter-spacing: 0.02em;
+  line-height: 1.4;
+}
+
+.tab-panel.active .ss-label {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.tab-panel.active .ss-label:nth-child(2) { transition-delay: 0.15s; }
+.tab-panel.active .ss-label:nth-child(3) { transition-delay: 0.25s; }
+.tab-panel.active .ss-label:nth-child(4) { transition-delay: 0.35s; }
+.tab-panel.active .ss-label:nth-child(5) { transition-delay: 0.45s; }
+
+@media (max-width: 640px) {
+  .ss-label {
+    font-size: 0.5625rem;
+    padding: 0.2rem 0.5rem;
+  }
+}

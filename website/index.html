@@ -454,118 +454,166 @@
       <!-- Tab Panels -->
       <div class="fade-up stagger-3">
         <div class="tab-panel active" id="tab-terminal">
-          <div class="rounded-2xl overflow-hidden border border-white/10 shadow-2xl">
+          <div class="rounded-2xl overflow-hidden border border-white/10 shadow-2xl relative">
             <div class="window-chrome">
               <div class="window-dot window-dot-red"></div>
               <div class="window-dot window-dot-yellow"></div>
               <div class="window-dot window-dot-green"></div>
               <span class="ml-4 text-xs text-zinc-500">Terminal</span>
             </div>
-            <img src="screenshots/terminal-view.png" alt="Terminal with Claude Code, file explorer, and status bar" class="w-full">
+            <div class="relative">
+              <img src="screenshots/terminal-view.png" alt="Terminal with Claude Code, file explorer, and status bar" class="w-full">
+              <span class="ss-label" style="top:8%;left:2%">File Explorer</span>
+              <span class="ss-label" style="top:4%;left:38%">Terminal Tabs</span>
+              <span class="ss-label" style="bottom:4%;left:30%">Model Selector</span>
+              <span class="ss-label" style="bottom:4%;right:8%">Session Stats</span>
+            </div>
           </div>
           <p class="text-center text-sm text-zinc-500 mt-4">Full terminal with file explorer, model selector, plan/work toggle, and session tracking</p>
         </div>
 
         <div class="tab-panel" id="tab-split">
-          <div class="rounded-2xl overflow-hidden border border-white/10 shadow-2xl">
+          <div class="rounded-2xl overflow-hidden border border-white/10 shadow-2xl relative">
             <div class="window-chrome">
               <div class="window-dot window-dot-red"></div>
               <div class="window-dot window-dot-yellow"></div>
               <div class="window-dot window-dot-green"></div>
               <span class="ml-4 text-xs text-zinc-500">Multi-Provider Terminals</span>
             </div>
-            <img src="screenshots/split-providers.png" alt="Claude Code and Codex running side by side" class="w-full" loading="lazy">
+            <div class="relative">
+              <img src="screenshots/split-providers.png" alt="Claude Code and Codex running side by side" class="w-full" loading="lazy">
+              <span class="ss-label" style="top:6%;left:10%">Claude Code</span>
+              <span class="ss-label" style="top:6%;right:10%">OpenAI Codex</span>
+              <span class="ss-label" style="bottom:4%;left:35%">Per-Tab Provider</span>
+            </div>
           </div>
           <p class="text-center text-sm text-zinc-500 mt-4">Run Claude Code and OpenAI Codex side by side&mdash;each tab picks its own CLI provider</p>
         </div>
 
         <div class="tab-panel" id="tab-orchestrator">
-          <div class="rounded-2xl overflow-hidden border border-white/10 shadow-2xl">
+          <div class="rounded-2xl overflow-hidden border border-white/10 shadow-2xl relative">
             <div class="window-chrome">
               <div class="window-dot window-dot-red"></div>
               <div class="window-dot window-dot-yellow"></div>
               <div class="window-dot window-dot-green"></div>
               <span class="ml-4 text-xs text-zinc-500">Orchestrator</span>
             </div>
-            <img src="screenshots/orchestrator.png" alt="Orchestrator with split and parallel modes" class="w-full" loading="lazy">
+            <div class="relative">
+              <img src="screenshots/orchestrator.png" alt="Orchestrator with split and parallel modes" class="w-full" loading="lazy">
+              <span class="ss-label" style="top:8%;left:28%">Split / Parallel Modes</span>
+              <span class="ss-label" style="top:40%;left:28%">Task Assignment</span>
+              <span class="ss-label" style="bottom:12%;left:28%">Terminal Count</span>
+            </div>
           </div>
           <p class="text-center text-sm text-zinc-500 mt-4">Split or parallel mode&mdash;assign tasks per terminal and launch coordinated multi-agent workflows</p>
         </div>
 
         <div class="tab-panel" id="tab-memory">
-          <div class="rounded-2xl overflow-hidden border border-white/10 shadow-2xl">
+          <div class="rounded-2xl overflow-hidden border border-white/10 shadow-2xl relative">
             <div class="window-chrome">
               <div class="window-dot window-dot-red"></div>
               <div class="window-dot window-dot-yellow"></div>
               <div class="window-dot window-dot-green"></div>
               <span class="ml-4 text-xs text-zinc-500">Claude's Memory</span>
             </div>
-            <img src="screenshots/memory.png" alt="Natural language memory with project and global scopes" class="w-full" loading="lazy">
+            <div class="relative">
+              <img src="screenshots/memory.png" alt="Natural language memory with project and global scopes" class="w-full" loading="lazy">
+              <span class="ss-label" style="top:6%;left:28%">Scope Selector</span>
+              <span class="ss-label" style="top:35%;left:28%">Natural Language Input</span>
+              <span class="ss-label" style="bottom:15%;left:28%">Stored Memories</span>
+            </div>
           </div>
           <p class="text-center text-sm text-zinc-500 mt-4">Teach Claude your preferences in plain English&mdash;scoped per project, private, or global</p>
         </div>
 
         <div class="tab-panel" id="tab-teams">
-          <div class="rounded-2xl overflow-hidden border border-white/10 shadow-2xl">
+          <div class="rounded-2xl overflow-hidden border border-white/10 shadow-2xl relative">
             <div class="window-chrome">
               <div class="window-dot window-dot-red"></div>
               <div class="window-dot window-dot-yellow"></div>
               <div class="window-dot window-dot-green"></div>
               <span class="ml-4 text-xs text-zinc-500">Teams</span>
             </div>
-            <img src="screenshots/teams.png" alt="Teams monitor with task progress" class="w-full" loading="lazy">
+            <div class="relative">
+              <img src="screenshots/teams.png" alt="Teams monitor with task progress" class="w-full" loading="lazy">
+              <span class="ss-label" style="top:6%;left:28%">Active Teams</span>
+              <span class="ss-label" style="top:35%;left:28%">Team Members</span>
+              <span class="ss-label" style="bottom:15%;left:28%">Task Progress</span>
+            </div>
           </div>
           <p class="text-center text-sm text-zinc-500 mt-4">Monitor multi-agent teams with real-time task progress and coordination</p>
         </div>
 
         <div class="tab-panel" id="tab-dashboard">
-          <div class="rounded-2xl overflow-hidden border border-white/10 shadow-2xl">
+          <div class="rounded-2xl overflow-hidden border border-white/10 shadow-2xl relative">
             <div class="window-chrome">
               <div class="window-dot window-dot-red"></div>
               <div class="window-dot window-dot-yellow"></div>
               <div class="window-dot window-dot-green"></div>
               <span class="ml-4 text-xs text-zinc-500">Analytics Dashboard</span>
             </div>
-            <img src="screenshots/dashboard.png" alt="Analytics Dashboard" class="w-full" loading="lazy">
+            <div class="relative">
+              <img src="screenshots/dashboard.png" alt="Analytics Dashboard" class="w-full" loading="lazy">
+              <span class="ss-label" style="top:6%;left:4%">Usage Stats</span>
+              <span class="ss-label" style="top:6%;right:8%">Time Period</span>
+              <span class="ss-label" style="top:45%;left:4%">Activity Chart</span>
+              <span class="ss-label" style="bottom:10%;left:4%">Top Projects</span>
+            </div>
           </div>
           <p class="text-center text-sm text-zinc-500 mt-4">Track coding time, tokens, and project activity with real-time analytics</p>
         </div>
 
         <div class="tab-panel" id="tab-hive">
-          <div class="rounded-2xl overflow-hidden border border-white/10 shadow-2xl">
+          <div class="rounded-2xl overflow-hidden border border-white/10 shadow-2xl relative">
             <div class="window-chrome">
               <div class="window-dot window-dot-red"></div>
               <div class="window-dot window-dot-yellow"></div>
               <div class="window-dot window-dot-green"></div>
               <span class="ml-4 text-xs text-zinc-500">Agent Hive</span>
             </div>
-            <img src="screenshots/hive-manager.png" alt="Agent Hive - multi-agent swarm management" class="w-full" loading="lazy">
+            <div class="relative">
+              <img src="screenshots/hive-manager.png" alt="Agent Hive - multi-agent swarm management" class="w-full" loading="lazy">
+              <span class="ss-label" style="top:6%;left:20%">Hive Presets</span>
+              <span class="ss-label" style="top:40%;left:20%">Agent Cards</span>
+              <span class="ss-label" style="bottom:10%;left:20%">Launch Controls</span>
+            </div>
           </div>
           <p class="text-center text-sm text-zinc-500 mt-4">Manage specialized agent swarms for audit, action, design, and more</p>
         </div>
 
         <div class="tab-panel" id="tab-super-agent">
-          <div class="rounded-2xl overflow-hidden border border-white/10 shadow-2xl">
+          <div class="rounded-2xl overflow-hidden border border-white/10 shadow-2xl relative">
             <div class="window-chrome">
               <div class="window-dot window-dot-red"></div>
               <div class="window-dot window-dot-yellow"></div>
               <div class="window-dot window-dot-green"></div>
               <span class="ml-4 text-xs text-zinc-500">Super Agent</span>
             </div>
-            <img src="screenshots/super-agent-modal.png" alt="Super Agent - autonomous task execution" class="w-full" loading="lazy">
+            <div class="relative">
+              <img src="screenshots/super-agent-modal.png" alt="Super Agent - autonomous task execution" class="w-full" loading="lazy">
+              <span class="ss-label" style="top:8%;left:25%">Task Input</span>
+              <span class="ss-label" style="top:45%;left:25%">Time Limit</span>
+              <span class="ss-label" style="bottom:18%;left:25%">Safety Level</span>
+            </div>
           </div>
           <p class="text-center text-sm text-zinc-500 mt-4">Launch autonomous tasks with time limits, safety levels, and provider choice</p>
         </div>
 
         <div class="tab-panel" id="tab-skills">
-          <div class="rounded-2xl overflow-hidden border border-white/10 shadow-2xl">
+          <div class="rounded-2xl overflow-hidden border border-white/10 shadow-2xl relative">
             <div class="window-chrome">
               <div class="window-dot window-dot-red"></div>
               <div class="window-dot window-dot-yellow"></div>
               <div class="window-dot window-dot-green"></div>
               <span class="ml-4 text-xs text-zinc-500">Skills & Agents</span>
             </div>
-            <img src="screenshots/skills-agents.png" alt="Skills and agents marketplace" class="w-full" loading="lazy">
+            <div class="relative">
+              <img src="screenshots/skills-agents.png" alt="Skills and agents marketplace" class="w-full" loading="lazy">
+              <span class="ss-label" style="top:6%;left:4%">Category Filters</span>
+              <span class="ss-label" style="top:6%;right:8%">Search</span>
+              <span class="ss-label" style="top:35%;left:4%">Skill Cards</span>
+              <span class="ss-label" style="bottom:10%;left:4%">One-Click Install</span>
+            </div>
           </div>
           <p class="text-center text-sm text-zinc-500 mt-4">Browse 25 skills and 5 agents&mdash;search, filter, and deploy in one click</p>
         </div>
