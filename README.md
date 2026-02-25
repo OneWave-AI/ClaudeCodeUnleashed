@@ -10,15 +10,45 @@ The premium native desktop experience for [Claude Code](https://github.com/anthr
 ## Screenshots
 
 <p align="center">
-  <img src="assets/screenshots/dashboard.png" alt="Dashboard - Analytics and Activity Tracking" width="800"/>
+  <img src="assets/screenshots/terminal-view.png" alt="Terminal with Claude Code" width="800"/>
   <br/>
-  <em>Dashboard with analytics, activity tracking, and project insights</em>
+  <em>Terminal with Claude Code, file explorer, status bar, and session tracking</em>
 </p>
 
 <p align="center">
-  <img src="assets/screenshots/home-screen.png" alt="Home Screen" width="600"/>
+  <img src="assets/screenshots/split-providers.png" alt="Split Panels - Claude Code and Codex side by side" width="800"/>
   <br/>
-  <em>Home screen with project selection, Super Agent, and recent projects</em>
+  <em>Claude Code and OpenAI Codex running side by side with per-tab provider selection</em>
+</p>
+
+<p align="center">
+  <img src="assets/screenshots/home-grid.png" alt="Home Screen Action Grid" width="600"/>
+  <br/>
+  <em>Home screen with quick actions: Hive, Memory, Teams, Orchestrator, and more</em>
+</p>
+
+<p align="center">
+  <img src="assets/screenshots/orchestrator.png" alt="Orchestrator - Multi-terminal coordination" width="600"/>
+  <br/>
+  <em>Orchestrator with Split/Parallel modes and per-terminal task assignment</em>
+</p>
+
+<p align="center">
+  <img src="assets/screenshots/memory.png" alt="Claude's Memory - Natural language preferences" width="600"/>
+  <br/>
+  <em>Natural language memory: teach Claude your preferences across projects</em>
+</p>
+
+<p align="center">
+  <img src="assets/screenshots/teams.png" alt="Teams Panel" width="600"/>
+  <br/>
+  <em>Teams monitor with real-time task progress and multi-agent coordination</em>
+</p>
+
+<p align="center">
+  <img src="assets/screenshots/dashboard.png" alt="Dashboard - Analytics and Activity Tracking" width="800"/>
+  <br/>
+  <em>Analytics dashboard with activity tracking and project insights</em>
 </p>
 
 ## Who Is This For?

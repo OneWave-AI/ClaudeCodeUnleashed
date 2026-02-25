@@ -22,7 +22,6 @@ import {
   Image,
   FileText,
   Folder,
-  ListOrdered,
   Square,
   Zap,
   Hash,
@@ -34,7 +33,6 @@ import {
 
 import Terminal, { TerminalRef } from './Terminal'
 import PreviewBar from './PreviewBar'
-import TaskTimeline, { TimelineAction, ActionType, ActionStatus } from './TaskTimeline'
 import PlanPanel, { PlanItem } from './PlanPanel'
 import VoiceInput from './VoiceInput'
 import { useAppStore } from '../../store'
@@ -133,12 +131,6 @@ export default function TerminalWrapper({
   const [showUploadMenu, setShowUploadMenu] = useState(false)
   const uploadMenuRef = useRef<HTMLDivElement>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
-
-  // Task timeline state
-  const [timelineActions, setTimelineActions] = useState<TimelineAction[]>([])
-  const [showTimeline, setShowTimeline] = useState(false)
-  const [timelineCollapsed, setTimelineCollapsed] = useState(false)
-  const currentActionRef = useRef<string | null>(null)
 
   // Claude status
   const [claudeStatus, setClaudeStatus] = useState<'working' | 'waiting' | 'idle'>('idle')
@@ -1164,127 +1156,6 @@ export default function TerminalWrapper({
     e.target.value = ''
   }, [activeTerminalId])
 
-  // Timeline action tracking - with debouncing
-  const lastActionRef = useRef<{ type: ActionType; title: string; time: number } | null>(null)
-  const DEBOUNCE_MS = 2000 // Minimum 2 seconds between similar actions
-
-  const addTimelineAction = useCallback((
-    type: ActionType,
-    title: string,
-    options?: {
-      description?: string
-      file?: string
-      details?: string
-      status?: ActionStatus
-    }
-  ) => {
-    // Debounce: Skip if same type/title was added recently
-    const now = Date.now()
-    if (lastActionRef.current) {
-      const { type: lastType, title: lastTitle, time: lastTime } = lastActionRef.current
-      if (lastType === type && lastTitle === title && (now - lastTime) < DEBOUNCE_MS) {
-        return null // Skip duplicate
-      }
-    }
-
-    const id = `action-${now}-${Math.random().toString(36).slice(2, 7)}`
-    const action: TimelineAction = {
-      id,
-      type,
-      title,
-      description: options?.description,
-      file: options?.file,
-      details: options?.details,
-      timestamp: new Date(),
-      status: options?.status || 'running'
-    }
-    setTimelineActions(prev => [...prev, action])
-    currentActionRef.current = id
-    lastActionRef.current = { type, title, time: now }
-    return id
-  }, [])
-
-  const updateTimelineAction = useCallback((id: string, updates: Partial<TimelineAction>) => {
-    setTimelineActions(prev => prev.map(action =>
-      action.id === id ? { ...action, ...updates } : action
-    ))
-  }, [])
-
-  const completeTimelineAction = useCallback((id: string, success: boolean = true, details?: string) => {
-    setTimelineActions(prev => prev.map(action => {
-      if (action.id !== id) return action
-      return {
-        ...action,
-        status: success ? 'success' : 'error',
-        duration: Date.now() - action.timestamp.getTime(),
-        details: details || action.details
-      }
-    }))
-    if (currentActionRef.current === id) {
-      currentActionRef.current = null
-    }
-  }, [])
-
-  const clearTimeline = useCallback(() => {
-    setTimelineActions([])
-    currentActionRef.current = null
-  }, [])
-
-  // Parse terminal output for Claude actions
-  // More specific patterns to avoid false positives
-  const parseClaudeAction = useCallback((data: string) => {
-    // Only look for Claude CLI specific tool markers
-    // These patterns are more specific to actual tool invocations
-    const toolPatterns = [
-      // Look for tool invocations with emoji markers or specific formats
-      { pattern: /⏳.*?(?:Read|Reading)\s+([^\s\n]+)/i, type: 'read' as ActionType, getTitle: (m: RegExpMatchArray) => `Reading ${m[1].split('/').pop()}`, getFile: (m: RegExpMatchArray) => m[1] },
-      { pattern: /⏳.*?(?:Write|Writing)\s+([^\s\n]+)/i, type: 'write' as ActionType, getTitle: (m: RegExpMatchArray) => `Writing ${m[1].split('/').pop()}`, getFile: (m: RegExpMatchArray) => m[1] },
-      { pattern: /⏳.*?(?:Edit|Editing)\s+([^\s\n]+)/i, type: 'edit' as ActionType, getTitle: (m: RegExpMatchArray) => `Editing ${m[1].split('/').pop()}`, getFile: (m: RegExpMatchArray) => m[1] },
-      { pattern: /⏳.*?Bash/i, type: 'bash' as ActionType, getTitle: () => 'Running command' },
-      { pattern: /⏳.*?(?:Glob|Grep)/i, type: 'search' as ActionType, getTitle: () => 'Searching files' },
-      { pattern: /⏳.*?(?:WebFetch|WebSearch)/i, type: 'browser' as ActionType, getTitle: () => 'Fetching web' },
-      { pattern: /⏳.*?TodoWrite/i, type: 'tool' as ActionType, getTitle: () => 'Updating tasks' },
-      { pattern: /⏳.*?Task/i, type: 'tool' as ActionType, getTitle: () => 'Running agent' },
-      // Alternative: Look for tool names at start of line with specific formatting
-      { pattern: /^(?:│\s*)?Read\s+\/[^\s]+/m, type: 'read' as ActionType, getTitle: () => 'Reading file' },
-      { pattern: /^(?:│\s*)?Write\s+\/[^\s]+/m, type: 'write' as ActionType, getTitle: () => 'Writing file' },
-      { pattern: /^(?:│\s*)?Edit\s+\/[^\s]+/m, type: 'edit' as ActionType, getTitle: () => 'Editing file' },
-    ]
-
-    // Check for completion patterns - more specific
-    const successPattern = /✓|✔|Done|Completed successfully/
-    const errorPattern = /✗|✘|Error:|Failed:/
-
-    for (const { pattern, type, getTitle, getFile } of toolPatterns) {
-      const match = data.match(pattern)
-      if (match) {
-        // Complete previous action if there was one
-        if (currentActionRef.current) {
-          const isSuccess = successPattern.test(data)
-          const isError = errorPattern.test(data)
-          if (isSuccess || isError) {
-            completeTimelineAction(currentActionRef.current, isSuccess)
-          }
-        }
-
-        // Add new action (debouncing handled in addTimelineAction)
-        addTimelineAction(type, getTitle(match), {
-          file: getFile?.(match)
-        })
-        return
-      }
-    }
-
-    // Check for completion markers only
-    if (currentActionRef.current) {
-      if (successPattern.test(data)) {
-        completeTimelineAction(currentActionRef.current, true)
-      } else if (errorPattern.test(data)) {
-        completeTimelineAction(currentActionRef.current, false)
-      }
-    }
-  }, [addTimelineAction, completeTimelineAction])
-
   // Update browser tab URL
   const updateBrowserUrl = useCallback((panelId: string, tabId: string, url: string) => {
     setPanels(prev => prev.map(panel => {
@@ -1566,7 +1437,6 @@ export default function TerminalWrapper({
                   if (tab.id === panel.activeTabId) {
                     detectClaudeStatus(data)
                     detectHtmlFile(data)
-                    parseClaudeAction(data)
                     trackTokensAndCost(data)
                     parsePlanItems(data)
                     detectContextUsage(data)
@@ -1841,22 +1711,6 @@ export default function TerminalWrapper({
           </div>
         )}
 
-        {/* Task Timeline Panel */}
-        {showTimeline && (
-          <TaskTimeline
-            actions={timelineActions}
-            onClear={clearTimeline}
-            isCollapsed={timelineCollapsed}
-            onToggleCollapse={() => {
-              if (timelineCollapsed) {
-                setTimelineCollapsed(false)
-              } else {
-                setShowTimeline(false)
-              }
-            }}
-          />
-        )}
-
         {/* Plan Panel */}
         {showPlanPanel && (
           <PlanPanel
@@ -1997,30 +1851,6 @@ export default function TerminalWrapper({
 
         {/* Center: Actions */}
         <div className="flex items-center gap-0.5">
-          <button
-            onClick={() => {
-              if (showTimeline) {
-                setShowTimeline(false)
-                setTimelineCollapsed(false)
-              } else {
-                setShowTimeline(true)
-              }
-            }}
-            className={`p-1.5 rounded-md transition-all relative ${
-              showTimeline
-                ? 'bg-[#cc785c]/15 text-[#cc785c]'
-                : 'text-gray-500 hover:text-gray-300 hover:bg-white/[0.06]'
-            }`}
-            title="Task Timeline"
-          >
-            <ListOrdered size={13} />
-            {timelineActions.length > 0 && (
-              <span className="absolute -top-0.5 -right-0.5 w-3.5 h-3.5 bg-[#cc785c] text-white text-[8px] font-bold rounded-full flex items-center justify-center">
-                {timelineActions.length > 99 ? '+' : timelineActions.length}
-              </span>
-            )}
-          </button>
-
           <VoiceInput
             onTranscript={handleVoiceTranscript}
             disabled={!activeTerminalId}

@@ -203,7 +203,7 @@
           <div class="w-3 h-3 rounded-full bg-green-500"></div>
           <span class="ml-4 text-xs text-zinc-500">Claude Unleashed</span>
         </div>
-        <img src="screenshots/dashboard.png" alt="Claude Unleashed Dashboard showing analytics, session tracking, and project activity" class="w-full">
+        <img src="screenshots/split-providers.png" alt="Claude Code and OpenAI Codex running side by side in Claude Unleashed" class="w-full">
       </div>
     </div>
   </section>
@@ -440,17 +440,85 @@
 
       <!-- Tab Buttons -->
       <div class="flex flex-wrap justify-center gap-2 mb-8 fade-up stagger-2">
-        <button class="tab-btn active" data-tab="dashboard">Dashboard</button>
+        <button class="tab-btn active" data-tab="terminal">Terminal</button>
+        <button class="tab-btn" data-tab="split">Multi-Provider</button>
+        <button class="tab-btn" data-tab="orchestrator">Orchestrator</button>
+        <button class="tab-btn" data-tab="memory">Memory</button>
+        <button class="tab-btn" data-tab="teams">Teams</button>
+        <button class="tab-btn" data-tab="dashboard">Dashboard</button>
         <button class="tab-btn" data-tab="hive">Agent Hive</button>
         <button class="tab-btn" data-tab="super-agent">Super Agent</button>
         <button class="tab-btn" data-tab="skills">Skills & Agents</button>
-        <button class="tab-btn" data-tab="history">History</button>
-        <button class="tab-btn" data-tab="tools">Tools Panel</button>
       </div>
 
       <!-- Tab Panels -->
       <div class="fade-up stagger-3">
-        <div class="tab-panel active" id="tab-dashboard">
+        <div class="tab-panel active" id="tab-terminal">
+          <div class="rounded-2xl overflow-hidden border border-white/10 shadow-2xl">
+            <div class="window-chrome">
+              <div class="window-dot window-dot-red"></div>
+              <div class="window-dot window-dot-yellow"></div>
+              <div class="window-dot window-dot-green"></div>
+              <span class="ml-4 text-xs text-zinc-500">Terminal</span>
+            </div>
+            <img src="screenshots/terminal-view.png" alt="Terminal with Claude Code, file explorer, and status bar" class="w-full">
+          </div>
+          <p class="text-center text-sm text-zinc-500 mt-4">Full terminal with file explorer, model selector, plan/work toggle, and session tracking</p>
+        </div>
+
+        <div class="tab-panel" id="tab-split">
+          <div class="rounded-2xl overflow-hidden border border-white/10 shadow-2xl">
+            <div class="window-chrome">
+              <div class="window-dot window-dot-red"></div>
+              <div class="window-dot window-dot-yellow"></div>
+              <div class="window-dot window-dot-green"></div>
+              <span class="ml-4 text-xs text-zinc-500">Multi-Provider Terminals</span>
+            </div>
+            <img src="screenshots/split-providers.png" alt="Claude Code and Codex running side by side" class="w-full" loading="lazy">
+          </div>
+          <p class="text-center text-sm text-zinc-500 mt-4">Run Claude Code and OpenAI Codex side by side&mdash;each tab picks its own CLI provider</p>
+        </div>
+
+        <div class="tab-panel" id="tab-orchestrator">
+          <div class="rounded-2xl overflow-hidden border border-white/10 shadow-2xl">
+            <div class="window-chrome">
+              <div class="window-dot window-dot-red"></div>
+              <div class="window-dot window-dot-yellow"></div>
+              <div class="window-dot window-dot-green"></div>
+              <span class="ml-4 text-xs text-zinc-500">Orchestrator</span>
+            </div>
+            <img src="screenshots/orchestrator.png" alt="Orchestrator with split and parallel modes" class="w-full" loading="lazy">
+          </div>
+          <p class="text-center text-sm text-zinc-500 mt-4">Split or parallel mode&mdash;assign tasks per terminal and launch coordinated multi-agent workflows</p>
+        </div>
+
+        <div class="tab-panel" id="tab-memory">
+          <div class="rounded-2xl overflow-hidden border border-white/10 shadow-2xl">
+            <div class="window-chrome">
+              <div class="window-dot window-dot-red"></div>
+              <div class="window-dot window-dot-yellow"></div>
+              <div class="window-dot window-dot-green"></div>
+              <span class="ml-4 text-xs text-zinc-500">Claude's Memory</span>
+            </div>
+            <img src="screenshots/memory.png" alt="Natural language memory with project and global scopes" class="w-full" loading="lazy">
+          </div>
+          <p class="text-center text-sm text-zinc-500 mt-4">Teach Claude your preferences in plain English&mdash;scoped per project, private, or global</p>
+        </div>
+
+        <div class="tab-panel" id="tab-teams">
+          <div class="rounded-2xl overflow-hidden border border-white/10 shadow-2xl">
+            <div class="window-chrome">
+              <div class="window-dot window-dot-red"></div>
+              <div class="window-dot window-dot-yellow"></div>
+              <div class="window-dot window-dot-green"></div>
+              <span class="ml-4 text-xs text-zinc-500">Teams</span>
+            </div>
+            <img src="screenshots/teams.png" alt="Teams monitor with task progress" class="w-full" loading="lazy">
+          </div>
+          <p class="text-center text-sm text-zinc-500 mt-4">Monitor multi-agent teams with real-time task progress and coordination</p>
+        </div>
+
+        <div class="tab-panel" id="tab-dashboard">
           <div class="rounded-2xl overflow-hidden border border-white/10 shadow-2xl">
             <div class="window-chrome">
               <div class="window-dot window-dot-red"></div>
@@ -458,7 +526,7 @@
               <div class="window-dot window-dot-green"></div>
               <span class="ml-4 text-xs text-zinc-500">Analytics Dashboard</span>
             </div>
-            <img src="screenshots/dashboard.png" alt="Analytics Dashboard" class="w-full">
+            <img src="screenshots/dashboard.png" alt="Analytics Dashboard" class="w-full" loading="lazy">
           </div>
           <p class="text-center text-sm text-zinc-500 mt-4">Track coding time, tokens, and project activity with real-time analytics</p>
         </div>
@@ -500,32 +568,6 @@
             <img src="screenshots/skills-agents.png" alt="Skills and agents marketplace" class="w-full" loading="lazy">
           </div>
           <p class="text-center text-sm text-zinc-500 mt-4">Browse 25 skills and 5 agents&mdash;search, filter, and deploy in one click</p>
-        </div>
-
-        <div class="tab-panel" id="tab-history">
-          <div class="rounded-2xl overflow-hidden border border-white/10 shadow-2xl">
-            <div class="window-chrome">
-              <div class="window-dot window-dot-red"></div>
-              <div class="window-dot window-dot-yellow"></div>
-              <div class="window-dot window-dot-green"></div>
-              <span class="ml-4 text-xs text-zinc-500">Conversation History</span>
-            </div>
-            <img src="screenshots/super-agent-history.png" alt="Conversation and agent history" class="w-full" loading="lazy">
-          </div>
-          <p class="text-center text-sm text-zinc-500 mt-4">Full conversation and agent history with event logs and search</p>
-        </div>
-
-        <div class="tab-panel" id="tab-tools">
-          <div class="rounded-2xl overflow-hidden border border-white/10 shadow-2xl">
-            <div class="window-chrome">
-              <div class="window-dot window-dot-red"></div>
-              <div class="window-dot window-dot-yellow"></div>
-              <div class="window-dot window-dot-green"></div>
-              <span class="ml-4 text-xs text-zinc-500">Tools Panel</span>
-            </div>
-            <img src="screenshots/tools-panel.png" alt="Tools and MCP panel" class="w-full" loading="lazy">
-          </div>
-          <p class="text-center text-sm text-zinc-500 mt-4">Quick access to tools, agents, and skills from any screen</p>
         </div>
       </div>
     </div>
