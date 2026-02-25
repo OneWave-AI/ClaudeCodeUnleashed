@@ -14,6 +14,9 @@ import { registerHiveHandlers } from './hives'
 import { registerMemoryHandlers } from './memory'
 import { registerBackgroundAgentHandlers } from './backgroundAgents'
 import { registerRepoAnalyzerHandlers } from './repoAnalyzer'
+import { registerTeamHandlers } from './teams'
+import type { CLIProvider } from '../../shared/types'
+import { CLI_PROVIDERS } from '../../shared/providers'
 
 export function registerIpcHandlers(): void {
   // Terminal handlers
@@ -52,6 +55,9 @@ export function registerIpcHandlers(): void {
   // Repository Analyzer handlers
   registerRepoAnalyzerHandlers()
 
+  // Teams handlers
+  registerTeamHandlers()
+
   // Initialize settings (apply window opacity, etc.)
   initializeSettings()
 
@@ -79,56 +85,64 @@ export function registerIpcHandlers(): void {
     return result.canceled ? null : result.filePaths[0]
   })
 
-  // Claude CLI check
-  ipcMain.handle('check-claude-installed', async () => {
+  // Generic CLI check (provider-aware)
+  async function checkCliInstalled(provider: CLIProvider): Promise<boolean> {
     const { exec } = await import('child_process')
     const { existsSync } = await import('fs')
-    const { join } = await import('path')
+
+    const config = CLI_PROVIDERS[provider]
+    const home = homedir()
 
     // Check common installation paths first
     const commonPaths = [
-      join(homedir(), '.npm-global', 'bin', 'claude'),
-      join(homedir(), '.nvm', 'versions', 'node', process.version, 'bin', 'claude'),
-      '/usr/local/bin/claude',
-      '/opt/homebrew/bin/claude',
-      join(homedir(), '.local', 'bin', 'claude')
+      ...config.checkPaths(home),
+      join(home, '.nvm', 'versions', 'node', process.version, 'bin', config.binaryName)
     ]
 
-    for (const claudePath of commonPaths) {
-      if (existsSync(claudePath)) {
+    for (const binPath of commonPaths) {
+      if (existsSync(binPath)) {
         return true
       }
     }
 
     // Fallback to which command with user's shell
     return new Promise<boolean>((resolve) => {
-      // Use login shell to get proper PATH
-      exec('source ~/.zshrc 2>/dev/null || source ~/.bashrc 2>/dev/null; which claude', {
+      exec(`source ~/.zshrc 2>/dev/null || source ~/.bashrc 2>/dev/null; which ${config.binaryName}`, {
         shell: '/bin/zsh',
-        env: { ...process.env, PATH: `${process.env.PATH}:${homedir()}/.npm-global/bin:/usr/local/bin:/opt/homebrew/bin` }
+        env: { ...process.env, PATH: `${process.env.PATH}:${home}/.npm-global/bin:/usr/local/bin:/opt/homebrew/bin` }
       }, (error) => {
         resolve(!error)
       })
     })
+  }
+
+  // Claude CLI check (legacy, defaults to claude)
+  ipcMain.handle('check-claude-installed', async () => {
+    return checkCliInstalled('claude')
   })
 
-  // Claude CLI install
-  ipcMain.handle('install-claude', async (event) => {
+  // Generic CLI check
+  ipcMain.handle('check-cli-installed', async (_, provider: CLIProvider) => {
+    return checkCliInstalled(provider || 'claude')
+  })
+
+  // Generic CLI install
+  async function installCli(provider: CLIProvider, event: Electron.IpcMainInvokeEvent): Promise<void> {
     const { spawn } = await import('child_process')
-    const { BrowserWindow } = await import('electron')
+
+    const config = CLI_PROVIDERS[provider]
 
     return new Promise<void>((resolve, reject) => {
-      // Install using npm globally
-      const install = spawn('npm', ['install', '-g', '@anthropic-ai/claude-code'], {
+      const { CLAUDECODE: _, ...cleanEnv } = process.env
+      const install = spawn('npm', ['install', '-g', config.installPackage], {
         shell: true,
-        env: { ...process.env }
+        env: { ...cleanEnv }
       })
 
       const window = BrowserWindow.fromWebContents(event.sender)
 
       install.stdout?.on('data', (data) => {
         const output = data.toString()
-        // Parse npm output for progress indication
         if (output.includes('added')) {
           window?.webContents.send('install-progress', { stage: 'Installing packages...', progress: 75 })
         }
@@ -136,7 +150,6 @@ export function registerIpcHandlers(): void {
 
       install.stderr?.on('data', (data) => {
         const output = data.toString()
-        // npm often writes progress to stderr
         if (output.includes('npm')) {
           window?.webContents.send('install-progress', { stage: 'Downloading...', progress: 50 })
         }
@@ -155,9 +168,18 @@ export function registerIpcHandlers(): void {
         reject(err)
       })
 
-      // Send initial progress
       window?.webContents.send('install-progress', { stage: 'Starting installation...', progress: 10 })
     })
+  }
+
+  // Claude CLI install (legacy, defaults to claude)
+  ipcMain.handle('install-claude', async (event) => {
+    return installCli('claude', event)
+  })
+
+  // Generic CLI install
+  ipcMain.handle('install-cli', async (event, provider: CLIProvider) => {
+    return installCli(provider || 'claude', event)
   })
 
   // Window controls

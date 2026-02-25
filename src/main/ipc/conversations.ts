@@ -6,6 +6,7 @@ import type { Conversation, ConversationMessage, ConversationStats, Conversation
 
 const CLAUDE_DIR = join(homedir(), '.claude')
 const PINNED_FILE = join(CLAUDE_DIR, 'pinned-conversations.json')
+const ACTIVE_TIME_IDLE_THRESHOLD_MS = 5 * 60 * 1000 // 5 minutes
 
 interface PinnedConversations {
   [key: string]: boolean // key is `${projectDir}:${id}` where projectDir is the raw directory name
@@ -103,8 +104,7 @@ async function parseConversationFile(filePath: string): Promise<ParsedConversati
   const messages: ConversationMessage[] = []
   let humanMessages = 0
   let assistantMessages = 0
-  let firstTimestamp: number | undefined
-  let lastTimestamp: number | undefined
+  const timestamps: number[] = []
   let preview = ''
   let summaryPreview = ''
   let estimatedTokens = 0
@@ -115,9 +115,8 @@ async function parseConversationFile(filePath: string): Promise<ParsedConversati
       const parsed = JSON.parse(line)
       const timestamp = parsed.timestamp ? new Date(parsed.timestamp).getTime() : undefined
 
-      if (timestamp) {
-        if (!firstTimestamp) firstTimestamp = timestamp
-        lastTimestamp = timestamp
+      if (timestamp && !isNaN(timestamp)) {
+        timestamps.push(timestamp)
       }
 
       // Extract cwd from the first message that has it
@@ -171,7 +170,14 @@ async function parseConversationFile(filePath: string): Promise<ParsedConversati
     }
   }
 
-  const duration = firstTimestamp && lastTimestamp ? lastTimestamp - firstTimestamp : 0
+  // Sum only gaps between consecutive messages that are under the idle threshold
+  let duration = 0
+  for (let i = 1; i < timestamps.length; i++) {
+    const gap = timestamps[i] - timestamps[i - 1]
+    if (gap >= 0 && gap <= ACTIVE_TIME_IDLE_THRESHOLD_MS) {
+      duration += gap
+    }
+  }
 
   // Use summary as preview if no user message preview available
   const finalPreview = preview || summaryPreview
@@ -515,6 +521,174 @@ export function registerConversationHandlers(): void {
       }
 
       return conversations
+    }
+  )
+
+  // Generate session context markdown from recent conversations
+  ipcMain.handle(
+    'generate-session-context',
+    async (_, projectPath: string, days: number = 7): Promise<string> => {
+      try {
+        if (!days || days <= 0 || isNaN(days)) days = 7
+
+        const projectDir = pathToProjectDir(projectPath)
+        const projectDirPath = join(CLAUDE_DIR, 'projects', projectDir)
+
+        // Check if project directory exists
+        try {
+          await fs.access(projectDirPath)
+        } catch {
+          return ''
+        }
+
+        const cutoff = Date.now() - days * 24 * 60 * 60 * 1000
+        const files = await fs.readdir(projectDirPath).catch(() => [])
+        const jsonlFiles = files.filter(
+          (f) => f.endsWith('.jsonl') && !f.startsWith('agent-')
+        )
+
+        // Collect recent conversation entries
+        const entries: { date: string; preview: string; timestamp: number }[] = []
+
+        for (const file of jsonlFiles) {
+          const filePath = join(projectDirPath, file)
+          const fileStat = await fs.stat(filePath).catch(() => null)
+          if (!fileStat || fileStat.size === 0 || fileStat.mtimeMs < cutoff) continue
+
+          try {
+            // Only read the first 32KB — we just need the first human messages
+            const readSize = Math.min(fileStat.size, 32 * 1024)
+            const fileHandle = await fs.open(filePath, 'r')
+            let content: string
+            try {
+              const buffer = Buffer.alloc(readSize)
+              await fileHandle.read(buffer, 0, readSize, 0)
+              content = buffer.toString('utf-8')
+            } finally {
+              await fileHandle.close()
+            }
+
+            // If we read a partial file, drop the last potentially-truncated line
+            const rawLines = content.split('\n')
+            if (readSize < fileStat.size) rawLines.pop()
+            const fileLines = rawLines.filter((l) => l.trim())
+
+            // Extract first 1-2 human messages for topic
+            let humanCount = 0
+            let preview = ''
+            let conversationTimestamp = 0
+
+            for (const line of fileLines) {
+              try {
+                const parsed = JSON.parse(line)
+
+                if (parsed.timestamp && !conversationTimestamp) {
+                  const ts = new Date(parsed.timestamp).getTime()
+                  if (!isNaN(ts)) conversationTimestamp = ts
+                }
+
+                if (
+                  (parsed.type === 'user' || parsed.type === 'human') &&
+                  parsed.message?.content
+                ) {
+                  let msg: string
+                  if (typeof parsed.message.content === 'string') {
+                    msg = parsed.message.content
+                  } else if (Array.isArray(parsed.message.content)) {
+                    // Extract text from content blocks (same format as assistant messages)
+                    msg = parsed.message.content
+                      .filter((b: { type: string }) => b.type === 'text')
+                      .map((b: { text: string }) => b.text || '')
+                      .join(' ')
+                  } else {
+                    msg = String(parsed.message.content)
+                  }
+
+                  const cleaned = msg.trim()
+                  // Skip system/internal messages and non-useful previews
+                  if (!cleaned || cleaned.startsWith('<') || cleaned.startsWith('[Request interrupted')) {
+                    continue
+                  }
+
+                  if (humanCount === 0) {
+                    // Collapse whitespace
+                    let text = cleaned.replace(/\s+/g, ' ')
+
+                    // Extract plan title if this is a plan-mode message
+                    const planMatch = text.match(/^Implement the following plan:\s*#\s*(.+?)(?:\s*##|$)/)
+                    if (planMatch) {
+                      text = planMatch[1].trim()
+                    }
+
+                    // Truncate at word boundary
+                    if (text.length > 100) {
+                      text = text.slice(0, 100)
+                      const lastSpace = text.lastIndexOf(' ')
+                      if (lastSpace > 60) text = text.slice(0, lastSpace)
+                      text += '...'
+                    }
+                    preview = text
+                  }
+                  humanCount++
+                  if (humanCount >= 2) break
+                }
+              } catch {
+                // Skip invalid JSON
+              }
+            }
+
+            // Fall back to file mtime if no timestamp found in data
+            const timestamp = conversationTimestamp || fileStat.mtimeMs
+
+            if (preview) {
+              const date = new Date(timestamp)
+              const dateStr = date.toLocaleDateString('en-US', {
+                month: 'short',
+                day: 'numeric'
+              })
+              entries.push({ date: dateStr, preview, timestamp })
+            }
+          } catch {
+            // Skip unreadable files
+          }
+        }
+
+        if (entries.length === 0) return ''
+
+        // Sort by timestamp descending, cap at 20
+        entries.sort((a, b) => b.timestamp - a.timestamp)
+        const capped = entries.slice(0, 20)
+
+        // Group by date
+        const grouped = new Map<string, string[]>()
+        for (const entry of capped) {
+          const existing = grouped.get(entry.date) || []
+          existing.push(entry.preview)
+          grouped.set(entry.date, existing)
+        }
+
+        // Build markdown
+        const output = [
+          '# Recent Session History',
+          '',
+          'This is auto-generated context about recent work in this project.',
+          '',
+          `## Last ${days} Days`,
+          ''
+        ]
+
+        for (const [date, previews] of grouped) {
+          for (const p of previews) {
+            output.push(`- **${date}**: ${p}`)
+          }
+        }
+
+        output.push('')
+        return output.join('\n')
+      } catch (err) {
+        console.error('Failed to generate session context:', err)
+        return ''
+      }
     }
   )
 

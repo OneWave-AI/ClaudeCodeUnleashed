@@ -1,5 +1,5 @@
 import { create } from 'zustand'
-import type { AppSettings, CustomTheme } from '../../shared/types'
+import type { AppSettings, CustomTheme, CLIProvider } from '../../shared/types'
 
 // Debounce helper
 let saveTimeout: NodeJS.Timeout | null = null
@@ -70,6 +70,16 @@ interface AppState {
   claudeApiKey: string
   setClaudeApiKey: (key: string) => void
 
+  // CLI Provider
+  cliProvider: CLIProvider
+  setCLIProvider: (provider: CLIProvider) => void
+
+  // Session Context
+  sessionContextEnabled: boolean
+  setSessionContextEnabled: (enabled: boolean) => void
+  sessionContextDays: number
+  setSessionContextDays: (days: number) => void
+
   // Custom themes
   customThemes: CustomTheme[]
   setCustomThemes: (themes: CustomTheme[]) => void
@@ -95,7 +105,10 @@ const DEFAULT_SETTINGS: AppSettings = {
   confirmBeforeClose: true,
   showTabCloseButton: true,
   autoUpdate: true,
-  claudeApiKey: ''
+  claudeApiKey: '',
+  cliProvider: 'claude' as CLIProvider,
+  sessionContextEnabled: true,
+  sessionContextDays: 7
 }
 
 export const useAppStore = create<AppState>((set, get) => ({
@@ -204,6 +217,9 @@ export const useAppStore = create<AppState>((set, get) => ({
       confirmBeforeClose: settings.confirmBeforeClose,
       autoUpdate: settings.autoUpdate,
       claudeApiKey: settings.claudeApiKey,
+      cliProvider: settings.cliProvider || 'claude',
+      sessionContextEnabled: settings.sessionContextEnabled !== false,
+      sessionContextDays: settings.sessionContextDays ?? 7,
       customThemes: settings.customThemes
     })
   },
@@ -303,6 +319,30 @@ export const useAppStore = create<AppState>((set, get) => ({
   setClaudeApiKey: (claudeApiKey) => {
     set({ claudeApiKey })
     const settings = { ...get().settings, claudeApiKey }
+    set({ settings })
+    get().saveAllSettings()
+  },
+
+  cliProvider: 'claude' as CLIProvider,
+  setCLIProvider: (cliProvider) => {
+    set({ cliProvider })
+    const settings = { ...get().settings, cliProvider }
+    set({ settings })
+    get().saveAllSettings()
+  },
+
+  sessionContextEnabled: true,
+  setSessionContextEnabled: (sessionContextEnabled) => {
+    set({ sessionContextEnabled })
+    const settings = { ...get().settings, sessionContextEnabled }
+    set({ settings })
+    get().saveAllSettings()
+  },
+
+  sessionContextDays: 7,
+  setSessionContextDays: (sessionContextDays) => {
+    set({ sessionContextDays })
+    const settings = { ...get().settings, sessionContextDays }
     set({ settings })
     get().saveAllSettings()
   },

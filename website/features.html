@@ -135,7 +135,7 @@
         <p class="text-zinc-400 mt-4 max-w-2xl mx-auto">Run multiple specialized AI agents in parallel. Security audits, code review, testing, and refactoring - all at once.</p>
       </div>
 
-      <div class="grid lg:grid-cols-2 gap-8">
+      <div class="grid lg:grid-cols-2 gap-8 mb-8">
         <!-- Super Agent -->
         <div class="glass rounded-2xl p-8 fade-up">
           <div class="flex items-center gap-4 mb-6">
@@ -153,19 +153,19 @@
           <ul class="space-y-3 text-sm text-zinc-300">
             <li class="flex items-start gap-3">
               <svg class="w-5 h-5 text-green-500 flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
-              <span><strong>LLM-driven:</strong> An outer model monitors Claude and decides next steps</span>
+              <span><strong>Two-tier decisions:</strong> Instant fast-path handles y/n prompts and spinners; LLM handles creative responses</span>
             </li>
             <li class="flex items-start gap-3">
               <svg class="w-5 h-5 text-green-500 flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
-              <span><strong>Auto-approve:</strong> Automatically approves tool calls until task is done</span>
+              <span><strong>Safety-aware:</strong> Dangerous commands detected in safe mode and routed to LLM instead of auto-approving</span>
             </li>
             <li class="flex items-start gap-3">
               <svg class="w-5 h-5 text-green-500 flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
-              <span><strong>Time limits:</strong> Set execution time from 5 to 60 minutes</span>
+              <span><strong>Session stats:</strong> Live tracking of files written, tests passed/failed, and errors during autonomous runs</span>
             </li>
             <li class="flex items-start gap-3">
               <svg class="w-5 h-5 text-green-500 flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
-              <span><strong>Activity log:</strong> Real-time visibility into the agent's thinking</span>
+              <span><strong>Rich activity log:</strong> Color-coded entries distinguish Auto, LLM, and Approved decisions with full question context</span>
             </li>
           </ul>
         </div>
@@ -204,6 +204,86 @@
           </ul>
         </div>
       </div>
+
+      <!-- Teams - full width below the 2-col grid -->
+      <div class="glass rounded-2xl p-8 fade-up stagger-2">
+        <div class="flex items-center gap-4 mb-6">
+          <div class="feature-icon" style="background: rgba(20, 184, 166, 0.1); color: #14b8a6;">
+            <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
+          </div>
+          <div>
+            <h3 class="text-xl font-bold">Teams</h3>
+            <p class="text-zinc-500 text-sm">Multi-agent coordination with shared task lists</p>
+          </div>
+        </div>
+
+        <div class="grid md:grid-cols-2 gap-6">
+          <ul class="space-y-3 text-sm text-zinc-300">
+            <li class="flex items-start gap-3">
+              <svg class="w-5 h-5 text-green-500 flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+              <span><strong>Lead + teammates:</strong> A lead agent spawns specialized teammates (researcher, developer, tester) that work in parallel</span>
+            </li>
+            <li class="flex items-start gap-3">
+              <svg class="w-5 h-5 text-green-500 flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+              <span><strong>Shared task list:</strong> Tasks with assignments, status tracking, and dependency management (blocks/blockedBy)</span>
+            </li>
+          </ul>
+          <ul class="space-y-3 text-sm text-zinc-300">
+            <li class="flex items-start gap-3">
+              <svg class="w-5 h-5 text-green-500 flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+              <span><strong>Live progress:</strong> Auto-refreshing panel shows real-time task completion and member activity</span>
+            </li>
+            <li class="flex items-start gap-3">
+              <svg class="w-5 h-5 text-green-500 flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+              <span><strong>One-click start:</strong> Start a team from the panel and Claude analyzes your conversation to suggest the right team structure</span>
+            </li>
+          </ul>
+        </div>
+      </div>
+
+      <!-- Orchestrator - full width -->
+      <div class="glass rounded-2xl p-8 fade-up stagger-3">
+        <div class="flex items-center gap-4 mb-6">
+          <div class="feature-icon" style="background: rgba(6, 182, 212, 0.1); color: #06b6d4;">
+            <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 5a1 1 0 011-1h14a1 1 0 011 1v2a1 1 0 01-1 1H5a1 1 0 01-1-1V5zM4 13a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H5a1 1 0 01-1-1v-6zM16 13a1 1 0 011-1h2a1 1 0 011 1v6a1 1 0 01-1 1h-2a1 1 0 01-1-1v-6z"/></svg>
+          </div>
+          <div>
+            <h3 class="text-xl font-bold">Orchestrator</h3>
+            <p class="text-zinc-500 text-sm">Multi-terminal agent coordination</p>
+          </div>
+        </div>
+
+        <div class="grid md:grid-cols-2 gap-6">
+          <ul class="space-y-3 text-sm text-zinc-300">
+            <li class="flex items-start gap-3">
+              <svg class="w-5 h-5 text-green-500 flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+              <span><strong>Auto-terminal creation:</strong> Click Launch and terminals are automatically created&mdash;no manual grid setup required</span>
+            </li>
+            <li class="flex items-start gap-3">
+              <svg class="w-5 h-5 text-green-500 flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+              <span><strong>Cross-terminal awareness:</strong> Each terminal knows what the others are doing to avoid duplicate work and file conflicts</span>
+            </li>
+            <li class="flex items-start gap-3">
+              <svg class="w-5 h-5 text-green-500 flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+              <span><strong>Smart completion:</strong> Automatically detects when tasks are done and stops the orchestrator when all terminals finish</span>
+            </li>
+          </ul>
+          <ul class="space-y-3 text-sm text-zinc-300">
+            <li class="flex items-start gap-3">
+              <svg class="w-5 h-5 text-green-500 flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+              <span><strong>Error recovery:</strong> Exponential backoff retry with up to 8 attempts before marking a terminal as permanently failed</span>
+            </li>
+            <li class="flex items-start gap-3">
+              <svg class="w-5 h-5 text-green-500 flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+              <span><strong>Smart output summarization:</strong> Extracts key events from terminal output instead of naive truncation for better LLM context</span>
+            </li>
+            <li class="flex items-start gap-3">
+              <svg class="w-5 h-5 text-green-500 flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+              <span><strong>Split &amp; Parallel modes:</strong> Decompose one task across terminals or run independent tasks simultaneously</span>
+            </li>
+          </ul>
+        </div>
+      </div>
     </div>
   </section>
 
@@ -214,7 +294,7 @@
         <div class="fade-up">
           <span class="text-primary text-sm font-semibold uppercase tracking-wider">Analytics</span>
           <h2 class="text-3xl md:text-4xl font-bold mt-2">Track Your Productivity</h2>
-          <p class="text-zinc-400 mt-4 mb-8">Know exactly how much time you spend coding. Perfect for freelancers who bill by the hour or anyone who wants to understand their workflow.</p>
+          <p class="text-zinc-400 mt-4 mb-8">Know exactly how much time you actively spend coding. Tracks only active time by excluding idle gaps (lunch breaks, meetings, overnight)&mdash;perfect for freelancers who bill by the hour.</p>
 
           <div class="space-y-4">
             <div class="flex items-start gap-4">
@@ -223,7 +303,7 @@
               </div>
               <div>
                 <h4 class="font-semibold">Usage Statistics</h4>
-                <p class="text-sm text-zinc-400">Sessions, time coded, and tokens used at a glance</p>
+                <p class="text-sm text-zinc-400">Sessions, active coding time, and tokens used at a glance</p>
               </div>
             </div>
             <div class="flex items-start gap-4">
@@ -232,7 +312,7 @@
               </div>
               <div>
                 <h4 class="font-semibold">Project Time Tracking</h4>
-                <p class="text-sm text-zinc-400">Know exactly how long you've spent on each project</p>
+                <p class="text-sm text-zinc-400">Accurate active time per project&mdash;idle gaps are automatically excluded</p>
               </div>
             </div>
             <div class="flex items-start gap-4">
@@ -267,7 +347,7 @@
       <div class="text-center mb-16">
         <span class="text-primary text-sm font-semibold uppercase tracking-wider">Terminal</span>
         <h2 class="text-3xl md:text-4xl font-bold mt-2">A Real Development Environment</h2>
-        <p class="text-zinc-400 mt-4 max-w-2xl mx-auto">Split panels, multiple tabs, built-in browser preview, and 8 beautiful themes. Everything you need in one place.</p>
+        <p class="text-zinc-400 mt-4 max-w-2xl mx-auto">Split panels, 3x2 grid layout, multiple tabs, built-in browser preview, and 8 beautiful themes. Everything you need in one place.</p>
       </div>
 
       <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -275,8 +355,8 @@
           <div class="feature-icon feature-icon-primary">
             <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 5a1 1 0 011-1h14a1 1 0 011 1v2a1 1 0 01-1 1H5a1 1 0 01-1-1V5zM4 13a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H5a1 1 0 01-1-1v-6zM16 13a1 1 0 011-1h2a1 1 0 011 1v6a1 1 0 01-1 1h-2a1 1 0 01-1-1v-6z"/></svg>
           </div>
-          <h3 class="font-bold text-lg mb-2">Split Panels</h3>
-          <p class="text-sm text-zinc-400">Run two terminals side-by-side. Watch logs while Claude works.</p>
+          <h3 class="font-bold text-lg mb-2">Split Panels & Grid Layout</h3>
+          <p class="text-sm text-zinc-400">Split into two panels or launch a 3x2 grid of 6 independent terminals for multi-project workflows.</p>
         </div>
 
         <div class="glass feature-card fade-up stagger-1">
@@ -476,6 +556,7 @@
           <h4 class="font-semibold text-primary mb-3">Development</h4>
           <div class="text-sm text-zinc-300 space-y-2">
             <p class="flex items-center gap-2"><svg class="w-4 h-4 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg> Split terminal panels</p>
+            <p class="flex items-center gap-2"><svg class="w-4 h-4 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg> Grid layout (3x2, 6 terminals)</p>
             <p class="flex items-center gap-2"><svg class="w-4 h-4 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg> Multiple terminal tabs</p>
             <p class="flex items-center gap-2"><svg class="w-4 h-4 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg> Built-in browser preview</p>
             <p class="flex items-center gap-2"><svg class="w-4 h-4 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg> File explorer with git status</p>
@@ -504,6 +585,8 @@
           <div class="text-sm text-zinc-300 space-y-2">
             <p class="flex items-center gap-2"><svg class="w-4 h-4 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg> Super Agent (autonomous)</p>
             <p class="flex items-center gap-2"><svg class="w-4 h-4 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg> Agent Hive (multi-agent)</p>
+            <p class="flex items-center gap-2"><svg class="w-4 h-4 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg> Teams (coordinated agents)</p>
+            <p class="flex items-center gap-2"><svg class="w-4 h-4 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg> Orchestrator (multi-terminal)</p>
             <p class="flex items-center gap-2"><svg class="w-4 h-4 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg> 25 pre-built skills</p>
             <p class="flex items-center gap-2"><svg class="w-4 h-4 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg> 5 specialized agents</p>
             <p class="flex items-center gap-2"><svg class="w-4 h-4 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg> Custom skill creation</p>

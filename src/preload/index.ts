@@ -1,5 +1,5 @@
 import { contextBridge, ipcRenderer } from 'electron'
-import type { IpcApi, ConversationExportOptions, LLMApiRequest, SuperAgentConfig, SuperAgentSession, Hive } from '../shared/types'
+import type { IpcApi, ConversationExportOptions, LLMApiRequest, SuperAgentConfig, SuperAgentSession, Hive, CLIProvider } from '../shared/types'
 
 const api: IpcApi = {
   // Terminal
@@ -10,6 +10,7 @@ const api: IpcApi = {
     ipcRenderer.invoke('terminal-resize', cols, rows, terminalId),
   getTerminals: () => ipcRenderer.invoke('get-terminals'),
   terminalSendText: (text, terminalId) => ipcRenderer.invoke('terminal-send-text', text, terminalId),
+  terminalGetBuffer: (terminalId, lines) => ipcRenderer.invoke('terminal-get-buffer', terminalId, lines),
   onTerminalData: (callback) => {
     // Support multiple listeners - each terminal can register its own
     const handler = (_: Electron.IpcRendererEvent, data: string, terminalId: string) => callback(data, terminalId)
@@ -92,11 +93,15 @@ const api: IpcApi = {
   getDetailedUsageStats: (days?: number) =>
     ipcRenderer.invoke('get-detailed-usage-stats', days),
 
-  // Claude CLI
+  // Claude CLI (legacy)
   checkClaudeInstalled: () => ipcRenderer.invoke('check-claude-installed'),
   installClaude: () => ipcRenderer.invoke('install-claude'),
   onInstallProgress: (callback) =>
     ipcRenderer.on('install-progress', (_, data) => callback(data)),
+
+  // CLI Provider (generic)
+  checkCliInstalled: (provider: CLIProvider) => ipcRenderer.invoke('check-cli-installed', provider),
+  installCli: (provider: CLIProvider) => ipcRenderer.invoke('install-cli', provider),
 
   // Git
   gitStatus: () => ipcRenderer.invoke('git-status'),
@@ -186,6 +191,12 @@ const api: IpcApi = {
     return () => ipcRenderer.removeListener('background-agent-output', handler)
   },
 
+  // Teams
+  teamsList: () => ipcRenderer.invoke('teams-list'),
+  teamsGetConfig: (name: string) => ipcRenderer.invoke('teams-get-config', name),
+  teamsGetTasks: (name: string) => ipcRenderer.invoke('teams-get-tasks', name),
+  teamsDelete: (name: string) => ipcRenderer.invoke('teams-delete', name),
+
   // Repository Visualization
   repoAnalyze: (basePath: string) => ipcRenderer.invoke('repo-analyze', basePath),
   repoGetFileContent: (filePath: string) => ipcRenderer.invoke('repo-get-file-content', filePath),
@@ -208,6 +219,12 @@ const api: IpcApi = {
     ipcRenderer.invoke('memory-stats', projectPath),
   memoryDelete: (projectPath: string, type: 'main' | 'local' | 'rules') =>
     ipcRenderer.invoke('memory-delete', projectPath, type),
+  // Session Context
+  generateSessionContext: (projectPath: string, days?: number) =>
+    ipcRenderer.invoke('generate-session-context', projectPath, days),
+  writeSessionContext: (projectPath: string, content: string) =>
+    ipcRenderer.invoke('write-session-context', projectPath, content),
+
   // Legacy methods (backward compatibility)
   memoryGetContext: (projectPath: string) =>
     ipcRenderer.invoke('memory-get-context', projectPath),

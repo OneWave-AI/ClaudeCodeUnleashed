@@ -14,7 +14,8 @@ import {
   ChevronLeft,
   Hand,
   Pause,
-  Play
+  Play,
+  Shield
 } from 'lucide-react'
 import { useSuperAgent } from '../../hooks/useSuperAgent'
 
@@ -27,7 +28,9 @@ const LOG_CONFIG = {
   start: { icon: Clock, color: 'text-yellow-400', bg: 'bg-yellow-400/10', border: 'border-yellow-400/20', label: 'Waiting' },
   ready: { icon: Zap, color: 'text-green-400', bg: 'bg-green-400/10', border: 'border-green-400/20', label: 'Ready' },
   input: { icon: Send, color: 'text-blue-400', bg: 'bg-blue-400/10', border: 'border-blue-400/20', label: 'Sent' },
-  decision: { icon: Brain, color: 'text-purple-400', bg: 'bg-purple-400/10', border: 'border-purple-400/20', label: 'Thinking' },
+  decision: { icon: Brain, color: 'text-indigo-400', bg: 'bg-indigo-400/10', border: 'border-indigo-400/20', label: 'LLM' },
+  'fast-path': { icon: Zap, color: 'text-teal-400', bg: 'bg-teal-400/10', border: 'border-teal-400/20', label: 'Auto' },
+  permission: { icon: Shield, color: 'text-amber-400', bg: 'bg-amber-400/10', border: 'border-amber-400/20', label: 'Approved' },
   error: { icon: AlertCircle, color: 'text-red-400', bg: 'bg-red-400/10', border: 'border-red-400/20', label: 'Error' },
   complete: { icon: CheckCircle2, color: 'text-green-400', bg: 'bg-green-400/10', border: 'border-green-400/20', label: 'Done' },
   stop: { icon: Square, color: 'text-orange-400', bg: 'bg-orange-400/10', border: 'border-orange-400/20', label: 'Stopped' },
@@ -37,7 +40,7 @@ const LOG_CONFIG = {
 }
 
 export function SuperAgentStatusBar({ onStop }: SuperAgentStatusBarProps) {
-  const { isRunning, isPaused, task, startTime, timeLimit, activityLog, stopSuperAgent, nudgeSuperAgent, togglePause } = useSuperAgent()
+  const { isRunning, isPaused, task, startTime, timeLimit, activityLog, sessionStats, stopSuperAgent, nudgeSuperAgent, togglePause } = useSuperAgent()
   const [elapsed, setElapsed] = useState(0)
   const [isThinking, setIsThinking] = useState(false)
   const [copied, setCopied] = useState(false)
@@ -88,7 +91,7 @@ export function SuperAgentStatusBar({ onStop }: SuperAgentStatusBarProps) {
 
   const handleCopyLog = async () => {
     await navigator.clipboard.writeText(
-      activityLog.map(l => `[${new Date(l.timestamp).toLocaleTimeString()}] [${l.type}] ${l.message}`).join('\n')
+      activityLog.map(l => `[${new Date(l.timestamp).toLocaleTimeString()}] [${l.type}] ${l.message}${l.detail ? ` (${l.detail})` : ''}`).join('\n')
     )
     setCopied(true)
     setTimeout(() => setCopied(false), 2000)
@@ -209,6 +212,16 @@ export function SuperAgentStatusBar({ onStop }: SuperAgentStatusBarProps) {
         <p className="text-[11px] text-gray-300 line-clamp-2 leading-relaxed">{task}</p>
       </div>
 
+      {/* Session Stats */}
+      {(sessionStats.filesWritten > 0 || sessionStats.testsPassed > 0 || sessionStats.testsFailed > 0 || sessionStats.errorsEncountered > 0) && (
+        <div className="shrink-0 px-3 py-1.5 border-b border-white/[0.06] flex gap-3 text-[10px]">
+          {sessionStats.filesWritten > 0 && <span className="text-blue-400">{sessionStats.filesWritten} written</span>}
+          {sessionStats.testsPassed > 0 && <span className="text-green-400">{sessionStats.testsPassed} passed</span>}
+          {sessionStats.testsFailed > 0 && <span className="text-red-400">{sessionStats.testsFailed} failed</span>}
+          {sessionStats.errorsEncountered > 0 && <span className="text-red-400">{sessionStats.errorsEncountered} errors</span>}
+        </div>
+      )}
+
       {/* Activity Log */}
       <div className="flex-1 overflow-hidden flex flex-col min-h-0">
         <div className="shrink-0 flex items-center justify-between px-3 py-1.5 border-b border-white/[0.06]">
@@ -253,6 +266,9 @@ export function SuperAgentStatusBar({ onStop }: SuperAgentStatusBarProps) {
                 <p className="text-[11px] text-gray-300 leading-relaxed break-words pl-4">
                   {displayMsg}
                 </p>
+                {entry.detail && (
+                  <p className="text-[10px] text-gray-500 pl-4 mt-0.5 italic">{entry.detail}</p>
+                )}
               </div>
             )
           })}

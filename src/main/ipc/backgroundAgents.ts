@@ -1,9 +1,10 @@
-import { ipcMain, BrowserWindow } from 'electron'
+import { ipcMain, BrowserWindow, app } from 'electron'
 import * as fs from 'fs/promises'
 import { join } from 'path'
 import { homedir } from 'os'
 import * as pty from 'node-pty'
-import type { BackgroundAgentTask } from '../../shared/types'
+import type { BackgroundAgentTask, AppSettings } from '../../shared/types'
+import { CLI_PROVIDERS } from '../../shared/providers'
 
 const BACKGROUND_AGENTS_DIR = join(homedir(), '.claude', 'background-agents')
 
@@ -104,13 +105,16 @@ async function startTask(task: BackgroundAgentTask): Promise<void> {
   // Spawn the Claude CLI process
   const shell = process.platform === 'win32' ? 'powershell.exe' : '/bin/zsh'
 
+  // Strip env vars that prevent CLI tools from launching inside our terminal
+  const { CLAUDECODE: _, ...cleanEnv } = process.env
+
   const ptyProcess = pty.spawn(shell, [], {
     name: 'xterm-256color',
     cols: 120,
     rows: 40,
     cwd: task.projectPath,
     env: {
-      ...process.env,
+      ...cleanEnv,
       TERM: 'xterm-256color',
       COLORTERM: 'truecolor',
       FORCE_COLOR: '1'
@@ -158,10 +162,20 @@ async function startTask(task: BackgroundAgentTask): Promise<void> {
     processQueue()
   })
 
-  // Send the prompt to Claude
-  setTimeout(() => {
-    // First start Claude CLI
-    ptyProcess.write('claude\r')
+  // Read provider from settings and start CLI
+  setTimeout(async () => {
+    let binaryName = 'claude'
+    try {
+      const settingsPath = join(app.getPath('userData'), 'settings.json')
+      const data = await fs.readFile(settingsPath, 'utf-8')
+      const settings: Partial<AppSettings> = JSON.parse(data)
+      const provider = settings.cliProvider || 'claude'
+      binaryName = CLI_PROVIDERS[provider].binaryName
+    } catch {
+      // Default to claude if settings can't be read
+    }
+
+    ptyProcess.write(`${binaryName}\r`)
 
     // Wait for it to initialize, then send the prompt
     setTimeout(() => {

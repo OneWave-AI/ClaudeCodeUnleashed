@@ -15,6 +15,7 @@ import {
 } from 'lucide-react'
 import { useSuperAgent } from '../../hooks/useSuperAgent'
 import { useAppStore } from '../../store'
+import { useOrchestratorStore } from '../../store/orchestratorStore'
 import type { SafetyLevel, LLMProvider } from '../../../shared/types'
 
 type LaunchMode = 'new' | 'takeover'
@@ -36,6 +37,7 @@ export function SuperAgentModal({ isOpen, onClose, terminalId, onStart }: SuperA
   const { startSuperAgent, config, provider, setProvider, timeLimit, setTimeLimit, safetyLevel, setSafetyLevel, loadConfig } =
     useSuperAgent()
   const { cwd } = useAppStore()
+  const orchestratorRunning = useOrchestratorStore((s) => s.isRunning)
 
   const [task, setTask] = useState('')
   const [isStarting, setIsStarting] = useState(false)
@@ -57,6 +59,11 @@ export function SuperAgentModal({ isOpen, onClose, terminalId, onStart }: SuperA
   }, [isOpen, loadConfig])
 
   const handleStart = async (mode: LaunchMode = launchMode) => {
+    if (orchestratorRunning) {
+      setError('Stop the Orchestrator first')
+      return
+    }
+
     if (mode === 'new' && !task.trim()) {
       setError('Tell Claude what to build')
       return
@@ -130,6 +137,13 @@ export function SuperAgentModal({ isOpen, onClose, terminalId, onStart }: SuperA
 
         {/* Content */}
         <div className="p-5 space-y-4">
+          {/* Orchestrator guard */}
+          {orchestratorRunning && (
+            <div className="px-3 py-2 bg-cyan-500/10 border border-cyan-500/20 rounded-lg text-cyan-400 text-xs">
+              Orchestrator is running. Stop it before starting Super Agent.
+            </div>
+          )}
+
           {/* Mode Toggle */}
           <div className="flex gap-2 p-1 bg-[#0a0a0b] rounded-lg">
             <button
@@ -263,9 +277,9 @@ export function SuperAgentModal({ isOpen, onClose, terminalId, onStart }: SuperA
           {/* Launch Button */}
           <button
             onClick={() => handleStart()}
-            disabled={isStarting || isLoadingConfig || (launchMode === 'new' && !task.trim())}
+            disabled={isStarting || isLoadingConfig || orchestratorRunning || (launchMode === 'new' && !task.trim())}
             className={`w-full py-3 rounded-xl font-medium transition-all flex items-center justify-center gap-2 ${
-              isStarting || isLoadingConfig || (launchMode === 'new' && !task.trim())
+              isStarting || isLoadingConfig || orchestratorRunning || (launchMode === 'new' && !task.trim())
                 ? 'bg-gray-800 text-gray-500 cursor-not-allowed'
                 : launchMode === 'takeover'
                   ? 'bg-purple-500 hover:bg-purple-400 text-white'

@@ -5,7 +5,8 @@ import {
   AlertTriangle, ExternalLink, Loader2, FolderOpen, Sparkles, Zap, CheckCircle, Save
 } from 'lucide-react'
 import { useAppStore } from '../../store'
-import type { CustomTheme, UpdateInfo, SuperAgentConfig, LLMProvider, SafetyLevel } from '../../../shared/types'
+import type { CustomTheme, UpdateInfo, SuperAgentConfig, LLMProvider, SafetyLevel, CLIProvider } from '../../../shared/types'
+import { CLI_PROVIDERS } from '../../../shared/providers'
 
 interface SettingsPanelProps {
   isOpen: boolean
@@ -116,6 +117,9 @@ export default function SettingsPanel({ isOpen, onClose }: SettingsPanelProps) {
     confirmBeforeClose, setConfirmBeforeClose,
     autoUpdate, setAutoUpdate,
     claudeApiKey, setClaudeApiKey,
+    cliProvider, setCLIProvider,
+    sessionContextEnabled, setSessionContextEnabled,
+    sessionContextDays, setSessionContextDays,
     customThemes, addCustomTheme, removeCustomTheme,
     initializeSettings, settings
   } = useAppStore()
@@ -865,6 +869,38 @@ export default function SettingsPanel({ isOpen, onClose }: SettingsPanelProps) {
             {/* Behavior Section */}
             {activeSection === 'behavior' && (
               <div className="space-y-6">
+                <h3 className="text-sm font-medium text-white mb-4">Default CLI Provider</h3>
+                <div className="space-y-3">
+                  <p className="text-xs text-gray-500">Choose the default CLI for new terminal tabs. You can override per-tab from the + menu.</p>
+                  <div className="grid grid-cols-2 gap-3">
+                    {(Object.values(CLI_PROVIDERS) as import('../../../shared/types').CLIProviderConfig[]).map((provider) => (
+                      <button
+                        key={provider.id}
+                        onClick={() => setCLIProvider(provider.id)}
+                        className={`flex flex-col items-start gap-1.5 p-4 rounded-xl border-2 transition-all ${
+                          cliProvider === provider.id
+                            ? 'border-[#cc785c] bg-[#cc785c]/10'
+                            : 'border-white/10 bg-white/[0.02] hover:bg-white/[0.05] hover:border-white/20'
+                        }`}
+                      >
+                        <div className="flex items-center gap-2 w-full">
+                          <span className="text-sm font-semibold text-white">{provider.name}</span>
+                          {cliProvider === provider.id && (
+                            <CheckCircle size={14} className="text-[#cc785c] ml-auto" />
+                          )}
+                        </div>
+                        <span className="text-[11px] text-gray-500">{provider.binaryName} CLI</span>
+                        <div className="flex flex-wrap gap-1 mt-1">
+                          {provider.models.map((m) => (
+                            <span key={m.id} className="text-[10px] px-1.5 py-0.5 rounded bg-white/[0.06] text-gray-400">{m.name}</span>
+                          ))}
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="border-t border-white/[0.06] pt-6" />
                 <h3 className="text-sm font-medium text-white mb-4">Tab Behavior</h3>
                 {renderToggle(
                   confirmBeforeClose,
@@ -912,6 +948,36 @@ export default function SettingsPanel({ isOpen, onClose }: SettingsPanelProps) {
                         View Release Notes
                       </button>
                     )}
+                  </div>
+                )}
+
+                <div className="border-t border-white/[0.06] pt-6" />
+                <h3 className="text-sm font-medium text-white mb-4">Session Context</h3>
+                {renderToggle(
+                  sessionContextEnabled,
+                  setSessionContextEnabled,
+                  'Include Recent Activity Context',
+                  'Auto-generate context about recent work when starting new sessions'
+                )}
+
+                {sessionContextEnabled && (
+                  <div className="mt-4">
+                    <label className="block text-sm text-gray-400 mb-2">History Window</label>
+                    <div className="flex gap-2">
+                      {[7, 14, 30].map((d) => (
+                        <button
+                          key={d}
+                          onClick={() => setSessionContextDays(d)}
+                          className={`flex-1 px-4 py-2.5 rounded-lg text-sm font-medium transition-colors ${
+                            sessionContextDays === d
+                              ? 'bg-[#cc785c] text-white'
+                              : 'bg-white/5 text-gray-400 hover:bg-white/10 hover:text-white'
+                          }`}
+                        >
+                          {d} days
+                        </button>
+                      ))}
+                    </div>
                   </div>
                 )}
               </div>

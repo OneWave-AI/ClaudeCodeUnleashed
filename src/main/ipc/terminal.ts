@@ -13,6 +13,8 @@ interface Terminal {
 }
 
 const terminals = new Map<string, Terminal>()
+const terminalOutputBuffers = new Map<string, string>()
+const MAX_OUTPUT_BUFFER = 50_000 // 50KB ring buffer per terminal
 let terminalCounter = 0
 let currentCwd = homedir()
 let handlersRegistered = false
@@ -45,13 +47,16 @@ export function registerTerminalHandlers(): void {
         `${homedir()}/.local/bin`
       ].join(':')
 
+      // Strip env vars that prevent CLI tools from launching inside our terminal
+      const { CLAUDECODE, ...cleanEnv } = process.env
+
       const ptyProcess = pty.spawn(shell, [], {
         name: 'xterm-256color',
         cols: cols || 80,
         rows: rows || 24,
         cwd: currentCwd,
         env: {
-          ...process.env,
+          ...cleanEnv,
           TERM: 'xterm-256color',
           COLORTERM: 'truecolor',
           PATH: `${extraPaths}:${process.env.PATH || ''}`
@@ -72,8 +77,19 @@ export function registerTerminalHandlers(): void {
 
       terminals.set(id, terminal)
 
-      // Forward data to renderer - store the disposable
+      // Initialize output buffer for this terminal
+      terminalOutputBuffers.set(id, '')
+
+      // Forward data to renderer and track in ring buffer
       const dataDisposable = ptyProcess.onData((data) => {
+        // Append to ring buffer
+        const existing = terminalOutputBuffers.get(id) || ''
+        const updated = existing + data
+        terminalOutputBuffers.set(
+          id,
+          updated.length > MAX_OUTPUT_BUFFER ? updated.slice(-MAX_OUTPUT_BUFFER) : updated
+        )
+
         try {
           const window = BrowserWindow.fromWebContents(event.sender)
           if (window && !window.isDestroyed()) {
@@ -144,25 +160,27 @@ export function registerTerminalHandlers(): void {
   })
 
   // Send text to a specific terminal and press Enter
-  // This simulates typing text character by character then pressing Enter
+  // Bulk write for performance - no per-character delay needed
   ipcMain.handle('terminal-send-text', async (_, text: string, terminalId: string) => {
     const terminal = terminals.get(terminalId)
     if (terminal) {
       try {
-        // Type each character with a small delay to simulate human typing
-        // This helps with CLIs that have special input handling
-        for (const char of text) {
-          terminal.pty.write(char)
-          await new Promise(resolve => setTimeout(resolve, 10))
-        }
-        // Small delay before Enter
-        await new Promise(resolve => setTimeout(resolve, 50))
-        // Send Enter key (carriage return)
-        terminal.pty.write('\r')
+        terminal.pty.write(text + '\r')
       } catch (error) {
         console.error(`Failed to send text to terminal ${terminalId}:`, error)
       }
     }
+  })
+
+  // Get recent output buffer from a terminal
+  ipcMain.handle('terminal-get-buffer', (_, terminalId: string, lines?: number) => {
+    const buffer = terminalOutputBuffers.get(terminalId)
+    if (!buffer) return ''
+    if (lines && lines > 0) {
+      const allLines = buffer.split('\n')
+      return allLines.slice(-lines).join('\n')
+    }
+    return buffer
   })
 
   // Clean up all terminals when app quits
@@ -207,8 +225,9 @@ function cleanupTerminal(terminalId: string): void {
     // Process may already be dead
   }
 
-  // Remove from map
+  // Remove from maps
   terminals.delete(terminalId)
+  terminalOutputBuffers.delete(terminalId)
 }
 
 /**

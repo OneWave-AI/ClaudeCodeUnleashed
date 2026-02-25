@@ -1,6 +1,26 @@
 import { create } from 'zustand'
 import type { LLMProvider, SafetyLevel, ActivityLogEntry, SuperAgentConfig } from '../../shared/types'
 
+interface SessionStats {
+  filesWritten: number
+  filesRead: number
+  testsPassed: number
+  testsFailed: number
+  errorsEncountered: number
+  fastPathDecisions: number
+  llmDecisions: number
+}
+
+const DEFAULT_SESSION_STATS: SessionStats = {
+  filesWritten: 0,
+  filesRead: 0,
+  testsPassed: 0,
+  testsFailed: 0,
+  errorsEncountered: 0,
+  fastPathDecisions: 0,
+  llmDecisions: 0
+}
+
 interface SuperAgentState {
   // Running state
   isRunning: boolean
@@ -18,6 +38,9 @@ interface SuperAgentState {
 
   // Activity log
   activityLog: ActivityLogEntry[]
+
+  // Session stats
+  sessionStats: SessionStats
 
   // Config
   config: SuperAgentConfig
@@ -40,11 +63,15 @@ interface SuperAgentState {
   // Output handling
   appendOutput: (data: string) => void
   clearOutput: () => void
+  markSent: (message: string) => void
   setIdle: (idle: boolean) => void
 
   // Logging
-  addLog: (type: ActivityLogEntry['type'], message: string) => void
+  addLog: (type: ActivityLogEntry['type'], message: string, detail?: string) => void
   clearLogs: () => void
+
+  // Stats
+  updateSessionStats: (stats: Partial<SessionStats>) => void
 
   // Session management
   startSession: (task: string, terminalId: string, projectFolder: string) => void
@@ -76,6 +103,7 @@ export const useSuperAgentStore = create<SuperAgentState>((set, get) => ({
   lastOutputTime: 0,
   isIdle: false,
   activityLog: [],
+  sessionStats: { ...DEFAULT_SESSION_STATS },
   config: DEFAULT_CONFIG,
   provider: 'groq',
   activeTerminalId: null,
@@ -118,18 +146,42 @@ export const useSuperAgentStore = create<SuperAgentState>((set, get) => ({
 
   clearOutput: () => set({ outputBuffer: '', isIdle: false }),
 
+  markSent: (message) =>
+    set((state) => {
+      const MAX_BUFFER = 100_000
+      const marker = `\n--- AGENT SENT: "${message}" ---\n`
+      const newBuffer = state.outputBuffer + marker
+      return {
+        outputBuffer: newBuffer.length > MAX_BUFFER
+          ? newBuffer.slice(-MAX_BUFFER)
+          : newBuffer,
+        isIdle: false
+      }
+    }),
+
   setIdle: (idle) => set({ isIdle: idle }),
 
   // Logging - limit to 500 entries to prevent memory leaks
-  addLog: (type, message) =>
+  addLog: (type, message, detail?) =>
     set((state) => ({
       activityLog: [
         ...state.activityLog.slice(-499), // Keep last 499 + new = 500 max
-        { timestamp: Date.now(), type, message }
+        { timestamp: Date.now(), type, message, ...(detail ? { detail } : {}) }
       ]
     })),
 
   clearLogs: () => set({ activityLog: [] }),
+
+  // Session stats
+  updateSessionStats: (stats) =>
+    set((state) => ({
+      sessionStats: {
+        ...state.sessionStats,
+        ...Object.fromEntries(
+          Object.entries(stats).map(([k, v]) => [k, Math.max(v as number, (state.sessionStats as Record<string, number>)[k] || 0)])
+        )
+      }
+    })),
 
   // Session management
   startSession: (task, terminalId, projectFolder) =>
@@ -142,6 +194,7 @@ export const useSuperAgentStore = create<SuperAgentState>((set, get) => ({
       outputBuffer: '',
       lastOutputTime: Date.now(),
       isIdle: false,
+      sessionStats: { ...DEFAULT_SESSION_STATS },
       activityLog: [
         { timestamp: Date.now(), type: 'start', message: `Task started: ${task}` }
       ]
@@ -200,6 +253,7 @@ export const useSuperAgentStore = create<SuperAgentState>((set, get) => ({
       lastOutputTime: 0,
       isIdle: false,
       activityLog: [],
+      sessionStats: { ...DEFAULT_SESSION_STATS },
       activeTerminalId: null
     })
 }))

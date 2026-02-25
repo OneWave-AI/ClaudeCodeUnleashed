@@ -208,6 +208,34 @@ export interface CustomTheme {
   white: string
 }
 
+// CLI Provider types
+export type CLIProvider = 'claude' | 'codex'
+
+export interface CLIModelInfo {
+  id: string
+  name: string
+  desc: string
+  color: string
+  bg: string
+}
+
+export interface CLIProviderConfig {
+  id: CLIProvider
+  name: string
+  binaryName: string
+  installCommand: string
+  installPackage: string
+  checkPaths: (home: string) => string[]
+  models: CLIModelInfo[]
+  defaultModel: string
+  modelCommand: string // e.g. "/model" for Claude, empty for Codex (uses --model at launch)
+  hasPlanMode: boolean
+  configDir: string
+  promptChar: RegExp
+  workingPatterns: RegExp[]
+  waitingPatterns: RegExp[]
+}
+
 export interface AppSettings {
   // Appearance
   theme: string
@@ -232,6 +260,13 @@ export interface AppSettings {
 
   // API
   claudeApiKey: string
+
+  // CLI Provider
+  cliProvider: CLIProvider
+
+  // Session Context
+  sessionContextEnabled: boolean
+  sessionContextDays: number
 }
 
 export interface UpdateInfo {
@@ -298,6 +333,7 @@ export interface IpcApi {
   terminalResize: (cols: number, rows: number, terminalId: string) => Promise<void>
   getTerminals: () => Promise<Terminal[]>
   terminalSendText: (text: string, terminalId: string) => Promise<void>
+  terminalGetBuffer: (terminalId: string, lines?: number) => Promise<string>
   onTerminalData: (callback: (data: string, terminalId: string) => void) => (() => void) | void
   onTerminalExit: (callback: (code: number, terminalId: string) => void) => (() => void) | void
 
@@ -359,10 +395,14 @@ export interface IpcApi {
   getCurrentSessionTodos: (projectFolder: string) => Promise<Array<{ id: string; content: string; status: string; activeForm?: string; createdAt: Date }>>
   getDetailedUsageStats: (days?: number) => Promise<DetailedUsageStats>
 
-  // Claude CLI
+  // Claude CLI (legacy, defaults to current provider)
   checkClaudeInstalled: () => Promise<boolean>
   installClaude: () => Promise<void>
   onInstallProgress: (callback: (data: { stage: string; progress: number }) => void) => void
+
+  // CLI Provider (generic)
+  checkCliInstalled: (provider: CLIProvider) => Promise<boolean>
+  installCli: (provider: CLIProvider) => Promise<void>
 
   // Git
   gitStatus: () => Promise<GitStatus | null>
@@ -414,6 +454,12 @@ export interface IpcApi {
   deleteHive: (id: string) => Promise<HiveOperationResult>
   resetHives: () => Promise<HiveOperationResult>
 
+  // Teams
+  teamsList: () => Promise<TeamSummary[]>
+  teamsGetConfig: (name: string) => Promise<TeamConfig | null>
+  teamsGetTasks: (name: string) => Promise<TeamTask[]>
+  teamsDelete: (name: string) => Promise<{ success: boolean; error?: string }>
+
   // Window Controls
   windowClose: () => Promise<void>
   windowMinimize: () => Promise<void>
@@ -453,6 +499,10 @@ export interface IpcApi {
   memoryOpenEditor: (projectPath: string, type: 'main' | 'local' | 'user') => Promise<{ success: boolean; path: string }>
   memoryStats: (projectPath: string) => Promise<MemoryStats>
   memoryDelete: (projectPath: string, type: 'main' | 'local' | 'rules') => Promise<{ success: boolean }>
+  // Session Context
+  generateSessionContext: (projectPath: string, days?: number) => Promise<string>
+  writeSessionContext: (projectPath: string, content: string) => Promise<{ success: boolean }>
+
   // Legacy methods (backward compatibility)
   memoryGetContext: (projectPath: string) => Promise<string>
   memorySetGlobalContext: (projectPath: string, context: string) => Promise<{ success: boolean }>
@@ -554,8 +604,9 @@ export interface SuperAgentConfig {
 
 export interface ActivityLogEntry {
   timestamp: number
-  type: 'start' | 'input' | 'output' | 'decision' | 'permission' | 'complete' | 'error' | 'stop' | 'working' | 'waiting' | 'ready'
+  type: 'start' | 'input' | 'output' | 'decision' | 'fast-path' | 'permission' | 'complete' | 'error' | 'stop' | 'working' | 'waiting' | 'ready'
   message: string
+  detail?: string
 }
 
 export interface SuperAgentSession {
@@ -568,6 +619,53 @@ export interface SuperAgentSession {
   activityLog: ActivityLogEntry[]
   provider: LLMProvider
   projectFolder: string
+}
+
+// Orchestrator types
+export interface OrchestratorSession extends SuperAgentSession {
+  mode: 'split' | 'parallel'
+  terminalCount: number
+}
+
+// Teams types
+export interface TeamMember {
+  agentId: string
+  name: string
+  agentType: string
+  model?: string
+  prompt?: string
+  color?: string
+  joinedAt: number
+  cwd?: string
+  backendType?: string
+}
+
+export interface TeamConfig {
+  name: string
+  description?: string
+  createdAt: number
+  leadAgentId?: string
+  leadSessionId?: string
+  members: TeamMember[]
+}
+
+export interface TeamTask {
+  id: string
+  subject: string
+  description?: string
+  activeForm?: string
+  owner?: string
+  status: 'pending' | 'in_progress' | 'completed'
+  blocks?: string[]
+  blockedBy?: string[]
+}
+
+export interface TeamSummary {
+  name: string
+  description?: string
+  createdAt: number
+  memberCount: number
+  taskStats: { total: number; completed: number; inProgress: number; pending: number }
 }
 
 // Background Agent types

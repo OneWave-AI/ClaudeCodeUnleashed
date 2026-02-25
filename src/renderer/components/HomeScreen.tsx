@@ -62,6 +62,8 @@ import { useAppStore } from '../store'
 interface HomeScreenProps {
   cwd: string
   claudeInstalled: boolean | null
+  claudeCliInstalled?: boolean | null
+  codexCliInstalled?: boolean | null
   onStartSession: () => void
   onSelectFolder: () => void
   onOpenSkills: () => void
@@ -71,6 +73,7 @@ interface HomeScreenProps {
   onOpenAnalytics?: () => void
   onOpenHive?: () => void
   onOpenMemory?: () => void
+  onOpenTeams?: () => void
 }
 
 interface RecentProject {
@@ -111,6 +114,8 @@ type LoadingState = 'idle' | 'loading' | 'loaded' | 'error'
 export default function HomeScreen({
   cwd,
   claudeInstalled,
+  claudeCliInstalled,
+  codexCliInstalled,
   onStartSession,
   onSelectFolder,
   onOpenSkills,
@@ -119,14 +124,14 @@ export default function HomeScreen({
   onOpenSuperAgent,
   onOpenAnalytics,
   onOpenHive,
-  onOpenMemory
+  onOpenMemory,
+  onOpenTeams
 }: HomeScreenProps) {
   // Get setCwd from store to keep it in sync when clicking projects
   const setCwd = useAppStore((state) => state.setCwd)
 
   const [recentProjects, setRecentProjects] = useState<RecentProject[]>([])
   const [stats, setStats] = useState<Stats>({ conversations: 0, skills: 0, agents: 0, mcpServers: 0 })
-  const [dockHoverIndex, setDockHoverIndex] = useState<number | null>(null)
   const [detailedStats, setDetailedStats] = useState<DetailedStats>({
     totalSessions: 0,
     totalTokens: 0,
@@ -780,13 +785,25 @@ export default function HomeScreen({
             </div>
           </button>
 
-          {/* Claude not installed */}
-          {claudeInstalled === false && (
-            <div className="bg-amber-500/10 border border-amber-500/20 rounded-xl p-4 mb-4">
-              <p className="text-amber-400 text-sm mb-2">Claude CLI not installed</p>
-              <button onClick={() => window.api.installClaude()} className="w-full flex items-center justify-center gap-2 bg-amber-500 hover:bg-amber-400 text-black font-medium rounded-lg py-2 text-sm transition-colors">
-                <Download size={16} /> Install Claude CLI
-              </button>
+          {/* CLI install status */}
+          {(claudeCliInstalled === false || codexCliInstalled === false) && (
+            <div className="space-y-2 mb-4">
+              {claudeCliInstalled === false && (
+                <div className="bg-amber-500/10 border border-amber-500/20 rounded-xl p-4">
+                  <p className="text-amber-400 text-sm mb-2">Claude Code CLI not installed</p>
+                  <button onClick={() => window.api.installCli('claude')} className="w-full flex items-center justify-center gap-2 bg-amber-500 hover:bg-amber-400 text-black font-medium rounded-lg py-2 text-sm transition-colors">
+                    <Download size={16} /> Install Claude Code
+                  </button>
+                </div>
+              )}
+              {codexCliInstalled === false && (
+                <div className="bg-emerald-500/10 border border-emerald-500/20 rounded-xl p-4">
+                  <p className="text-emerald-400 text-sm mb-2">Codex CLI not installed</p>
+                  <button onClick={() => window.api.installCli('codex')} className="w-full flex items-center justify-center gap-2 bg-emerald-500 hover:bg-emerald-400 text-black font-medium rounded-lg py-2 text-sm transition-colors">
+                    <Download size={16} /> Install Codex
+                  </button>
+                </div>
+              )}
             </div>
           )}
 
@@ -847,150 +864,123 @@ export default function HomeScreen({
           </p>
         </div>
 
-        {/* Arena Command Bar - Unique Design */}
-        <div className="flex justify-center mb-10">
-          <div
-            className="command-bar relative flex items-center gap-4 px-6 py-4"
-            onMouseLeave={() => setDockHoverIndex(null)}
-            style={{
-              background: 'linear-gradient(135deg, rgba(20,20,25,0.9) 0%, rgba(10,10,12,0.95) 100%)',
-              borderRadius: '20px',
-              border: '1px solid rgba(255,255,255,0.06)',
-              boxShadow: '0 20px 60px -15px rgba(0,0,0,0.7), inset 0 0 30px rgba(204,120,92,0.03)',
-            }}
-          >
-            {/* Animated border glow */}
-            <div className="absolute -inset-[1px] rounded-[21px] opacity-40 pointer-events-none" style={{
-              background: 'linear-gradient(90deg, rgba(204,120,92,0.3), rgba(168,85,247,0.3), rgba(6,182,212,0.3), rgba(204,120,92,0.3))',
+        {/* Command Panel */}
+        <div className="flex justify-center mb-8">
+          <div className="relative max-w-md w-full">
+            {/* Animated border */}
+            <div className="absolute -inset-[1px] rounded-2xl pointer-events-none" style={{
+              background: 'linear-gradient(90deg, rgba(204,120,92,0.3), rgba(168,85,247,0.25), rgba(6,182,212,0.3), rgba(204,120,92,0.3))',
               backgroundSize: '300% 100%',
-              animation: 'borderGlow 8s linear infinite'
+              animation: 'borderGlow 8s linear infinite',
+              opacity: 0.4
             }} />
 
-            {/* Inner container */}
-            <div className="relative flex items-center gap-3">
-              {[
-                { id: 'folder', label: 'Projects', onClick: onSelectFolder, gradient: ['#3b82f6', '#1d4ed8'], icon: 'folder' },
-                { id: 'tools', label: 'Tools', onClick: onOpenSkills, gradient: ['#f97316', '#dc2626'], icon: 'sparkle', badge: stats.skills + stats.agents || undefined },
-                { id: 'hive', label: 'Hive', onClick: onOpenHive || onOpenSuperAgent || (() => {}), gradient: ['#fbbf24', '#f59e0b'], icon: 'bee' },
-                { id: 'memory', label: 'Memory', onClick: onOpenMemory || (() => {}), gradient: ['#a855f7', '#9333ea'], icon: 'brain' },
-                { id: 'history', label: 'History', onClick: onOpenHistory, gradient: ['#a855f7', '#7c3aed'], icon: 'clock', badge: stats.conversations || undefined },
-                { id: 'analytics', label: 'Stats', onClick: onOpenAnalytics || (() => {}), gradient: ['#06b6d4', '#0891b2'], icon: 'chart' },
-                { id: 'settings', label: 'Config', onClick: onOpenSettings || (() => {}), gradient: ['#6b7280', '#4b5563'], icon: 'gear' },
-              ].map((item, index) => {
-                const isHovered = dockHoverIndex === index
-                // Unique wave animation - items rise and glow
-                let lift = 0
-                let glow = 0
-                if (dockHoverIndex !== null) {
-                  const distance = Math.abs(index - dockHoverIndex)
-                  if (distance === 0) {
-                    lift = -16
-                    glow = 1
-                  } else if (distance === 1) {
-                    lift = -8
-                    glow = 0.5
-                  } else if (distance === 2) {
-                    lift = -3
-                    glow = 0.2
-                  }
-                }
+            {/* Glass container */}
+            <div className="relative rounded-2xl overflow-hidden" style={{
+              background: 'linear-gradient(165deg, rgba(255,255,255,0.04) 0%, rgba(255,255,255,0.015) 100%)',
+              backdropFilter: 'blur(16px)',
+              border: '1px solid rgba(255,255,255,0.07)',
+              boxShadow: '0 20px 60px -12px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.06)'
+            }}>
+              {/* Top edge highlight */}
+              <div className="absolute inset-x-0 top-0 h-px pointer-events-none" style={{
+                background: 'linear-gradient(90deg, transparent 20%, rgba(255,255,255,0.1) 50%, transparent 80%)'
+              }} />
 
-                return (
-                  <CommandBarItem
-                    key={item.id}
-                    id={item.id}
-                    label={item.label}
-                    onClick={item.onClick}
-                    gradient={item.gradient}
-                    icon={item.icon}
-                    badge={item.badge}
-                    lift={lift}
-                    glow={glow}
-                    onHover={() => setDockHoverIndex(index)}
-                    isHovered={isHovered}
-                  />
-                )
-              })}
+              <div className="relative px-2 py-2.5">
+                {/* Top row */}
+                <div className="grid grid-cols-4 gap-0.5">
+                  <PanelItem label="Projects" icon="projects" accent="#60a5fa" onClick={onSelectFolder} />
+                  <PanelItem label="Tools" icon="tools" accent="#fb923c" onClick={onOpenSkills} badge={stats.skills + stats.agents || undefined} />
+                  <PanelItem label="Hive" icon="hive" accent="#fbbf24" onClick={onOpenHive || onOpenSuperAgent || (() => {})} />
+                  <PanelItem label="Memory" icon="memory" accent="#a78bfa" onClick={onOpenMemory || (() => {})} />
+                </div>
+
+                {/* Separator */}
+                <div className="mx-8 my-1.5 h-px" style={{
+                  background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.06), transparent)'
+                }} />
+
+                {/* Bottom row */}
+                <div className="grid grid-cols-4 gap-0.5">
+                  <PanelItem label="Teams" icon="teams" accent="#2dd4bf" onClick={onOpenTeams || (() => {})} />
+                  <PanelItem label="History" icon="history" accent="#8b5cf6" onClick={onOpenHistory} badge={stats.conversations || undefined} />
+                  <PanelItem label="Stats" icon="stats" accent="#22d3ee" onClick={onOpenAnalytics || (() => {})} />
+                  <PanelItem label="Config" icon="config" accent="#9ca3af" onClick={onOpenSettings || (() => {})} />
+                </div>
+
+                {/* Agent row separator */}
+                <div className="mx-6 my-1.5 h-px" style={{
+                  background: 'linear-gradient(90deg, transparent, rgba(168,85,247,0.1), transparent)'
+                }} />
+
+                {/* Agent buttons row */}
+                <div className="grid grid-cols-2 gap-1.5 px-1">
+                  {/* Super Agent */}
+                  {onOpenSuperAgent && (
+                    <button
+                      onClick={onOpenSuperAgent}
+                      disabled={claudeInstalled === false}
+                      className="agent-btn group/sa relative flex items-center gap-2.5 rounded-xl px-3 py-2 transition-all duration-200 active:scale-[0.97]"
+                      style={{ background: 'transparent' }}
+                      onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(168,85,247,0.04)' }}
+                      onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent' }}
+                    >
+                      <div
+                        className="relative w-8 h-8 rounded-lg flex items-center justify-center shrink-0 transition-transform duration-200 group-hover/sa:scale-105"
+                        style={{
+                          background: 'linear-gradient(135deg, rgba(168,85,247,0.18), rgba(236,72,153,0.1))',
+                          border: '1px solid rgba(168,85,247,0.15)',
+                          boxShadow: 'inset 0 1px 0 rgba(168,85,247,0.08)',
+                        }}
+                      >
+                        <Zap className="w-3.5 h-3.5 text-purple-400 opacity-80 group-hover/sa:opacity-100 transition-opacity duration-200" />
+                      </div>
+                      <div className="flex-1 text-left min-w-0">
+                        <div className="text-[10px] font-semibold tracking-wide text-gray-400 group-hover/sa:text-gray-200 transition-colors duration-200 truncate">
+                          Super Agent
+                        </div>
+                        <div className="text-[8px] text-gray-600 truncate">AI task execution</div>
+                      </div>
+                      <ChevronRight className="w-3 h-3 text-gray-700 group-hover/sa:text-purple-400 group-hover/sa:translate-x-0.5 transition-all duration-200 shrink-0" />
+                    </button>
+                  )}
+
+                  {/* Orchestrator */}
+                  {onOpenSuperAgent && (
+                    <button
+                      onClick={onOpenSuperAgent}
+                      className="agent-btn group/orch relative flex items-center gap-2.5 rounded-xl px-3 py-2 transition-all duration-200 active:scale-[0.97]"
+                      style={{ background: 'transparent' }}
+                      onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(6,182,212,0.04)' }}
+                      onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent' }}
+                    >
+                      <div
+                        className="relative w-8 h-8 rounded-lg flex items-center justify-center shrink-0 transition-transform duration-200 group-hover/orch:scale-105"
+                        style={{
+                          background: 'linear-gradient(135deg, rgba(6,182,212,0.18), rgba(168,85,247,0.1))',
+                          border: '1px solid rgba(6,182,212,0.15)',
+                          boxShadow: 'inset 0 1px 0 rgba(6,182,212,0.08)',
+                        }}
+                      >
+                        <div style={{ color: '#67e8f9' }} className="opacity-80 group-hover/orch:opacity-100 transition-opacity duration-200">
+                          <GeometricIcons.orchestrator className="w-4 h-4" />
+                        </div>
+                      </div>
+                      <div className="flex-1 text-left min-w-0">
+                        <div className="text-[10px] font-semibold tracking-wide text-gray-400 group-hover/orch:text-gray-200 transition-colors duration-200 truncate">
+                          Orchestrator
+                        </div>
+                        <div className="text-[8px] text-gray-600 truncate">Multi-agent swarm</div>
+                      </div>
+                      <ChevronRight className="w-3 h-3 text-gray-700 group-hover/orch:text-cyan-400 group-hover/orch:translate-x-0.5 transition-all duration-200 shrink-0" />
+                    </button>
+                  )}
+                </div>
+              </div>
             </div>
           </div>
         </div>
-
-        {/* Super Agent Button - Premium Design */}
-        {onOpenSuperAgent && (
-          <div className="relative mb-6 group">
-            {/* Animated gradient border */}
-            {claudeInstalled !== false && (
-              <div className="absolute -inset-[1px] rounded-2xl bg-gradient-to-r from-purple-500 via-pink-500 to-cyan-500 opacity-0 group-hover:opacity-100 blur-sm transition-opacity duration-500 animate-gradient-shift" />
-            )}
-            <div className="absolute -inset-[1px] rounded-2xl bg-gradient-to-r from-purple-500/50 via-pink-500/50 to-purple-500/50 opacity-60 group-hover:opacity-100 transition-opacity duration-300" style={{ backgroundSize: '200% 100%', animation: 'gradient-x 3s ease infinite' }} />
-
-            <button
-              onClick={onOpenSuperAgent}
-              disabled={claudeInstalled === false}
-              className={`relative w-full flex items-center gap-4 rounded-2xl p-5 transition-all duration-300 ${
-                claudeInstalled !== false
-                  ? 'bg-[#0d0d15] hover:bg-[#12121a]'
-                  : 'bg-gray-800/30 border border-gray-700/30 cursor-not-allowed'
-              }`}
-            >
-              {/* Glowing icon container */}
-              <div className="relative">
-                {claudeInstalled !== false && (
-                  <div className="absolute inset-0 rounded-xl bg-gradient-to-br from-purple-500 to-pink-500 blur-lg opacity-50 group-hover:opacity-75 transition-opacity animate-pulse-slow" />
-                )}
-                <div className={`relative w-14 h-14 rounded-xl flex items-center justify-center transition-all duration-300 ${
-                  claudeInstalled !== false
-                    ? 'bg-gradient-to-br from-purple-500 via-pink-500 to-purple-600 group-hover:scale-110 shadow-lg shadow-purple-500/25'
-                    : 'bg-gray-700'
-                }`}>
-                  <Zap className={`w-7 h-7 ${claudeInstalled !== false ? 'text-white drop-shadow-lg' : 'text-gray-500'}`} />
-                  {claudeInstalled !== false && (
-                    <div className="absolute inset-0 rounded-xl bg-gradient-to-t from-white/0 to-white/20" />
-                  )}
-                </div>
-              </div>
-
-              {/* Text content */}
-              <div className="flex-1 text-left">
-                <div className="flex items-center gap-2 mb-1">
-                  <h3 className={`text-lg font-bold tracking-tight ${claudeInstalled !== false ? 'text-white' : 'text-gray-500'}`}>
-                    Super Agent
-                  </h3>
-                  {claudeInstalled !== false && (
-                    <span className="relative px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider">
-                      <span className="absolute inset-0 rounded-full bg-gradient-to-r from-purple-500 to-pink-500 animate-pulse-slow" />
-                      <span className="relative text-white">New</span>
-                    </span>
-                  )}
-                </div>
-                <p className={`text-sm ${claudeInstalled !== false ? 'text-gray-400' : 'text-gray-600'}`}>
-                  Autonomous AI-powered task execution
-                </p>
-                {claudeInstalled !== false && (
-                  <div className="flex items-center gap-3 mt-2">
-                    <span className="flex items-center gap-1 text-[10px] text-purple-400/80">
-                      <Bot className="w-3 h-3" /> LLM-driven
-                    </span>
-                    <span className="flex items-center gap-1 text-[10px] text-pink-400/80">
-                      <Zap className="w-3 h-3" /> Auto-approve
-                    </span>
-                  </div>
-                )}
-              </div>
-
-              {/* Arrow */}
-              <div className={`flex items-center justify-center w-10 h-10 rounded-xl transition-all duration-300 ${
-                claudeInstalled !== false
-                  ? 'bg-white/5 group-hover:bg-purple-500/20 group-hover:scale-110'
-                  : 'bg-gray-800/50'
-              }`}>
-                <ChevronRight className={`w-5 h-5 transition-all duration-300 group-hover:translate-x-0.5 ${
-                  claudeInstalled !== false ? 'text-purple-400 group-hover:text-purple-300' : 'text-gray-600'
-                }`} />
-              </div>
-            </button>
-          </div>
-        )}
 
         {/* Recent Projects - Premium */}
         {recentProjects.length > 0 && (
@@ -1220,9 +1210,21 @@ export default function HomeScreen({
           100% { background-position: 300% 50%; }
         }
 
-        /* Command bar hover transition smoothing */
-        .command-bar button {
-          transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        /* Panel item hover states */
+        .panel-item:hover .panel-icon-box {
+          transform: scale(1.06);
+        }
+        .panel-item:hover .panel-icon-wrap {
+          opacity: 1;
+        }
+        .panel-item:hover .panel-label {
+          color: rgba(229,231,235,0.9);
+        }
+        .panel-item:hover .panel-underline {
+          width: 20px;
+        }
+        .panel-item:hover .panel-glow {
+          opacity: 0.25;
         }
 
         @media (prefers-reduced-motion: reduce) {
@@ -1306,228 +1308,436 @@ function StatCard({ icon: Icon, label, value, color }: {
   )
 }
 
-// Custom Icon Components for Command Bar
-const CommandIcons = {
-  folder: ({ color }: { color: string }) => (
-    <svg width="28" height="28" viewBox="0 0 28 28" fill="none">
-      {/* Folder back */}
-      <path d="M3 8C3 6.34315 4.34315 5 6 5H10L13 8H22C23.6569 8 25 9.34315 25 11V20C25 21.6569 23.6569 23 22 23H6C4.34315 23 3 21.6569 3 20V8Z" fill={color} fillOpacity="0.3"/>
-      {/* Folder front */}
-      <path d="M3 11C3 9.89543 3.89543 9 5 9H23C24.1046 9 25 9.89543 25 11V21C25 22.1046 24.1046 23 23 23H5C3.89543 23 3 22.1046 3 21V11Z" fill={color}/>
-      {/* Shine */}
-      <path d="M5 11H23V13H5V11Z" fill="white" fillOpacity="0.3"/>
-      {/* Dot accent */}
-      <circle cx="14" cy="16" r="2" fill="white" fillOpacity="0.5"/>
+// 3D Geometric Icons - uses gradients for lighting, layered fills for depth
+const GeometricIcons: Record<string, ({ className }: { className?: string }) => JSX.Element> = {
+  projects: ({ className }: { className?: string }) => (
+    <svg viewBox="0 0 32 32" fill="none" className={className}>
+      <defs>
+        <linearGradient id="proj-face" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor="currentColor" stopOpacity="0.25" />
+          <stop offset="100%" stopColor="currentColor" stopOpacity="0.08" />
+        </linearGradient>
+        <linearGradient id="proj-top" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor="currentColor" stopOpacity="0.4" />
+          <stop offset="100%" stopColor="currentColor" stopOpacity="0.12" />
+        </linearGradient>
+      </defs>
+      {/* Drop shadow */}
+      <path d="M5 27C5 27 8 29 16 29C24 29 27 27 27 27" stroke="currentColor" strokeWidth="0.5" opacity="0.08" />
+      {/* Back card - offset for depth */}
+      <rect x="7" y="3" width="20" height="17" rx="2.5" fill="currentColor" opacity="0.06" stroke="currentColor" strokeWidth="0.8" opacity="0.15" />
+      {/* Middle card */}
+      <rect x="4.5" y="5.5" width="20" height="17" rx="2.5" fill="currentColor" opacity="0.08" stroke="currentColor" strokeWidth="0.8" opacity="0.2" />
+      {/* Front folder - 3D face */}
+      <path d="M3 12.5C3 11.12 4.12 10 5.5 10H10.5L13 12.5H24.5C25.88 12.5 27 13.62 27 15V24.5C27 25.88 25.88 27 24.5 27H5.5C4.12 27 3 25.88 3 24.5V12.5Z" fill="url(#proj-face)" stroke="currentColor" strokeWidth="1.3" />
+      {/* Folder tab - lit from top */}
+      <path d="M3 12.5C3 11.12 4.12 10 5.5 10H10.5L13 12.5" fill="url(#proj-top)" />
+      <path d="M5.5 10H10.5L13 12.5" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round" />
+      {/* Top edge highlight */}
+      <path d="M13.5 12.5H24.5C25.88 12.5 27 13.62 27 15" stroke="currentColor" strokeWidth="0.6" opacity="0.35" />
+      {/* Inner shine band */}
+      <rect x="6" y="15" width="19" height="1" rx="0.5" fill="currentColor" opacity="0.1" />
+      {/* Embossed diamond detail */}
+      <path d="M14.5 20L16 18L17.5 20L16 22L14.5 20Z" fill="currentColor" opacity="0.2" stroke="currentColor" strokeWidth="0.6" opacity="0.3" />
     </svg>
   ),
-  sparkle: ({ color }: { color: string }) => (
-    <svg width="28" height="28" viewBox="0 0 28 28" fill="none">
-      {/* Main star */}
-      <path d="M14 2L16.5 10.5L25 14L16.5 17.5L14 26L11.5 17.5L3 14L11.5 10.5L14 2Z" fill={color}/>
-      {/* Inner glow */}
-      <path d="M14 6L15.5 11.5L21 14L15.5 16.5L14 22L12.5 16.5L7 14L12.5 11.5L14 6Z" fill="white" fillOpacity="0.4"/>
-      {/* Small sparkles */}
-      <circle cx="21" cy="7" r="1.5" fill={color} fillOpacity="0.6"/>
-      <circle cx="7" cy="21" r="1" fill={color} fillOpacity="0.4"/>
-      <circle cx="23" cy="21" r="1" fill={color} fillOpacity="0.5"/>
+  tools: ({ className }: { className?: string }) => (
+    <svg viewBox="0 0 32 32" fill="none" className={className}>
+      <defs>
+        <linearGradient id="star-lit" x1="0.5" y1="0" x2="0.5" y2="1">
+          <stop offset="0%" stopColor="currentColor" stopOpacity="0.35" />
+          <stop offset="60%" stopColor="currentColor" stopOpacity="0.1" />
+          <stop offset="100%" stopColor="currentColor" stopOpacity="0.02" />
+        </linearGradient>
+        <linearGradient id="star-edge" x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0%" stopColor="currentColor" stopOpacity="0.5" />
+          <stop offset="100%" stopColor="currentColor" stopOpacity="0.15" />
+        </linearGradient>
+      </defs>
+      {/* Soft glow ring */}
+      <circle cx="16" cy="16" r="13" stroke="currentColor" strokeWidth="0.5" opacity="0.08" strokeDasharray="2 3" />
+      {/* Main star - filled face */}
+      <path d="M16 3L18.8 12.2L27 16L18.8 19.8L16 29L13.2 19.8L5 16L13.2 12.2L16 3Z" fill="url(#star-lit)" />
+      {/* Star outline with lighting */}
+      <path d="M16 3L18.8 12.2L27 16L18.8 19.8L16 29L13.2 19.8L5 16L13.2 12.2L16 3Z" stroke="url(#star-edge)" strokeWidth="1.3" strokeLinejoin="round" />
+      {/* Top-left lit facet */}
+      <path d="M16 3L13.2 12.2L5 16L16 16L16 3Z" fill="currentColor" opacity="0.12" />
+      {/* Top-right lit facet */}
+      <path d="M16 3L18.8 12.2L27 16L16 16L16 3Z" fill="currentColor" opacity="0.08" />
+      {/* Center gem */}
+      <circle cx="16" cy="16" r="2" fill="currentColor" opacity="0.3" />
+      <circle cx="16" cy="16" r="1" fill="currentColor" opacity="0.15" />
+      {/* Secondary sparkle */}
+      <path d="M25 5L25.8 7.2L28 8L25.8 8.8L25 11L24.2 8.8L22 8L24.2 7.2L25 5Z" fill="currentColor" opacity="0.25" stroke="currentColor" strokeWidth="0.6" strokeLinejoin="round" />
+      {/* Micro sparkle */}
+      <circle cx="7" cy="6.5" r="1" fill="currentColor" opacity="0.3" />
+      <path d="M7 5.5V7.5M6 6.5H8" stroke="currentColor" strokeWidth="0.5" opacity="0.4" />
     </svg>
   ),
-  bee: ({ color }: { color: string }) => (
-    <svg width="28" height="28" viewBox="0 0 28 28" fill="none">
-      {/* Wings */}
-      <ellipse cx="8" cy="12" rx="4" ry="3" fill="white" fillOpacity="0.3" transform="rotate(-20 8 12)"/>
-      <ellipse cx="20" cy="12" rx="4" ry="3" fill="white" fillOpacity="0.3" transform="rotate(20 20 12)"/>
-      {/* Body */}
-      <ellipse cx="14" cy="16" rx="6" ry="7" fill={color}/>
-      {/* Stripes */}
-      <path d="M8.5 14H19.5" stroke="#000" strokeWidth="2" strokeOpacity="0.3"/>
-      <path d="M8.5 18H19.5" stroke="#000" strokeWidth="2" strokeOpacity="0.3"/>
-      {/* Head */}
-      <circle cx="14" cy="8" r="4" fill={color}/>
-      {/* Eyes */}
-      <circle cx="12" cy="7" r="1.5" fill="#000" fillOpacity="0.5"/>
-      <circle cx="16" cy="7" r="1.5" fill="#000" fillOpacity="0.5"/>
-      {/* Antennae */}
-      <path d="M11 5L9 2" stroke={color} strokeWidth="1.5" strokeLinecap="round"/>
-      <path d="M17 5L19 2" stroke={color} strokeWidth="1.5" strokeLinecap="round"/>
-      {/* Antenna tips */}
-      <circle cx="9" cy="2" r="1" fill={color}/>
-      <circle cx="19" cy="2" r="1" fill={color}/>
+  hive: ({ className }: { className?: string }) => (
+    <svg viewBox="0 0 32 32" fill="none" className={className}>
+      <defs>
+        <linearGradient id="hex-top" x1="0.5" y1="0" x2="0.5" y2="1">
+          <stop offset="0%" stopColor="currentColor" stopOpacity="0.3" />
+          <stop offset="100%" stopColor="currentColor" stopOpacity="0.05" />
+        </linearGradient>
+        <linearGradient id="hex-side" x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0%" stopColor="currentColor" stopOpacity="0.15" />
+          <stop offset="100%" stopColor="currentColor" stopOpacity="0.03" />
+        </linearGradient>
+      </defs>
+      {/* Top hex - brightest, front-facing */}
+      <path d="M16 1.5L21.5 4.5V10.5L16 13.5L10.5 10.5V4.5L16 1.5Z" fill="url(#hex-top)" stroke="currentColor" strokeWidth="1.3" strokeLinejoin="round" />
+      {/* Top hex upper facet highlight */}
+      <path d="M10.5 4.5L16 1.5L21.5 4.5L16 7.5L10.5 4.5Z" fill="currentColor" opacity="0.15" />
+      {/* Bottom-left hex */}
+      <path d="M8 13.5L13.5 16.5V22.5L8 25.5L2.5 22.5V16.5L8 13.5Z" fill="url(#hex-side)" stroke="currentColor" strokeWidth="1.3" strokeLinejoin="round" />
+      <path d="M2.5 16.5L8 13.5L13.5 16.5L8 19.5L2.5 16.5Z" fill="currentColor" opacity="0.1" />
+      {/* Bottom-right hex */}
+      <path d="M24 13.5L29.5 16.5V22.5L24 25.5L18.5 22.5V16.5L24 13.5Z" fill="url(#hex-side)" stroke="currentColor" strokeWidth="1.3" strokeLinejoin="round" />
+      <path d="M18.5 16.5L24 13.5L29.5 16.5L24 19.5L18.5 16.5Z" fill="currentColor" opacity="0.1" />
+      {/* Shared edge glow lines */}
+      <line x1="13.5" y1="10.5" x2="13.5" y2="16.5" stroke="currentColor" strokeWidth="0.8" opacity="0.25" />
+      <line x1="18.5" y1="10.5" x2="18.5" y2="16.5" stroke="currentColor" strokeWidth="0.8" opacity="0.25" />
+      {/* Joint nodes */}
+      <circle cx="13.5" cy="13.5" r="1.2" fill="currentColor" opacity="0.35" />
+      <circle cx="18.5" cy="13.5" r="1.2" fill="currentColor" opacity="0.35" />
+      <circle cx="16" cy="16.5" r="1" fill="currentColor" opacity="0.2" />
     </svg>
   ),
-  clock: ({ color }: { color: string }) => (
-    <svg width="28" height="28" viewBox="0 0 28 28" fill="none">
-      {/* Outer ring */}
-      <circle cx="14" cy="14" r="11" fill={color} fillOpacity="0.2"/>
-      <circle cx="14" cy="14" r="10" stroke={color} strokeWidth="2"/>
-      {/* Inner circle */}
-      <circle cx="14" cy="14" r="7" fill={color} fillOpacity="0.3"/>
-      {/* Clock hands */}
-      <path d="M14 8V14L18 17" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-      {/* Center dot */}
-      <circle cx="14" cy="14" r="1.5" fill="white"/>
-      {/* Hour markers */}
-      <circle cx="14" cy="5" r="1" fill={color}/>
-      <circle cx="23" cy="14" r="1" fill={color}/>
-      <circle cx="14" cy="23" r="1" fill={color}/>
-      <circle cx="5" cy="14" r="1" fill={color}/>
+  memory: ({ className }: { className?: string }) => (
+    <svg viewBox="0 0 32 32" fill="none" className={className}>
+      <defs>
+        <radialGradient id="mem-core" cx="0.4" cy="0.35" r="0.6">
+          <stop offset="0%" stopColor="currentColor" stopOpacity="0.35" />
+          <stop offset="100%" stopColor="currentColor" stopOpacity="0.05" />
+        </radialGradient>
+        <radialGradient id="mem-node" cx="0.35" cy="0.3" r="0.65">
+          <stop offset="0%" stopColor="currentColor" stopOpacity="0.4" />
+          <stop offset="100%" stopColor="currentColor" stopOpacity="0.08" />
+        </radialGradient>
+      </defs>
+      {/* Orbit ring */}
+      <circle cx="16" cy="16" r="12" stroke="currentColor" strokeWidth="0.4" opacity="0.08" strokeDasharray="1.5 3" />
+      {/* Connection lines with glow */}
+      <line x1="16" y1="12" x2="16" y2="5.5" stroke="currentColor" strokeWidth="1.2" opacity="0.35" />
+      <line x1="19.2" y1="13.2" x2="25.5" y2="9.5" stroke="currentColor" strokeWidth="1.2" opacity="0.35" />
+      <line x1="19" y1="19" x2="24.5" y2="23.5" stroke="currentColor" strokeWidth="1.2" opacity="0.3" />
+      <line x1="13" y1="19" x2="7.5" y2="23.5" stroke="currentColor" strokeWidth="1.2" opacity="0.3" />
+      <line x1="12.8" y1="13.2" x2="6.5" y2="9.5" stroke="currentColor" strokeWidth="1.2" opacity="0.35" />
+      {/* Central node - 3D sphere */}
+      <circle cx="16" cy="16" r="4.5" fill="url(#mem-core)" />
+      <circle cx="16" cy="16" r="4.5" stroke="currentColor" strokeWidth="1.4" />
+      {/* Sphere highlight */}
+      <ellipse cx="14.5" cy="14" rx="2" ry="1.5" fill="currentColor" opacity="0.12" />
+      <circle cx="16" cy="16" r="1.8" fill="currentColor" opacity="0.4" />
+      <circle cx="15" cy="15" r="0.6" fill="currentColor" opacity="0.25" />
+      {/* Outer nodes - 3D spheres */}
+      <circle cx="16" cy="4" r="2.8" fill="url(#mem-node)" stroke="currentColor" strokeWidth="1.1" />
+      <ellipse cx="15.2" cy="3.2" rx="1" ry="0.7" fill="currentColor" opacity="0.15" />
+      <circle cx="27" cy="9" r="2.3" fill="url(#mem-node)" stroke="currentColor" strokeWidth="1.1" />
+      <ellipse cx="26.3" cy="8.3" rx="0.8" ry="0.6" fill="currentColor" opacity="0.15" />
+      <circle cx="25.5" cy="24" r="2.3" fill="url(#mem-node)" stroke="currentColor" strokeWidth="1.1" />
+      <ellipse cx="24.8" cy="23.3" rx="0.8" ry="0.6" fill="currentColor" opacity="0.12" />
+      <circle cx="6.5" cy="24" r="2.3" fill="url(#mem-node)" stroke="currentColor" strokeWidth="1.1" />
+      <ellipse cx="5.8" cy="23.3" rx="0.8" ry="0.6" fill="currentColor" opacity="0.12" />
+      <circle cx="5" cy="9" r="2.3" fill="url(#mem-node)" stroke="currentColor" strokeWidth="1.1" />
+      <ellipse cx="4.3" cy="8.3" rx="0.8" ry="0.6" fill="currentColor" opacity="0.15" />
     </svg>
   ),
-  chart: ({ color }: { color: string }) => (
-    <svg width="28" height="28" viewBox="0 0 28 28" fill="none">
-      {/* Background */}
-      <rect x="3" y="3" width="22" height="22" rx="4" fill={color} fillOpacity="0.15"/>
-      {/* Bars */}
-      <rect x="6" y="15" width="4" height="8" rx="1" fill={color} fillOpacity="0.5"/>
-      <rect x="12" y="10" width="4" height="13" rx="1" fill={color}/>
-      <rect x="18" y="6" width="4" height="17" rx="1" fill={color} fillOpacity="0.7"/>
+  teams: ({ className }: { className?: string }) => (
+    <svg viewBox="0 0 32 32" fill="none" className={className}>
+      <defs>
+        <radialGradient id="team-orb" cx="0.4" cy="0.35" r="0.65">
+          <stop offset="0%" stopColor="currentColor" stopOpacity="0.2" />
+          <stop offset="100%" stopColor="currentColor" stopOpacity="0.03" />
+        </radialGradient>
+      </defs>
+      {/* Left sphere */}
+      <circle cx="11.5" cy="12" r="7.5" fill="url(#team-orb)" stroke="currentColor" strokeWidth="1.3" />
+      <ellipse cx="9.5" cy="10" rx="3" ry="2" fill="currentColor" opacity="0.08" />
+      {/* Right sphere */}
+      <circle cx="20.5" cy="12" r="7.5" fill="url(#team-orb)" stroke="currentColor" strokeWidth="1.3" />
+      <ellipse cx="18.5" cy="10" rx="3" ry="2" fill="currentColor" opacity="0.08" />
+      {/* Bottom sphere */}
+      <circle cx="16" cy="20" r="7.5" fill="url(#team-orb)" stroke="currentColor" strokeWidth="1.3" />
+      <ellipse cx="14" cy="18" rx="3" ry="2" fill="currentColor" opacity="0.08" />
+      {/* Intersections - brighter where overlapping */}
+      <ellipse cx="16" cy="10.5" rx="3" ry="4" fill="currentColor" opacity="0.08" />
+      <ellipse cx="13" cy="17.5" rx="3" ry="3.5" fill="currentColor" opacity="0.06" />
+      <ellipse cx="19" cy="17.5" rx="3" ry="3.5" fill="currentColor" opacity="0.06" />
+      {/* Triple intersection core - brightest */}
+      <circle cx="16" cy="15" r="2.5" fill="currentColor" opacity="0.18" />
+      <circle cx="16" cy="15" r="1.2" fill="currentColor" opacity="0.3" />
+      <circle cx="15.5" cy="14.3" r="0.5" fill="currentColor" opacity="0.15" />
+    </svg>
+  ),
+  history: ({ className }: { className?: string }) => (
+    <svg viewBox="0 0 32 32" fill="none" className={className}>
+      <defs>
+        <linearGradient id="clock-face" x1="0.5" y1="0" x2="0.5" y2="1">
+          <stop offset="0%" stopColor="currentColor" stopOpacity="0.15" />
+          <stop offset="100%" stopColor="currentColor" stopOpacity="0.03" />
+        </linearGradient>
+        <linearGradient id="hand-lit" x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0%" stopColor="currentColor" stopOpacity="0.9" />
+          <stop offset="100%" stopColor="currentColor" stopOpacity="0.5" />
+        </linearGradient>
+      </defs>
+      {/* Shadow under clock */}
+      <ellipse cx="16" cy="28" rx="10" ry="1.5" fill="currentColor" opacity="0.05" />
+      {/* Outer atmospheric ring */}
+      <circle cx="16" cy="16" r="14" stroke="currentColor" strokeWidth="0.4" opacity="0.06" strokeDasharray="1 3" />
+      {/* Clock face fill */}
+      <circle cx="16" cy="16" r="11.5" fill="url(#clock-face)" />
+      {/* Main ring with gap */}
+      <path d="M16 4C9.37 4 4 9.37 4 16C4 22.63 9.37 28 16 28C22.63 28 28 22.63 28 16C28 12.69 26.67 9.7 24.49 7.51" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
+      {/* Inner ring glow */}
+      <circle cx="16" cy="16" r="9" stroke="currentColor" strokeWidth="0.5" opacity="0.1" />
+      {/* Rewind arrow */}
+      <path d="M24.5 3L25 8L20 7.2" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M24.5 3L25 8L20 7.2" fill="currentColor" opacity="0.1" />
+      {/* Hour marks - 3D dots */}
+      <circle cx="16" cy="6" r="1" fill="currentColor" opacity="0.3" />
+      <circle cx="26" cy="16" r="1" fill="currentColor" opacity="0.25" />
+      <circle cx="16" cy="26" r="1" fill="currentColor" opacity="0.2" />
+      <circle cx="6" cy="16" r="1" fill="currentColor" opacity="0.25" />
+      {/* Smaller tick marks */}
+      <circle cx="21.5" cy="7.5" r="0.5" fill="currentColor" opacity="0.15" />
+      <circle cx="24.5" cy="10.5" r="0.5" fill="currentColor" opacity="0.15" />
+      <circle cx="24.5" cy="21.5" r="0.5" fill="currentColor" opacity="0.12" />
+      <circle cx="21.5" cy="24.5" r="0.5" fill="currentColor" opacity="0.12" />
+      <circle cx="10.5" cy="24.5" r="0.5" fill="currentColor" opacity="0.12" />
+      <circle cx="7.5" cy="21.5" r="0.5" fill="currentColor" opacity="0.12" />
+      {/* Hour hand - thick, lit */}
+      <line x1="16" y1="10.5" x2="16" y2="16" stroke="url(#hand-lit)" strokeWidth="2" strokeLinecap="round" />
+      {/* Minute hand */}
+      <line x1="16" y1="16" x2="20.5" y2="18.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" opacity="0.7" />
+      {/* Center hub - 3D */}
+      <circle cx="16" cy="16" r="2" fill="currentColor" opacity="0.25" />
+      <circle cx="16" cy="16" r="1.3" fill="currentColor" opacity="0.5" />
+      <circle cx="15.3" cy="15.3" r="0.5" fill="currentColor" opacity="0.2" />
+    </svg>
+  ),
+  stats: ({ className }: { className?: string }) => (
+    <svg viewBox="0 0 32 32" fill="none" className={className}>
+      <defs>
+        <linearGradient id="bar1" x1="0.5" y1="0" x2="0.5" y2="1">
+          <stop offset="0%" stopColor="currentColor" stopOpacity="0.25" />
+          <stop offset="100%" stopColor="currentColor" stopOpacity="0.06" />
+        </linearGradient>
+        <linearGradient id="bar2" x1="0.5" y1="0" x2="0.5" y2="1">
+          <stop offset="0%" stopColor="currentColor" stopOpacity="0.35" />
+          <stop offset="100%" stopColor="currentColor" stopOpacity="0.08" />
+        </linearGradient>
+        <linearGradient id="bar3" x1="0.5" y1="0" x2="0.5" y2="1">
+          <stop offset="0%" stopColor="currentColor" stopOpacity="0.45" />
+          <stop offset="100%" stopColor="currentColor" stopOpacity="0.1" />
+        </linearGradient>
+      </defs>
+      {/* Floor shadow */}
+      <path d="M3 28.5H29" stroke="currentColor" strokeWidth="0.4" opacity="0.1" />
+      {/* Grid lines */}
+      <line x1="4" y1="22" x2="28" y2="22" stroke="currentColor" strokeWidth="0.3" opacity="0.06" strokeDasharray="2 2" />
+      <line x1="4" y1="16" x2="28" y2="16" stroke="currentColor" strokeWidth="0.3" opacity="0.06" strokeDasharray="2 2" />
+      <line x1="4" y1="10" x2="28" y2="10" stroke="currentColor" strokeWidth="0.3" opacity="0.06" strokeDasharray="2 2" />
+      {/* Bar 1 - short, 3D with side face */}
+      <rect x="5" y="19" width="5.5" height="9" rx="1.5" fill="url(#bar1)" stroke="currentColor" strokeWidth="1.2" />
+      <rect x="5" y="19" width="2.5" height="9" rx="0.5" fill="currentColor" opacity="0.06" />
+      <rect x="5" y="19" width="5.5" height="1.5" rx="0.5" fill="currentColor" opacity="0.1" />
+      {/* Bar 2 - medium */}
+      <rect x="13" y="12" width="5.5" height="16" rx="1.5" fill="url(#bar2)" stroke="currentColor" strokeWidth="1.2" />
+      <rect x="13" y="12" width="2.5" height="16" rx="0.5" fill="currentColor" opacity="0.06" />
+      <rect x="13" y="12" width="5.5" height="1.5" rx="0.5" fill="currentColor" opacity="0.12" />
+      {/* Bar 3 - tall */}
+      <rect x="21" y="5" width="5.5" height="23" rx="1.5" fill="url(#bar3)" stroke="currentColor" strokeWidth="1.2" />
+      <rect x="21" y="5" width="2.5" height="23" rx="0.5" fill="currentColor" opacity="0.06" />
+      <rect x="21" y="5" width="5.5" height="1.5" rx="0.5" fill="currentColor" opacity="0.15" />
       {/* Trend line */}
-      <path d="M6 18L12 13L18 8L24 5" stroke="white" strokeWidth="2" strokeLinecap="round" strokeOpacity="0.6"/>
-      {/* Dots on line */}
-      <circle cx="12" cy="13" r="2" fill="white"/>
-      <circle cx="18" cy="8" r="2" fill="white"/>
+      <path d="M7.5 18L15.5 11L23.5 4" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" strokeDasharray="3 2" opacity="0.4" />
+      {/* Trend dots - 3D */}
+      <circle cx="7.5" cy="18" r="2" fill="currentColor" opacity="0.15" />
+      <circle cx="7.5" cy="18" r="1.2" fill="currentColor" opacity="0.35" />
+      <circle cx="15.5" cy="11" r="2" fill="currentColor" opacity="0.15" />
+      <circle cx="15.5" cy="11" r="1.2" fill="currentColor" opacity="0.35" />
+      <circle cx="23.5" cy="4" r="2" fill="currentColor" opacity="0.15" />
+      <circle cx="23.5" cy="4" r="1.2" fill="currentColor" opacity="0.35" />
     </svg>
   ),
-  gear: ({ color }: { color: string }) => (
-    <svg width="28" height="28" viewBox="0 0 28 28" fill="none">
-      {/* Gear teeth */}
-      <path d="M14 2L16 5H12L14 2Z" fill={color}/>
-      <path d="M14 26L12 23H16L14 26Z" fill={color}/>
-      <path d="M2 14L5 12V16L2 14Z" fill={color}/>
-      <path d="M26 14L23 16V12L26 14Z" fill={color}/>
-      <path d="M5.5 5.5L8 7L6 9L5.5 5.5Z" fill={color}/>
-      <path d="M22.5 22.5L20 21L22 19L22.5 22.5Z" fill={color}/>
-      <path d="M22.5 5.5L19 8L21 6L22.5 5.5Z" fill={color}/>
-      <path d="M5.5 22.5L8 20L6 22L5.5 22.5Z" fill={color}/>
-      {/* Main gear body */}
-      <circle cx="14" cy="14" r="8" fill={color}/>
-      {/* Inner circle */}
-      <circle cx="14" cy="14" r="5" fill={color} fillOpacity="0.5"/>
-      {/* Center hole */}
-      <circle cx="14" cy="14" r="2.5" fill="#1a1a1a"/>
-      {/* Shine */}
-      <path d="M10 10C11 9 13 8 16 10" stroke="white" strokeWidth="1.5" strokeOpacity="0.4" strokeLinecap="round"/>
+  config: ({ className }: { className?: string }) => (
+    <svg viewBox="0 0 32 32" fill="none" className={className}>
+      <defs>
+        <linearGradient id="oct-face" x1="0.3" y1="0" x2="0.7" y2="1">
+          <stop offset="0%" stopColor="currentColor" stopOpacity="0.18" />
+          <stop offset="100%" stopColor="currentColor" stopOpacity="0.03" />
+        </linearGradient>
+        <radialGradient id="oct-ring" cx="0.4" cy="0.35" r="0.6">
+          <stop offset="0%" stopColor="currentColor" stopOpacity="0.3" />
+          <stop offset="100%" stopColor="currentColor" stopOpacity="0.06" />
+        </radialGradient>
+      </defs>
+      {/* Outer octagon - 3D body */}
+      <path d="M11 2.5H21L29.5 11V21L21 29.5H11L2.5 21V11L11 2.5Z" fill="url(#oct-face)" stroke="currentColor" strokeWidth="1.3" strokeLinejoin="round" />
+      {/* Top facet highlight */}
+      <path d="M11 2.5H21L16 8L11 2.5Z" fill="currentColor" opacity="0.08" />
+      {/* Left facet - slightly lit */}
+      <path d="M2.5 11L11 2.5L8 16L2.5 21V11Z" fill="currentColor" opacity="0.05" />
+      {/* Inner octagon */}
+      <path d="M13.5 7.5H18.5L23.5 12.5V19.5L18.5 24.5H13.5L8.5 19.5V12.5L13.5 7.5Z" stroke="currentColor" strokeWidth="1" strokeLinejoin="round" opacity="0.3" />
+      <path d="M13.5 7.5H18.5L23.5 12.5V19.5L18.5 24.5H13.5L8.5 19.5V12.5L13.5 7.5Z" fill="currentColor" opacity="0.04" />
+      {/* Center ring - 3D */}
+      <circle cx="16" cy="16" r="4" fill="url(#oct-ring)" />
+      <circle cx="16" cy="16" r="4" stroke="currentColor" strokeWidth="1.3" />
+      {/* Ring highlight */}
+      <ellipse cx="14.8" cy="14.5" rx="1.8" ry="1.2" fill="currentColor" opacity="0.08" />
+      {/* Center dot */}
+      <circle cx="16" cy="16" r="1.5" fill="currentColor" opacity="0.45" />
+      <circle cx="15.4" cy="15.4" r="0.5" fill="currentColor" opacity="0.2" />
+      {/* Vertex accents */}
+      <circle cx="11" cy="2.5" r="1" fill="currentColor" opacity="0.2" />
+      <circle cx="21" cy="2.5" r="1" fill="currentColor" opacity="0.2" />
+      <circle cx="29.5" cy="11" r="1" fill="currentColor" opacity="0.15" />
+      <circle cx="29.5" cy="21" r="1" fill="currentColor" opacity="0.1" />
+      <circle cx="21" cy="29.5" r="0.8" fill="currentColor" opacity="0.08" />
+      <circle cx="11" cy="29.5" r="0.8" fill="currentColor" opacity="0.08" />
+      <circle cx="2.5" cy="21" r="0.8" fill="currentColor" opacity="0.1" />
+      <circle cx="2.5" cy="11" r="1" fill="currentColor" opacity="0.15" />
     </svg>
   ),
-  brain: ({ color }: { color: string }) => (
-    <svg width="28" height="28" viewBox="0 0 28 28" fill="none">
-      {/* Brain outline - left hemisphere */}
-      <path d="M14 4C10 4 7 6 6 9C5 11 5 14 6 16C5 17 5 19 6 21C7 23 9 24 11 24C12 24 13 24 14 23" fill={color} fillOpacity="0.3"/>
-      {/* Brain outline - right hemisphere */}
-      <path d="M14 4C18 4 21 6 22 9C23 11 23 14 22 16C23 17 23 19 22 21C21 23 19 24 17 24C16 24 15 24 14 23" fill={color} fillOpacity="0.3"/>
-      {/* Left hemisphere details */}
-      <path d="M14 5C10.5 5 8 7 7 9.5C6 12 6.5 14.5 7.5 16.5C6.5 17.5 6 19.5 7 21.5C8 23 10 23.5 12 23.5" stroke={color} strokeWidth="1.5" strokeLinecap="round"/>
-      {/* Right hemisphere details */}
-      <path d="M14 5C17.5 5 20 7 21 9.5C22 12 21.5 14.5 20.5 16.5C21.5 17.5 22 19.5 21 21.5C20 23 18 23.5 16 23.5" stroke={color} strokeWidth="1.5" strokeLinecap="round"/>
-      {/* Brain folds - left */}
-      <path d="M8 11C9 11 10 12 10 13" stroke="white" strokeWidth="1" strokeOpacity="0.5" strokeLinecap="round"/>
-      <path d="M9 15C10 14.5 11 15 11 16" stroke="white" strokeWidth="1" strokeOpacity="0.5" strokeLinecap="round"/>
-      {/* Brain folds - right */}
-      <path d="M20 11C19 11 18 12 18 13" stroke="white" strokeWidth="1" strokeOpacity="0.5" strokeLinecap="round"/>
-      <path d="M19 15C18 14.5 17 15 17 16" stroke="white" strokeWidth="1" strokeOpacity="0.5" strokeLinecap="round"/>
-      {/* Center connection */}
-      <path d="M14 8V20" stroke={color} strokeWidth="1.5" strokeLinecap="round"/>
-      {/* Glow effect dots */}
-      <circle cx="10" cy="10" r="1.5" fill={color}/>
-      <circle cx="18" cy="10" r="1.5" fill={color}/>
-      <circle cx="14" cy="14" r="2" fill="white" fillOpacity="0.6"/>
+  orchestrator: ({ className }: { className?: string }) => (
+    <svg viewBox="0 0 32 32" fill="none" className={className}>
+      <defs>
+        <radialGradient id="orch-core" cx="0.4" cy="0.3" r="0.6">
+          <stop offset="0%" stopColor="currentColor" stopOpacity="0.45" />
+          <stop offset="100%" stopColor="currentColor" stopOpacity="0.08" />
+        </radialGradient>
+        <linearGradient id="orch-ring" x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0%" stopColor="currentColor" stopOpacity="0.4" />
+          <stop offset="100%" stopColor="currentColor" stopOpacity="0.1" />
+        </linearGradient>
+      </defs>
+      {/* Outer orbit ring */}
+      <circle cx="16" cy="16" r="14" stroke="currentColor" strokeWidth="0.5" opacity="0.08" strokeDasharray="2 4" />
+      {/* Middle orbit ring */}
+      <ellipse cx="16" cy="16" rx="10" ry="10" stroke="url(#orch-ring)" strokeWidth="0.8" strokeDasharray="3 2" />
+      {/* Orbital path arcs */}
+      <path d="M6 16C6 10.5 10.5 6 16 6" stroke="currentColor" strokeWidth="0.6" opacity="0.15" />
+      <path d="M26 16C26 21.5 21.5 26 16 26" stroke="currentColor" strokeWidth="0.6" opacity="0.15" />
+      {/* Central core - 3D sphere */}
+      <circle cx="16" cy="16" r="5" fill="url(#orch-core)" />
+      <circle cx="16" cy="16" r="5" stroke="currentColor" strokeWidth="1.4" />
+      {/* Core specular */}
+      <ellipse cx="14.5" cy="14" rx="2.2" ry="1.5" fill="currentColor" opacity="0.12" />
+      <circle cx="16" cy="16" r="2" fill="currentColor" opacity="0.35" />
+      <circle cx="15" cy="15" r="0.7" fill="currentColor" opacity="0.2" />
+      {/* Satellite nodes on orbit */}
+      <circle cx="16" cy="4" r="2.2" fill="currentColor" opacity="0.12" stroke="currentColor" strokeWidth="1" />
+      <circle cx="15.3" cy="3.3" r="0.5" fill="currentColor" opacity="0.15" />
+      <circle cx="27" cy="11" r="2" fill="currentColor" opacity="0.1" stroke="currentColor" strokeWidth="1" />
+      <circle cx="26.3" cy="10.3" r="0.5" fill="currentColor" opacity="0.12" />
+      <circle cx="27" cy="21" r="2" fill="currentColor" opacity="0.1" stroke="currentColor" strokeWidth="1" />
+      <circle cx="5" cy="11" r="2" fill="currentColor" opacity="0.1" stroke="currentColor" strokeWidth="1" />
+      <circle cx="5" cy="21" r="2" fill="currentColor" opacity="0.1" stroke="currentColor" strokeWidth="1" />
+      <circle cx="16" cy="28" r="2.2" fill="currentColor" opacity="0.1" stroke="currentColor" strokeWidth="1" />
+      {/* Connection beams from core */}
+      <line x1="16" y1="11" x2="16" y2="5.8" stroke="currentColor" strokeWidth="0.8" opacity="0.3" />
+      <line x1="20" y1="13" x2="25.2" y2="11.5" stroke="currentColor" strokeWidth="0.8" opacity="0.25" />
+      <line x1="20" y1="19" x2="25.2" y2="20.5" stroke="currentColor" strokeWidth="0.8" opacity="0.2" />
+      <line x1="12" y1="19" x2="6.8" y2="20.5" stroke="currentColor" strokeWidth="0.8" opacity="0.2" />
+      <line x1="12" y1="13" x2="6.8" y2="11.5" stroke="currentColor" strokeWidth="0.8" opacity="0.25" />
+      <line x1="16" y1="21" x2="16" y2="26.2" stroke="currentColor" strokeWidth="0.8" opacity="0.2" />
+      {/* Energy pulse rings */}
+      <circle cx="16" cy="16" r="7.5" stroke="currentColor" strokeWidth="0.4" opacity="0.1" />
     </svg>
-  )
+  ),
 }
 
-// Arena Command Bar Item - Completely Unique Design
-function CommandBarItem({ id, label, onClick, gradient, icon, badge, lift, glow, onHover, isHovered }: {
-  id: string
+// Convert hex to rgba helper
+function hexToRgba(hex: string, alpha: number): string {
+  const r = parseInt(hex.slice(1, 3), 16)
+  const g = parseInt(hex.slice(3, 5), 16)
+  const b = parseInt(hex.slice(5, 7), 16)
+  return `rgba(${r},${g},${b},${alpha})`
+}
+
+// Compact Panel Item
+function PanelItem({ label, icon, accent, onClick, badge }: {
   label: string
-  onClick: () => void
-  gradient: string[]
   icon: string
+  accent: string
+  onClick: () => void
   badge?: number
-  lift: number
-  glow: number
-  onHover: () => void
-  isHovered: boolean
 }) {
-  const IconComponent = CommandIcons[icon as keyof typeof CommandIcons]
-  const gradientBg = `linear-gradient(145deg, ${gradient[0]}, ${gradient[1]})`
+  const IconComponent = GeometricIcons[icon]
 
   return (
-    <div className="relative">
-      <button
-        onClick={onClick}
-        onMouseEnter={onHover}
-        className="group relative flex flex-col items-center transition-all duration-200 ease-out"
-        style={{ transform: `translateY(${lift}px)` }}
-      >
-        {/* Glow aura */}
+    <button
+      onClick={onClick}
+      className="panel-item relative flex flex-col items-center gap-1.5 rounded-xl px-2 py-2.5 transition-all duration-200 active:scale-[0.96]"
+      style={{ background: 'transparent' }}
+      onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(255,255,255,0.03)' }}
+      onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent' }}
+    >
+      <div className="relative">
+        {/* Hover glow */}
         <div
-          className="absolute -inset-3 rounded-2xl blur-xl transition-opacity duration-300"
-          style={{
-            background: gradient[0],
-            opacity: glow * 0.4
-          }}
+          className="panel-glow absolute -inset-1.5 rounded-xl pointer-events-none transition-opacity duration-300"
+          style={{ backgroundColor: accent, opacity: 0, filter: 'blur(10px)' }}
         />
 
-        {/* Badge */}
-        {badge !== undefined && badge > 0 && (
-          <div
-            className="absolute -top-2 -right-2 min-w-[18px] h-[18px] px-1 rounded-full text-[9px] font-bold flex items-center justify-center z-20 border border-white/20"
-            style={{
-              background: 'linear-gradient(135deg, #ef4444, #dc2626)',
-              color: 'white',
-              boxShadow: '0 2px 8px rgba(239,68,68,0.5)'
-            }}
-          >
-            {badge > 99 ? '99+' : badge}
-          </div>
-        )}
-
-        {/* Main button container - Hexagonal inspired shape */}
+        {/* Icon box */}
         <div
-          className="relative w-14 h-14 flex items-center justify-center transition-all duration-200"
+          className="panel-icon-box relative w-9 h-9 rounded-[10px] flex items-center justify-center transition-all duration-200"
           style={{
-            background: gradientBg,
-            borderRadius: isHovered ? '16px' : '12px',
-            boxShadow: isHovered
-              ? `0 0 30px ${gradient[0]}60, 0 8px 25px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.2)`
-              : '0 4px 15px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.15)',
-            transform: isHovered ? 'scale(1.1)' : 'scale(1)'
+            background: `linear-gradient(145deg, ${hexToRgba(accent, 0.1)}, ${hexToRgba(accent, 0.03)})`,
+            border: `1px solid ${hexToRgba(accent, 0.1)}`,
+            boxShadow: `inset 0 1px 0 ${hexToRgba(accent, 0.06)}`,
           }}
         >
-          {/* Frosted glass overlay */}
-          <div className="absolute inset-0 rounded-[inherit] overflow-hidden">
-            <div className="absolute inset-x-0 top-0 h-1/2 bg-gradient-to-b from-white/30 to-transparent" />
-          </div>
-
-          {/* Ring accent when hovered */}
-          {isHovered && (
+          {/* Badge */}
+          {badge !== undefined && badge > 0 && (
             <div
-              className="absolute -inset-1 rounded-[18px] border-2 animate-pulse"
-              style={{ borderColor: `${gradient[0]}60` }}
-            />
+              className="absolute -top-1 -right-1 min-w-[14px] h-[14px] px-0.5 rounded-full text-[7px] font-bold flex items-center justify-center z-20"
+              style={{
+                background: hexToRgba(accent, 0.2),
+                color: accent,
+                border: `1px solid ${hexToRgba(accent, 0.25)}`,
+              }}
+            >
+              {badge > 99 ? '99+' : badge}
+            </div>
           )}
 
-          {/* Custom Icon */}
-          <div className="relative z-10">
-            {IconComponent && <IconComponent color="white" />}
-          </div>
+          {/* Icon */}
+          {IconComponent && (
+            <div
+              className="panel-icon-wrap relative z-10 transition-all duration-200"
+              style={{ color: accent, opacity: 0.6 }}
+            >
+              <IconComponent className="w-[18px] h-[18px]" />
+            </div>
+          )}
         </div>
+      </div>
 
-        {/* Label - appears on hover */}
-        <div
-          className={`absolute -bottom-7 whitespace-nowrap px-2.5 py-1 rounded-md text-[10px] font-medium transition-all duration-200 ${
-            isHovered ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-1 pointer-events-none'
-          }`}
-          style={{
-            background: 'rgba(20,20,22,0.95)',
-            color: 'white',
-            border: '1px solid rgba(255,255,255,0.1)'
-          }}
-        >
-          {label}
-        </div>
-      </button>
-    </div>
+      {/* Label */}
+      <span
+        className="panel-label text-[9px] font-medium tracking-wider uppercase transition-colors duration-200"
+        style={{ color: 'rgba(156,163,175,0.6)' }}
+      >
+        {label}
+      </span>
+
+      {/* Hover underline */}
+      <div
+        className="panel-underline absolute bottom-1.5 left-1/2 h-[1.5px] rounded-full pointer-events-none transition-all duration-300"
+        style={{
+          background: `linear-gradient(90deg, transparent, ${accent}, transparent)`,
+          width: 0,
+          transform: 'translateX(-50%)'
+        }}
+      />
+    </button>
   )
 }
 

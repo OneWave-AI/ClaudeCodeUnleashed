@@ -3,7 +3,6 @@ import {
   Plus,
   X,
   Terminal as TerminalIcon,
-  Sparkles,
   GripVertical,
   SplitSquareVertical,
   Trash2,
@@ -27,10 +26,10 @@ import {
   Square,
   Zap,
   Hash,
-  Loader2,
   Brain,
   Hammer,
-  Database
+  Database,
+  LayoutGrid
 } from 'lucide-react'
 
 import Terminal, { TerminalRef } from './Terminal'
@@ -39,6 +38,8 @@ import TaskTimeline, { TimelineAction, ActionType, ActionStatus } from './TaskTi
 import PlanPanel, { PlanItem } from './PlanPanel'
 import VoiceInput from './VoiceInput'
 import { useAppStore } from '../../store'
+import { CLI_PROVIDERS } from '../../../shared/providers'
+import type { CLIProvider } from '../../../shared/types'
 
 interface Tab {
   id: string
@@ -46,6 +47,7 @@ interface Tab {
   type: 'terminal' | 'browser'
   url?: string
   active: boolean
+  cliProvider?: import('../../../shared/types').CLIProvider
 }
 
 interface Panel {
@@ -54,9 +56,17 @@ interface Panel {
   activeTabId: string
 }
 
+export interface TerminalWrapperHandle {
+  createGrid: () => void
+  addTerminalTab: (panelId: string) => void
+  addTerminalPanel: () => void
+}
+
 interface TerminalWrapperProps {
   onTerminalData?: (data: string, terminalId: string) => void
   onTerminalIdChange?: (terminalId: string | null) => void
+  onAllTerminalIdsChange?: (mapping: Record<string, { tabId: string; panelId: string }>) => void
+  onHandleReady?: (handle: TerminalWrapperHandle) => void
   previewUrl?: string | null
   onClosePreview?: () => void
   onOpenPreview?: (url: string) => void
@@ -88,6 +98,8 @@ const formatDuration = (seconds: number): string => {
 export default function TerminalWrapper({
   onTerminalData,
   onTerminalIdChange,
+  onAllTerminalIdsChange,
+  onHandleReady,
   previewUrl,
   onClosePreview,
   onOpenPreview,
@@ -95,14 +107,17 @@ export default function TerminalWrapper({
   onClosePlanPanel,
   onPlanItemsChange
 }: TerminalWrapperProps) {
-  // Multi-panel state
+  // Multi-panel state - initial tab uses store's default provider
+  const defaultProvider = useAppStore((state) => state.cliProvider) || 'claude'
   const [panels, setPanels] = useState<Panel[]>([
     {
       id: 'left',
-      tabs: [{ id: '1', name: 'Claude', type: 'terminal', active: true }],
+      tabs: [{ id: '1', name: CLI_PROVIDERS[defaultProvider].name, type: 'terminal', active: true, cliProvider: defaultProvider }],
       activeTabId: '1'
     }
   ])
+
+  const [layoutMode, setLayoutMode] = useState<'default' | 'grid'>('default')
 
   const [terminalSize, setTerminalSize] = useState({ cols: 80, rows: 24 })
 
@@ -128,6 +143,7 @@ export default function TerminalWrapper({
   // Claude status
   const [claudeStatus, setClaudeStatus] = useState<'working' | 'waiting' | 'idle'>('idle')
   const statusTimeoutRef = useRef<NodeJS.Timeout | null>(null)
+  const statusBufferRef = useRef<string>('')
 
   // Plan/Work mode toggle
   const [claudeMode, setClaudeMode] = useState<'plan' | 'work'>('work')
@@ -155,10 +171,13 @@ export default function TerminalWrapper({
   // Memory usage
   const [memoryUsage, setMemoryUsage] = useState(0)
 
+  // CLI Provider from global store (used as default for new tabs)
+  const cliProvider = useAppStore((state) => state.cliProvider)
+
   // Token and cost tracking
   const [tokenCount, setTokenCount] = useState(0)
   const [estimatedCost, setEstimatedCost] = useState(0)
-  const [currentModel, setCurrentModel] = useState<'opus' | 'sonnet' | 'haiku'>('sonnet')
+  const [currentModel, setCurrentModel] = useState(CLI_PROVIDERS[cliProvider || 'claude'].defaultModel)
   const [showModelMenu, setShowModelMenu] = useState(false)
   const modelMenuRef = useRef<HTMLDivElement>(null)
 
@@ -228,10 +247,22 @@ export default function TerminalWrapper({
   const activePanel = panels[0]
   const activeTab = activePanel?.tabs.find(t => t.id === activePanel.activeTabId)
 
+  // Derive provider config from the active tab's provider (per-tab model)
+  const activeTabProvider = activeTab?.cliProvider || cliProvider || 'claude'
+  const providerConfig = CLI_PROVIDERS[activeTabProvider]
+
   // Get active terminal ID
   const activeTerminalId = activeTab?.type === 'terminal'
     ? terminalRefs.current.get(activeTab.id)?.getTerminalId() || null
     : null
+
+  // Reset per-tab state when switching to a tab with a different provider
+  useEffect(() => {
+    setCurrentModel(providerConfig.defaultModel)
+    // Reset status detection buffer so old provider's patterns don't linger
+    statusBufferRef.current = ''
+    setClaudeStatus('idle')
+  }, [activeTabProvider])
 
   // Close menus on click outside
   useEffect(() => {
@@ -285,18 +316,22 @@ export default function TerminalWrapper({
   }, [planItems, onPlanItemsChange])
 
   // Add tab to panel
-  const addTab = useCallback((panelId: string, type: 'terminal' | 'browser') => {
+  const addTab = useCallback((panelId: string, type: 'terminal' | 'browser', provider?: CLIProvider) => {
     setShowPlusMenu(null)
+    const tabProvider = provider || cliProvider || 'claude'
+    const providerName = CLI_PROVIDERS[tabProvider].name
 
     setPanels(prev => prev.map(panel => {
       if (panel.id !== panelId) return panel
 
+      const termCount = panel.tabs.filter(t => t.type === 'terminal' && t.cliProvider === tabProvider).length + 1
       const newTab: Tab = {
         id: Date.now().toString(),
-        name: type === 'terminal' ? `Terminal ${panel.tabs.filter(t => t.type === 'terminal').length + 1}` : 'New Tab',
+        name: type === 'terminal' ? `${providerName} ${termCount}` : 'New Tab',
         type,
         url: type === 'browser' ? '' : undefined,
-        active: true
+        active: true,
+        cliProvider: type === 'terminal' ? tabProvider : undefined
       }
 
       return {
@@ -305,18 +340,20 @@ export default function TerminalWrapper({
         activeTabId: newTab.id
       }
     }))
-  }, [])
+  }, [cliProvider])
 
   // Add second panel
-  const addPanel = useCallback((type: 'terminal' | 'browser') => {
-    if (panels.length >= 2) return
+  const addPanel = useCallback((type: 'terminal' | 'browser', provider?: CLIProvider) => {
+    if (layoutMode === 'default' && panels.length >= 2) return
+    const tabProvider = provider || cliProvider || 'claude'
 
     const newTab: Tab = {
       id: Date.now().toString(),
-      name: type === 'terminal' ? 'Terminal 1' : 'New Tab',
+      name: type === 'terminal' ? `${CLI_PROVIDERS[tabProvider].name} 1` : 'New Tab',
       type,
       url: type === 'browser' ? '' : undefined,
-      active: true
+      active: true,
+      cliProvider: type === 'terminal' ? tabProvider : undefined
     }
 
     setPanels(prev => [...prev, {
@@ -325,10 +362,60 @@ export default function TerminalWrapper({
       activeTabId: newTab.id
     }])
     setShowPlusMenu(null)
-  }, [panels.length])
+  }, [panels.length, layoutMode, cliProvider])
+
+  // Create 3x2 grid layout with 6 terminal panels
+  const createGridLayout = useCallback(() => {
+    const now = Date.now()
+    const gridProvider = cliProvider || 'claude'
+    const gridPanels: Panel[] = Array.from({ length: 6 }, (_, i) => ({
+      id: `grid-${i}`,
+      tabs: [{
+        id: `${now}-${i}`,
+        name: `${CLI_PROVIDERS[gridProvider].name} ${i + 1}`,
+        type: 'terminal' as const,
+        active: true,
+        cliProvider: gridProvider
+      }],
+      activeTabId: `${now}-${i}`
+    }))
+    setPanels(gridPanels)
+    setLayoutMode('grid')
+    setShowPlusMenu(null)
+  }, [cliProvider])
+
+  // Exit grid layout back to single panel
+  const exitGridLayout = useCallback(() => {
+    setPanels(prev => {
+      if (prev.length === 0) {
+        const fallbackId = Date.now().toString()
+        const fallbackProvider = cliProvider || 'claude'
+        return [{
+          id: 'left',
+          tabs: [{ id: fallbackId, name: CLI_PROVIDERS[fallbackProvider].name, type: 'terminal' as const, active: true, cliProvider: fallbackProvider }],
+          activeTabId: fallbackId
+        }]
+      }
+      return [{ ...prev[0], id: 'left' }]
+    })
+    setLayoutMode('default')
+  }, [cliProvider])
+
+  // Expose handle for external control (e.g., Orchestrator)
+  useEffect(() => {
+    if (onHandleReady) {
+      onHandleReady({
+        createGrid: createGridLayout,
+        addTerminalTab: (panelId: string) => addTab(panelId, 'terminal'),
+        addTerminalPanel: () => addPanel('terminal')
+      })
+    }
+  }, [onHandleReady, createGridLayout, addTab, addPanel])
 
   // Close tab
   const closeTab = useCallback((panelId: string, tabId: string) => {
+    let shouldExitGrid = false
+
     setPanels(prev => {
       const panelIndex = prev.findIndex(p => p.id === panelId)
       if (panelIndex === -1) return prev
@@ -340,7 +427,13 @@ export default function TerminalWrapper({
 
       // If only one tab but multiple panels, remove the panel
       if (panel.tabs.length === 1) {
-        return prev.filter(p => p.id !== panelId)
+        const remaining = prev.filter(p => p.id !== panelId)
+        // Auto-exit grid mode when down to 1 panel
+        if (remaining.length === 1 && layoutMode === 'grid') {
+          shouldExitGrid = true
+          return [{ ...remaining[0], id: 'left' }]
+        }
+        return remaining
       }
 
       // Remove tab and select another
@@ -353,7 +446,11 @@ export default function TerminalWrapper({
         return { ...p, tabs: newTabs, activeTabId: newActiveId }
       })
     })
-  }, [])
+
+    if (shouldExitGrid) {
+      setLayoutMode('default')
+    }
+  }, [layoutMode])
 
   // Select tab
   const selectTab = useCallback((panelId: string, tabId: string) => {
@@ -467,7 +564,7 @@ export default function TerminalWrapper({
 
   const handlePanelDrop = useCallback((e: React.DragEvent, side: 'left' | 'right') => {
     e.preventDefault()
-    if (!draggedTab || panels.length >= 2) {
+    if (!draggedTab || (layoutMode === 'default' && panels.length >= 2)) {
       setDraggedTab(null)
       setDropTarget(null)
       return
@@ -537,25 +634,24 @@ export default function TerminalWrapper({
     }
   }, [activeTerminalId])
 
-  // Switch Claude model
-  const handleModelChange = useCallback((model: 'opus' | 'sonnet' | 'haiku') => {
+  // Switch model (provider-aware)
+  const handleModelChange = useCallback((model: string) => {
     setCurrentModel(model)
     setShowModelMenu(false)
-    // Send /model command to Claude CLI
-    if (activeTerminalId) {
-      window.api.terminalSendText(`/model ${model}\n`, activeTerminalId)
+    if (activeTerminalId && providerConfig.modelCommand) {
+      window.api.terminalSendText(`${providerConfig.modelCommand} ${model}\n`, activeTerminalId)
     }
-  }, [activeTerminalId])
+  }, [activeTerminalId, providerConfig.modelCommand])
 
-  // Toggle Plan/Work mode - sends shift+tab to Claude CLI
+  // Toggle Plan/Work mode - sends shift+tab to Claude CLI (only if provider supports it)
   const handleModeToggle = useCallback(() => {
+    if (!providerConfig.hasPlanMode) return
     const newMode = claudeMode === 'plan' ? 'work' : 'plan'
     setClaudeMode(newMode)
-    // Send shift+tab to toggle plan mode in Claude CLI
     if (activeTerminalId) {
       window.api.terminalSendText('\x1b[Z', activeTerminalId) // Shift+Tab escape sequence
     }
-  }, [activeTerminalId, claudeMode])
+  }, [activeTerminalId, claudeMode, providerConfig.hasPlanMode])
 
   // Screenshot terminal - copies terminal content to clipboard
   const handleScreenshot = useCallback(() => {
@@ -848,7 +944,8 @@ export default function TerminalWrapper({
   }, [])
 
   // Claude status detection - accumulate buffer for better detection
-  const statusBufferRef = useRef<string>('')
+  const providerConfigRef = useRef(providerConfig)
+  providerConfigRef.current = providerConfig
   const detectClaudeStatus = useCallback((data: string) => {
     if (statusTimeoutRef.current) clearTimeout(statusTimeoutRef.current)
 
@@ -857,27 +954,13 @@ export default function TerminalWrapper({
     const cleanData = statusBufferRef.current.replace(/\x1b\[[0-9;]*[a-zA-Z]/g, '')
     const lastLines = cleanData.split('\n').slice(-15).join('\n')
 
-    // Extended working patterns including agent mode tools
-    const workingPatterns = [
-      /\.\.\.\s*$/m,                                    // Progress dots
-      /⠋|⠙|⠹|⠸|⠼|⠴|⠦|⠧|⠇|⠏/m,                        // Spinner characters
-      /thinking|analyzing|searching|reading|writing|running|executing|loading|processing|building|compiling|installing|fetching|creating|updating|downloading/i,
-      /Tool:|Read\(|Write\(|Edit\(|Bash\(|Task\(|Glob\(|Grep\(|WebFetch\(|WebSearch\(/i,  // All tool calls
-      /\[running\]|\[executing\]|\[working\]/i,        // Status indicators
-      /npm|yarn|pnpm|pip|cargo|go build|make/i,        // Build commands running
-      /✓.*modules? transformed/i,                      // Vite/build progress
-      /Compiling|Bundling|Generating/i                 // Build processes
-    ]
+    // Use provider-specific patterns for detection (via ref to avoid stale closure)
+    const config = providerConfigRef.current
+    const workingPatterns = config.workingPatterns
 
-    // Waiting patterns - Claude is ready for input
+    // Waiting patterns from provider config
     const waitingPatterns = [
-      /❯\s*$/m,                                        // Claude prompt
-      />\s*$/m,                                        // Generic prompt
-      /\(y\/n\)\s*$/im,                                // Yes/no prompt
-      /\[Y\/n\]\s*$/im,                                // Yes/no with default
-      /\[y\/N\]\s*$/im,                                // Yes/no with default
-      /What would you like|How can I help|anything else|Do you want to/i,
-      /Press Enter to continue/i,
+      ...config.waitingPatterns,
       /✓ built in \d+/i                               // Build completed
     ]
 
@@ -1235,36 +1318,85 @@ export default function TerminalWrapper({
   const renderPanel = (panel: Panel, isOnly: boolean) => {
     const currentTab = panel.tabs.find(t => t.id === panel.activeTabId)
     const isDropping = dropTarget?.panelId === panel.id
+    const isGrid = layoutMode === 'grid'
 
     return (
       <div
         key={panel.id}
-        className={`h-full flex flex-col bg-[#0d0d0d] ${isOnly ? 'flex-1' : 'w-1/2'} ${isDropping ? 'ring-2 ring-[#cc785c]/50 ring-inset' : ''}`}
+        className={`h-full flex flex-col bg-[#0d0d0d] ${isGrid ? '' : isOnly ? 'flex-1' : 'w-1/2'} ${isDropping ? 'ring-2 ring-[#cc785c]/50 ring-inset' : ''}`}
         onDragOver={(e) => handleTabDragOver(e, panel.id, 'tab')}
         onDragLeave={handleTabDragLeave}
         onDrop={(e) => handleTabDrop(e, panel.id)}
       >
         {/* Panel Tab Bar */}
-        <div className="flex items-center justify-between px-2 py-1 bg-gradient-to-b from-[#1a1a1a] to-[#141414] border-b border-white/[0.06]">
+        {isGrid ? (
+          /* Compact grid mode header */
+          <div className="flex items-center justify-between px-2 py-0.5 bg-[#111111] border-b border-white/[0.06]">
+            <div className="flex items-center gap-1.5">
+              <TerminalIcon size={9} className={panel.tabs[0]?.cliProvider === 'codex' ? 'text-emerald-400' : 'text-[#cc785c]'} />
+              <span className="text-[10px] font-medium text-gray-500">{panel.tabs[0]?.name || 'Terminal'}</span>
+            </div>
+            <div className="flex items-center gap-0.5">
+              <button
+                onClick={exitGridLayout}
+                className="px-1.5 py-0.5 rounded text-[9px] font-medium text-gray-500 hover:text-gray-300 hover:bg-white/[0.06] transition-colors"
+                title="Exit grid layout"
+              >
+                Exit
+              </button>
+              {panels.length > 1 && (
+                <button
+                  onClick={() => {
+                    let shouldExit = false
+                    setPanels(prev => {
+                      const remaining = prev.filter(p => p.id !== panel.id)
+                      if (remaining.length === 1) {
+                        shouldExit = true
+                        return [{ ...remaining[0], id: 'left' }]
+                      }
+                      return remaining
+                    })
+                    if (shouldExit) setLayoutMode('default')
+                  }}
+                  className="p-0.5 rounded text-gray-600 hover:text-red-400 hover:bg-red-500/10 transition-colors"
+                  title="Close Panel"
+                >
+                  <X size={11} />
+                </button>
+              )}
+            </div>
+          </div>
+        ) : (
+          /* Default mode header */
+          <div className="flex items-center justify-between px-2 py-1.5 bg-[#111111] border-b border-white/[0.06]">
           {/* Tabs container - scrollable */}
-          <div className="flex items-center gap-1 overflow-x-auto scrollbar-hide flex-1 min-w-0">
-            {panel.tabs.map((tab) => (
+          <div className="flex items-center gap-0.5 overflow-x-auto scrollbar-hide flex-1 min-w-0">
+            {panel.tabs.map((tab) => {
+              const isActive = tab.id === panel.activeTabId
+              return (
               <button
                 key={tab.id}
                 onClick={() => selectTab(panel.id, tab.id)}
                 draggable
                 onDragStart={(e) => handleTabDragStart(e, tab.id, panel.id)}
                 onDragEnd={handleDragEnd}
-                className={`group relative flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-medium transition-all duration-200 flex-shrink-0 ${
-                  tab.id === panel.activeTabId
-                    ? 'bg-[#cc785c]/15 text-[#cc785c]'
-                    : 'text-gray-500 hover:text-gray-300 hover:bg-white/5'
+                className={`group relative flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-all duration-150 flex-shrink-0 ${
+                  isActive
+                    ? tab.cliProvider === 'codex'
+                      ? 'bg-emerald-500/10 text-emerald-400'
+                      : 'bg-[#cc785c]/10 text-[#cc785c]'
+                    : 'text-gray-500 hover:text-gray-300 hover:bg-white/[0.04]'
                 } ${draggedTab?.tabId === tab.id ? 'opacity-50 scale-95' : ''}`}
               >
-                {/* Drag Handle */}
+                {/* Active tab accent */}
+                {isActive && (
+                  <div className={`absolute bottom-0 left-2 right-2 h-[2px] rounded-full ${
+                    tab.cliProvider === 'codex' ? 'bg-emerald-400' : 'bg-[#cc785c]'
+                  }`} />
+                )}
                 <GripVertical
                   size={10}
-                  className="opacity-0 group-hover:opacity-50 cursor-grab active:cursor-grabbing transition-opacity"
+                  className="opacity-0 group-hover:opacity-30 cursor-grab active:cursor-grabbing transition-opacity"
                 />
                 {tab.type === 'terminal' ? (
                   <TerminalIcon size={12} />
@@ -1278,57 +1410,73 @@ export default function TerminalWrapper({
                       e.stopPropagation()
                       closeTab(panel.id, tab.id)
                     }}
-                    className="p-0.5 rounded opacity-0 group-hover:opacity-100 hover:bg-white/10 transition-all"
+                    className="p-0.5 rounded-sm opacity-0 group-hover:opacity-100 hover:bg-white/10 text-gray-500 hover:text-white transition-all"
                   >
                     <X size={10} />
                   </button>
                 )}
               </button>
-            ))}
+              )
+            })}
           </div>
 
-          {/* Action buttons - outside scroll container for proper dropdown rendering */}
+          {/* Action buttons */}
           <div className="flex items-center gap-1 flex-shrink-0 ml-2">
             {/* Plus Button with Menu */}
             <div className="relative" ref={showPlusMenu === panel.id ? plusMenuRef : null}>
               <button
                 onClick={() => setShowPlusMenu(showPlusMenu === panel.id ? null : panel.id)}
-                className="flex items-center gap-1 px-2 py-1.5 rounded-lg text-gray-400 hover:text-white hover:bg-white/[0.08] border border-transparent hover:border-white/[0.1] transition-all duration-200"
+                className={`flex items-center gap-1 px-2 py-1 rounded-md text-gray-500 hover:text-gray-300 hover:bg-white/[0.06] transition-all duration-150 ${
+                  showPlusMenu === panel.id ? 'bg-white/[0.06] text-gray-300' : ''
+                }`}
                 title="Add Tab"
               >
-                <Plus size={14} />
-                <span className="text-xs">New</span>
-                <ChevronDown size={10} />
+                <Plus size={13} />
+                <ChevronDown size={9} className={`transition-transform duration-150 ${showPlusMenu === panel.id ? 'rotate-180' : ''}`} />
               </button>
 
               {showPlusMenu === panel.id && (
-                <div className="absolute top-full right-0 mt-1 w-48 bg-[#1a1a1a] border border-white/10 rounded-xl shadow-2xl z-[100] overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200">
+                <div className="absolute top-full right-0 mt-1.5 w-48 bg-[#1a1a1a] border border-white/[0.08] rounded-lg shadow-2xl z-[100] overflow-hidden animate-in fade-in slide-in-from-top-2 duration-150">
                   <div className="p-1">
                     <button
-                      onClick={() => addTab(panel.id, 'terminal')}
-                      className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-gray-300 hover:bg-white/[0.08] hover:text-white transition-colors"
+                      onClick={() => addTab(panel.id, 'terminal', 'claude')}
+                      className="w-full flex items-center gap-2.5 px-2.5 py-2 rounded-md text-[13px] text-gray-300 hover:bg-white/[0.06] hover:text-white transition-colors"
                     >
-                      <TerminalIcon size={16} className="text-[#cc785c]" />
-                      <span>New Terminal</span>
+                      <TerminalIcon size={14} className="text-[#cc785c]" />
+                      <span>Claude Code</span>
+                    </button>
+                    <button
+                      onClick={() => addTab(panel.id, 'terminal', 'codex')}
+                      className="w-full flex items-center gap-2.5 px-2.5 py-2 rounded-md text-[13px] text-gray-300 hover:bg-white/[0.06] hover:text-white transition-colors"
+                    >
+                      <TerminalIcon size={14} className="text-emerald-400" />
+                      <span>Codex</span>
                     </button>
                     <button
                       onClick={() => addTab(panel.id, 'browser')}
-                      className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-gray-300 hover:bg-white/[0.08] hover:text-white transition-colors"
+                      className="w-full flex items-center gap-2.5 px-2.5 py-2 rounded-md text-[13px] text-gray-300 hover:bg-white/[0.06] hover:text-white transition-colors"
                     >
-                      <Globe size={16} className="text-blue-400" />
-                      <span>New Browser</span>
+                      <Globe size={14} className="text-blue-400" />
+                      <span>Browser</span>
                     </button>
                   </div>
                   {panels.length < 2 && (
                     <>
-                      <div className="h-px bg-white/10 mx-2" />
+                      <div className="h-px bg-white/[0.06] mx-2" />
                       <div className="p-1">
                         <button
                           onClick={() => addPanel('terminal')}
-                          className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-gray-300 hover:bg-white/[0.08] hover:text-white transition-colors"
+                          className="w-full flex items-center gap-2.5 px-2.5 py-2 rounded-md text-[13px] text-gray-300 hover:bg-white/[0.06] hover:text-white transition-colors"
                         >
-                          <SplitSquareVertical size={16} className="text-purple-400" />
+                          <SplitSquareVertical size={14} className="text-gray-400" />
                           <span>Split Panel</span>
+                        </button>
+                        <button
+                          onClick={createGridLayout}
+                          className="w-full flex items-center gap-2.5 px-2.5 py-2 rounded-md text-[13px] text-gray-300 hover:bg-white/[0.06] hover:text-white transition-colors"
+                        >
+                          <LayoutGrid size={14} className="text-gray-400" />
+                          <span>Grid (3x2)</span>
                         </button>
                       </div>
                     </>
@@ -1337,30 +1485,43 @@ export default function TerminalWrapper({
               )}
             </div>
 
-            {/* Direct Split Panel Button - Always visible when only one panel */}
+            {/* Split/Grid buttons - compact icon-only */}
             {panels.length < 2 && (
-              <button
-                onClick={() => addPanel('terminal')}
-                className="flex items-center gap-1.5 px-2 py-1.5 rounded-lg text-purple-400 hover:text-purple-300 hover:bg-purple-500/10 border border-purple-500/20 hover:border-purple-500/40 transition-all duration-200"
-                title="Split into two panels"
-              >
-                <SplitSquareVertical size={14} />
-                <span className="text-xs font-medium">Split</span>
-              </button>
+              <>
+                <div className="w-px h-3.5 bg-white/[0.06] mx-0.5" />
+                <button
+                  onClick={() => addPanel('terminal')}
+                  className="p-1.5 rounded-md text-gray-500 hover:text-gray-300 hover:bg-white/[0.06] transition-all duration-150"
+                  title="Split into two panels"
+                >
+                  <SplitSquareVertical size={13} />
+                </button>
+                <button
+                  onClick={createGridLayout}
+                  className="p-1.5 rounded-md text-gray-500 hover:text-gray-300 hover:bg-white/[0.06] transition-all duration-150"
+                  title="Grid layout (3x2)"
+                >
+                  <LayoutGrid size={13} />
+                </button>
+              </>
+            )}
+
+            {/* Panel close */}
+            {panels.length > 1 && (
+              <>
+                <div className="w-px h-3.5 bg-white/[0.06] mx-0.5" />
+                <button
+                  onClick={() => setPanels(prev => prev.filter(p => p.id !== panel.id))}
+                  className="p-1.5 rounded-md text-gray-600 hover:text-red-400 hover:bg-red-500/10 transition-colors"
+                  title="Close Panel"
+                >
+                  <X size={13} />
+                </button>
+              </>
             )}
           </div>
-
-          {/* Panel close button (only if not the only panel) */}
-          {panels.length > 1 && (
-            <button
-              onClick={() => setPanels(prev => prev.filter(p => p.id !== panel.id))}
-              className="p-1 rounded-lg text-gray-600 hover:text-white hover:bg-white/5 transition-colors"
-              title="Close Panel"
-            >
-              <X size={14} />
-            </button>
-          )}
         </div>
+        )}
 
         {/* Panel Content */}
         <div className="flex-1 relative overflow-hidden">
@@ -1374,12 +1535,34 @@ export default function TerminalWrapper({
                 ref={(ref) => {
                   if (ref) terminalRefs.current.set(tab.id, ref)
                 }}
+                cliProvider={tab.cliProvider}
                 onResize={(cols, rows) => setTerminalSize({ cols, rows })}
                 onLocalhostDetected={handleLocalhostDetected}
                 onTerminalIdReady={(terminalId) => {
+                  // Notify parent of active terminal for left panel
                   if (panel.id === 'left' && tab.id === panel.activeTabId) onTerminalIdChange?.(terminalId)
+                  // Always notify all terminal IDs for orchestrator
+                  if (onAllTerminalIdsChange) {
+                    const mapping: Record<string, { tabId: string; panelId: string }> = {}
+                    // Gather all known terminal IDs from refs
+                    for (const p of panels) {
+                      for (const t of p.tabs) {
+                        if (t.type === 'terminal') {
+                          const ref = terminalRefs.current.get(t.id)
+                          const tid = ref?.getTerminalId()
+                          if (tid) mapping[tid] = { tabId: t.id, panelId: p.id }
+                        }
+                      }
+                    }
+                    // Add the current one too
+                    mapping[terminalId] = { tabId: tab.id, panelId: panel.id }
+                    onAllTerminalIdsChange(mapping)
+                  }
                 }}
                 onTerminalData={(data, terminalId) => {
+                  // Always forward data for ALL terminals (orchestrator needs it)
+                  onTerminalData?.(data, terminalId)
+                  // Local UI detection only for active tab
                   if (tab.id === panel.activeTabId) {
                     detectClaudeStatus(data)
                     detectHtmlFile(data)
@@ -1387,7 +1570,6 @@ export default function TerminalWrapper({
                     trackTokensAndCost(data)
                     parsePlanItems(data)
                     detectContextUsage(data)
-                    onTerminalData?.(data, terminalId)
                   }
                 }}
               />
@@ -1511,20 +1693,20 @@ export default function TerminalWrapper({
     >
       {/* File Drop Overlay */}
       {isDraggingFile && (
-        <div className="absolute inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center animate-fade-in">
-          <div className="text-center p-8 rounded-2xl border-2 border-dashed border-[#cc785c] bg-[#cc785c]/10">
-            <FileUp size={48} className="mx-auto mb-4 text-[#cc785c]" />
-            <p className="text-lg font-medium text-white mb-1">Drop files here</p>
-            <p className="text-sm text-gray-400">Files will be added to your chat with Claude</p>
+        <div className="absolute inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center">
+          <div className="text-center p-8 rounded-xl border-2 border-dashed border-[#cc785c]/60 bg-[#cc785c]/5">
+            <FileUp size={40} className="mx-auto mb-3 text-[#cc785c]/80" />
+            <p className="text-sm font-medium text-white mb-0.5">Drop files here</p>
+            <p className="text-xs text-gray-500">Files will be sent to the active session</p>
           </div>
         </div>
       )}
 
       {/* Ambient glow */}
       <div className="absolute inset-0 pointer-events-none">
-        <div className="absolute top-0 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-[#cc785c]/30 to-transparent" />
-        <div className="absolute top-0 left-0 w-32 h-32 bg-gradient-radial from-[#cc785c]/5 to-transparent" />
-        <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-radial from-purple-500/5 to-transparent" />
+        <div className="absolute top-0 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-[#cc785c]/20 to-transparent" />
+        <div className="absolute top-0 left-0 w-48 h-48 bg-gradient-radial from-[#cc785c]/[0.03] to-transparent" />
+        <div className="absolute top-0 right-0 w-48 h-48 bg-gradient-radial from-cyan-500/[0.03] to-transparent" />
       </div>
 
 
@@ -1538,9 +1720,9 @@ export default function TerminalWrapper({
       />
 
       {/* Panels Container */}
-      <div className="flex-1 flex relative">
+      <div className={`flex-1 relative ${layoutMode === 'grid' ? 'grid grid-cols-3 grid-rows-2 gap-px bg-[#1a1a1a]' : 'flex'}`}>
         {/* Drop zone indicators when dragging */}
-        {draggedTab && panels.length < 2 && (
+        {draggedTab && panels.length < 2 && layoutMode === 'default' && (
           <>
             <div
               className={`absolute left-0 top-0 bottom-0 w-16 z-40 flex items-center justify-center transition-all ${dropTarget?.position === 'left' ? 'bg-[#cc785c]/20' : 'bg-transparent hover:bg-[#cc785c]/10'}`}
@@ -1566,19 +1748,23 @@ export default function TerminalWrapper({
         )}
 
         {/* Render panels */}
-        {panels.map((panel, index) => (
-          <div key={panel.id} className="contents">
-            {renderPanel(panel, panels.length === 1)}
-            {index < panels.length - 1 && (
-              <div className="w-1 bg-[#1a1a1a] hover:bg-[#cc785c]/30 cursor-col-resize transition-colors" />
-            )}
-          </div>
-        ))}
+        {layoutMode === 'grid' ? (
+          panels.map((panel) => renderPanel(panel, false))
+        ) : (
+          panels.map((panel, index) => (
+            <div key={panel.id} className="contents">
+              {renderPanel(panel, panels.length === 1)}
+              {index < panels.length - 1 && (
+                <div className="w-px bg-white/[0.06] hover:bg-[#cc785c]/40 hover:w-1 cursor-col-resize transition-all" />
+              )}
+            </div>
+          ))
+        )}
 
         {/* Preview pane (for file/localhost previews) */}
         {previewUrl && (
           <>
-            <div className="w-1 bg-[#1a1a1a] hover:bg-[#cc785c]/30 cursor-col-resize transition-colors" />
+            <div className="w-px bg-white/[0.06] hover:bg-[#cc785c]/40 hover:w-1 cursor-col-resize transition-all" />
             <div className="h-full w-1/2 bg-[#0d0d0d] flex flex-col">
               <div className="flex items-center justify-between px-3 py-2 bg-[#141414] border-b border-white/[0.06]">
                 <div className="flex items-center gap-2">
@@ -1681,136 +1867,136 @@ export default function TerminalWrapper({
         )}
       </div>
 
-      {/* Streamlined Status Bar - Improved Readability */}
-      <footer className="relative flex items-center justify-between px-4 py-2 bg-[#0d0d0d] border-t border-white/[0.06]">
-        {/* Left: Session Info */}
-        <div className="flex items-center gap-3">
-          {/* Claude Status Indicator */}
-          <div className={`flex items-center gap-2 px-2.5 py-1.5 rounded-lg transition-colors ${
-            claudeStatus === 'working' ? 'bg-green-500/15 text-green-400' :
-            claudeStatus === 'waiting' ? 'bg-amber-500/15 text-amber-400' :
-            'bg-gray-500/10 text-gray-400'
+      {/* Status Bar */}
+      <footer className="relative flex items-center justify-between px-3 py-1.5 bg-[#0e0e0e] border-t border-white/[0.06]">
+        {/* Left: Status + Model + Mode */}
+        <div className="flex items-center gap-2">
+          {/* Status Indicator */}
+          <div className={`flex items-center gap-1.5 px-2 py-1 rounded-md transition-colors ${
+            claudeStatus === 'working' ? 'bg-green-500/10 text-green-400' :
+            claudeStatus === 'waiting' ? 'bg-amber-500/10 text-amber-400' :
+            'bg-white/[0.03] text-gray-500'
           }`}>
-            <div className={`w-2 h-2 rounded-full ${
+            <div className={`w-1.5 h-1.5 rounded-full ${
               claudeStatus === 'working' ? 'bg-green-400 animate-pulse' :
-              claudeStatus === 'waiting' ? 'bg-amber-400' : 'bg-gray-400'
+              claudeStatus === 'waiting' ? 'bg-amber-400' : 'bg-gray-600'
             }`} />
             <span className="text-[11px] font-medium">
               {claudeStatus === 'working' ? 'Working' : claudeStatus === 'waiting' ? 'Ready' : 'Idle'}
             </span>
           </div>
 
-          {/* Model Toggle Button */}
+          <div className="w-px h-3.5 bg-white/[0.06]" />
+
+          {/* Model Selector */}
           <div className="relative" ref={modelMenuRef}>
             <button
               onClick={() => setShowModelMenu(!showModelMenu)}
-              className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border transition-all ${
+              className={`flex items-center gap-1.5 px-2 py-1 rounded-md transition-all ${
                 showModelMenu
-                  ? 'bg-[#cc785c]/25 text-[#cc785c] border-[#cc785c]/40'
-                  : 'bg-[#cc785c]/15 text-[#cc785c] border-[#cc785c]/20 hover:bg-[#cc785c]/25 hover:border-[#cc785c]/40'
+                  ? 'bg-white/[0.08] text-white'
+                  : 'text-gray-400 hover:text-gray-200 hover:bg-white/[0.04]'
               }`}
               title="Switch model"
             >
-              <Zap size={12} />
-              <span className="text-[11px] font-semibold uppercase tracking-wide">{currentModel}</span>
-              <ChevronDown size={10} className={`transition-transform ${showModelMenu ? 'rotate-180' : ''}`} />
+              <Zap size={11} className={activeTabProvider === 'codex' ? 'text-emerald-400' : 'text-[#cc785c]'} />
+              <span className="text-[11px] font-medium">{currentModel}</span>
+              <ChevronDown size={9} className={`transition-transform duration-150 ${showModelMenu ? 'rotate-180' : ''}`} />
             </button>
 
             {/* Model Dropdown */}
             {showModelMenu && (
-              <div className="absolute bottom-full left-0 mb-2 w-44 bg-[#1a1a1a] border border-white/10 rounded-xl shadow-2xl z-50 overflow-hidden animate-in fade-in slide-in-from-bottom-2 duration-200">
-                <div className="px-3 py-2 border-b border-white/[0.06]">
-                  <span className="text-[10px] uppercase tracking-wider text-gray-500 font-medium">Select Model</span>
+              <div className="absolute bottom-full left-0 mb-2 w-52 bg-[#1a1a1a] border border-white/[0.08] rounded-lg shadow-2xl z-50 overflow-hidden animate-in fade-in slide-in-from-bottom-2 duration-150">
+                <div className="px-3 py-1.5 border-b border-white/[0.06]">
+                  <span className="text-[10px] uppercase tracking-wider text-gray-500 font-medium">{providerConfig.name} Models</span>
                 </div>
                 <div className="p-1">
-                  {[
-                    { id: 'opus', name: 'Opus', desc: 'Most capable', color: 'text-purple-400', bg: 'bg-purple-500/10' },
-                    { id: 'sonnet', name: 'Sonnet', desc: 'Balanced', color: 'text-[#cc785c]', bg: 'bg-[#cc785c]/10' },
-                    { id: 'haiku', name: 'Haiku', desc: 'Fastest', color: 'text-emerald-400', bg: 'bg-emerald-500/10' }
-                  ].map((model) => (
+                  {providerConfig.models.map((model) => (
                     <button
                       key={model.id}
-                      onClick={() => handleModelChange(model.id as 'opus' | 'sonnet' | 'haiku')}
-                      className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-left transition-colors ${
+                      onClick={() => handleModelChange(model.id)}
+                      disabled={!providerConfig.modelCommand}
+                      className={`w-full flex items-center gap-2.5 px-2.5 py-1.5 rounded-md text-left transition-colors ${
                         currentModel === model.id
                           ? `${model.bg} ${model.color}`
-                          : 'text-gray-300 hover:bg-white/[0.06]'
-                      }`}
+                          : 'text-gray-400 hover:text-gray-200 hover:bg-white/[0.06]'
+                      } ${!providerConfig.modelCommand ? 'opacity-50 cursor-not-allowed' : ''}`}
                     >
-                      <div className={`w-2 h-2 rounded-full ${currentModel === model.id ? model.color.replace('text-', 'bg-') : 'bg-gray-600'}`} />
-                      <div className="flex-1">
-                        <span className="text-sm font-medium">{model.name}</span>
-                        <span className="text-[10px] text-gray-500 ml-2">{model.desc}</span>
+                      <div className={`w-1.5 h-1.5 rounded-full ${currentModel === model.id ? model.color.replace('text-', 'bg-') : 'bg-gray-600'}`} />
+                      <div className="flex-1 min-w-0">
+                        <span className="text-[13px] font-medium">{model.name}</span>
+                        <span className="text-[10px] text-gray-500 ml-1.5">{model.desc}</span>
                       </div>
-                      {currentModel === model.id && (
-                        <span className="text-[10px] px-1.5 py-0.5 rounded bg-white/10">Active</span>
-                      )}
                     </button>
                   ))}
+                  {!providerConfig.modelCommand && (
+                    <div className="px-2.5 py-1.5 text-[10px] text-gray-600">
+                      Set via --model flag at launch
+                    </div>
+                  )}
                 </div>
               </div>
             )}
           </div>
 
-          {/* Plan/Work Mode Toggle */}
-          <button
-            onClick={handleModeToggle}
-            disabled={!activeTerminalId}
-            className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border transition-all ${
-              claudeMode === 'plan'
-                ? 'bg-blue-500/20 text-blue-400 border-blue-500/30 hover:bg-blue-500/25'
-                : 'bg-amber-500/15 text-amber-400 border-amber-500/20 hover:bg-amber-500/25'
-            } disabled:opacity-40 disabled:cursor-not-allowed`}
-            title={claudeMode === 'plan' ? 'Currently in Plan mode - click to switch to Work mode' : 'Currently in Work mode - click to switch to Plan mode'}
-          >
-            {claudeMode === 'plan' ? <Brain size={12} /> : <Hammer size={12} />}
-            <span className="text-[11px] font-semibold uppercase tracking-wide">{claudeMode}</span>
-          </button>
+          {/* Plan/Work Toggle */}
+          {providerConfig.hasPlanMode && (
+            <button
+              onClick={handleModeToggle}
+              disabled={!activeTerminalId}
+              className={`flex items-center gap-1.5 px-2 py-1 rounded-md transition-all ${
+                claudeMode === 'plan'
+                  ? 'bg-blue-500/10 text-blue-400 hover:bg-blue-500/15'
+                  : 'bg-amber-500/10 text-amber-400 hover:bg-amber-500/15'
+              } disabled:opacity-30 disabled:cursor-not-allowed`}
+              title={`${claudeMode === 'plan' ? 'Plan' : 'Work'} mode (Shift+Tab)`}
+            >
+              {claudeMode === 'plan' ? <Brain size={11} /> : <Hammer size={11} />}
+              <span className="text-[11px] font-medium capitalize">{claudeMode}</span>
+            </button>
+          )}
 
-          <div className="flex items-center gap-2 px-2 py-1 rounded-md bg-white/[0.04]">
-            <Clock size={11} className="text-gray-500" />
-            <span className="text-[11px] text-gray-300 font-medium">{formatDuration(sessionDuration)}</span>
+          <div className="w-px h-3.5 bg-white/[0.06]" />
+
+          {/* Session Stats */}
+          <div className="flex items-center gap-1.5 text-gray-500">
+            <Clock size={10} />
+            <span className="text-[10px] font-medium text-gray-400">{formatDuration(sessionDuration)}</span>
           </div>
-          <div className="flex items-center gap-2 px-2 py-1 rounded-md bg-white/[0.04]">
-            <Hash size={11} className="text-gray-500" />
-            <span className="text-[11px] text-gray-300 font-medium">{tokenCount > 1000 ? `${(tokenCount / 1000).toFixed(1)}K` : tokenCount} tokens</span>
+          <div className="flex items-center gap-1.5 text-gray-500">
+            <Hash size={10} />
+            <span className="text-[10px] font-medium text-gray-400">{tokenCount > 1000 ? `${(tokenCount / 1000).toFixed(1)}K` : tokenCount} tok</span>
           </div>
 
-          {/* Context Usage Bar */}
+          {/* Context Usage */}
           {contextUsage && (
             <div
-              className={`flex items-center gap-2 px-2.5 py-1.5 rounded-lg border transition-all ${
+              className={`flex items-center gap-1.5 px-2 py-1 rounded-md transition-all ${
                 contextUsage.percent >= 90
-                  ? 'bg-red-500/15 border-red-500/30 text-red-400'
+                  ? 'bg-red-500/10 text-red-400'
                   : contextUsage.percent >= 70
-                  ? 'bg-amber-500/15 border-amber-500/30 text-amber-400'
-                  : 'bg-cyan-500/10 border-cyan-500/20 text-cyan-400'
+                  ? 'bg-amber-500/10 text-amber-400'
+                  : 'text-gray-500'
               }`}
-              title={`Context: ${Math.round(contextUsage.current / 1000)}K / ${Math.round(contextUsage.max / 1000)}K tokens (${contextUsage.percent}%)`}
+              title={`Context: ${Math.round(contextUsage.current / 1000)}K / ${Math.round(contextUsage.max / 1000)}K tokens`}
             >
-              <Database size={11} />
-              <div className="flex items-center gap-1.5">
-                <div className="w-20 h-1.5 rounded-full bg-white/[0.1] overflow-hidden">
-                  <div
-                    className={`h-full rounded-full transition-all duration-300 ${
-                      contextUsage.percent >= 90
-                        ? 'bg-gradient-to-r from-red-500 to-red-400'
-                        : contextUsage.percent >= 70
-                        ? 'bg-gradient-to-r from-amber-500 to-yellow-400'
-                        : 'bg-gradient-to-r from-cyan-500 to-cyan-400'
-                    }`}
-                    style={{ width: `${Math.min(100, contextUsage.percent)}%` }}
-                  />
-                </div>
-                <span className="text-[10px] font-medium min-w-[28px]">{contextUsage.percent}%</span>
+              <Database size={10} />
+              <div className="w-16 h-1 rounded-full bg-white/[0.08] overflow-hidden">
+                <div
+                  className={`h-full rounded-full transition-all duration-500 ${
+                    contextUsage.percent >= 90 ? 'bg-red-400' :
+                    contextUsage.percent >= 70 ? 'bg-amber-400' : 'bg-gray-500'
+                  }`}
+                  style={{ width: `${Math.min(100, contextUsage.percent)}%` }}
+                />
               </div>
+              <span className="text-[9px] font-medium">{contextUsage.percent}%</span>
             </div>
           )}
         </div>
 
-        {/* Center: Key Actions */}
-        <div className="flex items-center gap-1">
-          {/* Timeline Toggle */}
+        {/* Center: Actions */}
+        <div className="flex items-center gap-0.5">
           <button
             onClick={() => {
               if (showTimeline) {
@@ -1820,116 +2006,113 @@ export default function TerminalWrapper({
                 setShowTimeline(true)
               }
             }}
-            className={`p-2 rounded-lg transition-all relative ${
+            className={`p-1.5 rounded-md transition-all relative ${
               showTimeline
-                ? 'bg-[#cc785c]/20 text-[#cc785c]'
-                : 'text-gray-400 hover:text-white hover:bg-white/[0.08]'
+                ? 'bg-[#cc785c]/15 text-[#cc785c]'
+                : 'text-gray-500 hover:text-gray-300 hover:bg-white/[0.06]'
             }`}
             title="Task Timeline"
           >
-            <ListOrdered size={14} />
+            <ListOrdered size={13} />
             {timelineActions.length > 0 && (
-              <span className="absolute -top-1 -right-1 w-4 h-4 bg-[#cc785c] text-white text-[9px] font-bold rounded-full flex items-center justify-center">
-                {timelineActions.length > 99 ? '99+' : timelineActions.length}
+              <span className="absolute -top-0.5 -right-0.5 w-3.5 h-3.5 bg-[#cc785c] text-white text-[8px] font-bold rounded-full flex items-center justify-center">
+                {timelineActions.length > 99 ? '+' : timelineActions.length}
               </span>
             )}
           </button>
 
-          {/* Voice Input Button */}
           <VoiceInput
             onTranscript={handleVoiceTranscript}
             disabled={!activeTerminalId}
           />
 
-          {/* Upload Button */}
+          {/* Upload */}
           <div className="relative" ref={uploadMenuRef}>
             <button
               onClick={() => setShowUploadMenu(!showUploadMenu)}
               disabled={!activeTerminalId}
-              className={`p-2 rounded-lg transition-all ${
+              className={`p-1.5 rounded-md transition-all ${
                 showUploadMenu
-                  ? 'bg-[#cc785c]/20 text-[#cc785c]'
-                  : 'text-gray-400 hover:text-white hover:bg-white/[0.08] disabled:opacity-40 disabled:cursor-not-allowed'
+                  ? 'bg-[#cc785c]/15 text-[#cc785c]'
+                  : 'text-gray-500 hover:text-gray-300 hover:bg-white/[0.06] disabled:opacity-30 disabled:cursor-not-allowed'
               }`}
               title="Upload files"
             >
-              <Upload size={14} />
+              <Upload size={13} />
             </button>
 
-            {/* Upload Menu Dropdown */}
             {showUploadMenu && (
-              <div className="absolute bottom-full right-0 mb-2 w-48 bg-[#1e1e1e] border border-white/[0.08] rounded-xl shadow-xl z-50 overflow-hidden">
-                <div className="px-3 py-2 border-b border-white/[0.06] text-[10px] uppercase tracking-wider text-gray-500">
-                  Add to Chat
+              <div className="absolute bottom-full right-0 mb-2 w-44 bg-[#1a1a1a] border border-white/[0.08] rounded-lg shadow-2xl z-50 overflow-hidden animate-in fade-in slide-in-from-bottom-2 duration-150">
+                <div className="p-1">
+                  <button
+                    onClick={() => handleFileSelect('file')}
+                    className="w-full flex items-center gap-2.5 px-2.5 py-2 rounded-md text-[13px] text-gray-300 hover:bg-white/[0.06] transition-colors"
+                  >
+                    <FileText size={13} className="text-gray-500" />
+                    <span>File</span>
+                  </button>
+                  <button
+                    onClick={() => handleFileSelect('image')}
+                    className="w-full flex items-center gap-2.5 px-2.5 py-2 rounded-md text-[13px] text-gray-300 hover:bg-white/[0.06] transition-colors"
+                  >
+                    <Image size={13} className="text-gray-500" />
+                    <span>Image</span>
+                  </button>
+                  <button
+                    onClick={() => handleFileSelect('folder')}
+                    className="w-full flex items-center gap-2.5 px-2.5 py-2 rounded-md text-[13px] text-gray-300 hover:bg-white/[0.06] transition-colors"
+                  >
+                    <Folder size={13} className="text-gray-500" />
+                    <span>Folder</span>
+                  </button>
                 </div>
-                <button
-                  onClick={() => handleFileSelect('file')}
-                  className="w-full flex items-center gap-3 px-3 py-2.5 hover:bg-white/[0.04] transition-colors"
-                >
-                  <FileText size={14} className="text-gray-400" />
-                  <span className="text-sm text-gray-300">Upload File</span>
-                </button>
-                <button
-                  onClick={() => handleFileSelect('image')}
-                  className="w-full flex items-center gap-3 px-3 py-2.5 hover:bg-white/[0.04] transition-colors"
-                >
-                  <Image size={14} className="text-gray-400" />
-                  <span className="text-sm text-gray-300">Upload Image</span>
-                </button>
-                <button
-                  onClick={() => handleFileSelect('folder')}
-                  className="w-full flex items-center gap-3 px-3 py-2.5 hover:bg-white/[0.04] transition-colors"
-                >
-                  <Folder size={14} className="text-gray-400" />
-                  <span className="text-sm text-gray-300">Select Folder</span>
-                </button>
-                <div className="px-3 py-2 border-t border-white/[0.06] text-[10px] text-gray-600">
-                  Or drag & drop files anywhere
+                <div className="px-2.5 py-1.5 border-t border-white/[0.06] text-[9px] text-gray-600">
+                  Or drag & drop anywhere
                 </div>
               </div>
             )}
           </div>
 
-          <div className="w-px h-4 bg-white/[0.08] mx-1" />
+          <div className="w-px h-3.5 bg-white/[0.06] mx-0.5" />
 
           <button
             onClick={handleKill}
             disabled={!activeTerminalId || claudeStatus === 'idle'}
-            className="p-2 rounded-lg text-red-400/80 hover:text-red-400 hover:bg-red-500/15 transition-all disabled:opacity-20 disabled:cursor-not-allowed"
+            className="p-1.5 rounded-md text-gray-500 hover:text-red-400 hover:bg-red-500/10 transition-all disabled:opacity-20 disabled:cursor-not-allowed"
             title="Stop (Ctrl+C)"
           >
-            <Square size={14} className="fill-current" />
+            <Square size={12} className="fill-current" />
           </button>
 
           <button
             onClick={handleClear}
-            className="p-2 rounded-lg text-gray-400 hover:text-white hover:bg-white/[0.08] transition-all"
-            title="Clear (⌘K)"
+            className="p-1.5 rounded-md text-gray-500 hover:text-gray-300 hover:bg-white/[0.06] transition-all"
+            title="Clear (Cmd+K)"
           >
-            <Trash2 size={14} />
+            <Trash2 size={13} />
           </button>
 
           <button
             onClick={handleCopyAll}
-            className="p-2 rounded-lg text-gray-400 hover:text-white hover:bg-white/[0.08] transition-all"
+            className="p-1.5 rounded-md text-gray-500 hover:text-gray-300 hover:bg-white/[0.06] transition-all"
             title="Copy All"
           >
-            <Copy size={14} />
+            <Copy size={13} />
           </button>
 
           <button
             onClick={handleScrollToBottom}
-            className="p-2 rounded-lg text-gray-400 hover:text-white hover:bg-white/[0.08] transition-all"
+            className="p-1.5 rounded-md text-gray-500 hover:text-gray-300 hover:bg-white/[0.06] transition-all"
             title="Scroll to Bottom"
           >
-            <ArrowDownToLine size={14} />
+            <ArrowDownToLine size={13} />
           </button>
         </div>
 
-        {/* Right: Keyboard Shortcut */}
-        <div className="flex items-center gap-2">
-          <kbd className="px-1.5 py-1 rounded-md bg-white/[0.05] text-gray-400 text-[10px] font-mono border border-white/[0.08]">⌘K</kbd>
-          <Sparkles size={12} className="text-[#cc785c]/60" />
+        {/* Right: Terminal Size */}
+        <div className="flex items-center gap-1.5">
+          <span className="text-[10px] text-gray-600 font-mono">{terminalSize.cols}x{terminalSize.rows}</span>
+          <kbd className="px-1.5 py-0.5 rounded bg-white/[0.04] text-gray-500 text-[10px] font-mono border border-white/[0.06]">Cmd+K</kbd>
         </div>
       </footer>
 

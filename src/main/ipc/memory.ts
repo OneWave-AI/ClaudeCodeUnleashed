@@ -600,6 +600,47 @@ export function registerMemoryHandlers(): void {
     return []
   })
 
+  // Write session context to .claude/rules/session-context.md
+  ipcMain.handle('write-session-context', async (_, projectPath: string, content: string): Promise<{ success: boolean }> => {
+    try {
+      const rulesDir = join(projectPath, '.claude', 'rules')
+      await ensureDir(rulesDir)
+      const filePath = join(rulesDir, 'session-context.md')
+      await fs.writeFile(filePath, content, 'utf-8')
+
+      // Ensure session-context.md is gitignored (check if a broader rule already covers it)
+      const gitignorePath = join(projectPath, '.gitignore')
+      try {
+        let gitContent = ''
+        if (existsSync(gitignorePath)) {
+          gitContent = await fs.readFile(gitignorePath, 'utf-8')
+        }
+        const ignoreTarget = '.claude/rules/session-context.md'
+        // Check for exact match or broader rules that already cover this file
+        const gitLines = gitContent.split('\n').map(l => l.trim())
+        const alreadyCovered = gitLines.some(line =>
+          !line.startsWith('#') && line.length > 0 && (
+            line === ignoreTarget ||
+            line === '.claude/' ||
+            line === '.claude/rules/' ||
+            line === '.claude/rules/*'
+          )
+        )
+        if (!alreadyCovered) {
+          const newContent = gitContent.trim() + '\n\n# Claude Code session context\n' + ignoreTarget + '\n'
+          await fs.writeFile(gitignorePath, newContent, 'utf-8')
+        }
+      } catch {
+        // Ignore errors with .gitignore
+      }
+
+      return { success: true }
+    } catch (err) {
+      console.error('Failed to write session context:', err)
+      return { success: false }
+    }
+  })
+
   // Keep legacy handlers that aren't used anymore as no-ops
   ipcMain.handle('memory-update', async (): Promise<null> => null)
   ipcMain.handle('memory-search', async (): Promise<[]> => [])

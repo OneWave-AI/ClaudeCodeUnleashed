@@ -2,9 +2,9 @@
 
 **Code with Superpowers.**
 
-The premium native desktop experience for [Claude Code](https://github.com/anthropics/claude-code). Multi-agent swarms, analytics, and a beautiful zero-config environment that lets you build faster—whether you're a developer or just getting started.
+The premium native desktop experience for [Claude Code](https://github.com/anthropics/claude-code) and [OpenAI Codex](https://github.com/openai/codex). Multi-agent swarms, analytics, per-tab CLI provider selection, and a beautiful zero-config environment that lets you build faster—whether you're a developer or just getting started.
 
-[![Version](https://img.shields.io/badge/version-2.0.0-red)](https://github.com/OneWave-AI/ClaudeCodeUnleashed/releases)
+[![Version](https://img.shields.io/badge/version-2.3.0-red)](https://github.com/OneWave-AI/ClaudeCodeUnleashed/releases)
 [![Made by OneWave AI](https://img.shields.io/badge/made%20by-OneWave--AI-orange)](https://onewave-ai.com)
 
 ## Screenshots
@@ -46,10 +46,11 @@ You don't need to be a coding expert to build amazing things. Unleashed translat
 ## Features
 
 ### Analytics Dashboard
-Track your coding time and productivity:
-- **Usage Statistics**: Sessions, time coded, tokens used at a glance
+Track your active coding time and productivity:
+- **Active Time Tracking**: Measures actual coding time by excluding idle gaps (breaks, meetings, overnight)&mdash;no more inflated hours
+- **Usage Statistics**: Sessions, active time, tokens used at a glance
 - **7-Day/30-Day Views**: See trends over different time periods
-- **Project Time Tracking**: Know exactly how long you've spent on each project (for billing!)
+- **Project Time Tracking**: Accurate per-project time for billing&mdash;only counts active work
 - **Activity Charts**: Visual breakdown of your daily coding activity
 - **Top Projects**: See which projects got the most attention
 - **Skeleton Loaders**: Smooth loading experience with beautiful placeholder animations
@@ -62,13 +63,30 @@ Launch multiple AI agents to audit and fix your codebase:
 - **One-Click Launch**: Glowing "Hive" button for instant agent deployment
 - **Smart Selection**: Claude automatically picks the most relevant agents for your situation
 
+### Orchestrator
+Multi-terminal agent coordination for parallel and split-task workflows:
+- **Auto-Terminal Creation**: Click Launch and terminals are created automatically -- no manual grid setup
+- **Split Mode**: Decompose one master task into sub-tasks across multiple terminals
+- **Parallel Mode**: Run independent tasks simultaneously across terminals
+- **Cross-Terminal Awareness**: Each terminal's LLM knows what the others are doing to avoid duplicate work
+- **Smart Completion Detection**: Automatically detects when Claude finishes a task and stops the orchestrator when all terminals complete
+- **Error Recovery**: Exponential backoff retry (up to 8 attempts) instead of silently dying on LLM failures
+- **Smart Output Summarization**: Extracts head, key events, and tail from terminal output instead of naive truncation
+- **Coordinator Log**: Real-time visibility into orchestrator decisions and terminal status
+
 ### Super Agent
 Autonomous AI-powered task execution that lets Claude work independently:
 - **LLM-Driven**: An outer LLM monitors Claude's terminal output and decides what to do next
 - **Auto-Approve**: Automatically approves tool calls and continues until the task is done
+- **Fast-Path Routing**: Known prompts (y/n, trust, permission) are answered instantly without an LLM call (<500ms vs 6-7s)
+- **Smart Status Detection**: Skips LLM calls entirely when Claude is actively working (spinner, tools running)
+- **Bulk Terminal Write**: Text appears instantly in the terminal instead of character-by-character typing
+- **Rolling Output Buffer**: Maintains full conversation context with sent-message markers instead of clearing output
+- **Adaptive Idle Timeout**: Shorter timeouts (1.5s) for waiting prompts, longer (8s) when Claude is working
+- **Structured JSON Output**: LLM responds with `{"action": "wait|send|done", "text": "..."}` for reliable parsing
+- **Terminal Buffer Snapshot**: Takeover mode reads current terminal state immediately via IPC ring buffer
 - **Time Limits**: Set execution time limits (5-60 minutes)
-- **Smart Waiting**: Detects when Claude is waiting for input and prompts it to continue
-- **Activity Log**: Real-time visibility into the agent's thought process
+- **Activity Log**: Real-time visibility into the agent's decisions (fast-path vs LLM)
 - **Side Panel**: Collapsible status bar shows progress without blocking the terminal
 
 ### Plan Panel
@@ -78,12 +96,22 @@ Track Claude's multi-step tasks in real-time:
 - **Progress Bar**: Overall completion percentage at a glance
 - **Slide-In Animation**: Smooth panel appearance when toggled
 
+### Multi-Provider Terminal Tabs
+Run Claude Code and OpenAI Codex side by side in the same window:
+- **Per-Tab Provider**: Each terminal tab independently chooses its CLI (Claude Code or Codex)
+- **Adaptive Status Bar**: Model menu, plan toggle, and status detection auto-switch based on the active tab
+- **Claude Code Models**: Opus 4.6, Sonnet 4.6, Haiku 4.5
+- **Codex Models**: GPT-5.3 Codex, GPT-5.3 Spark, GPT-5.2 Codex, GPT-5.1 Max
+- **Default Provider Setting**: Choose which CLI new tabs open with (configurable in Settings)
+- **Install Detection**: HomeScreen shows install status and one-click install for both CLIs
+
 ### Split Terminal Panels
 Work with multiple terminals simultaneously:
 - **Dual Panels**: Run two terminals side-by-side
-- **Tab Support**: Multiple tabs per panel
+- **Tab Support**: Multiple tabs per panel with per-tab provider selection
 - **Browser Tabs**: Built-in browser with mobile/desktop viewport toggle
-- **Drag & Drop**: Reorganize tabs between panels
+- **Drag & Drop**: Reorganize tabs between panels (provider follows the tab)
+- **Grid Layout**: 3x2 grid of terminals for multi-task workflows
 
 ### Zero-Config Discovery
 Automatically detects everything already on your machine:
@@ -160,10 +188,9 @@ View documents directly in the app:
 ### Premium UI
 - **Modern Home Screen**: Beautiful action grid with glass morphism
 - **Toast Notifications**: In-app alerts for success, error, and info
-- **8 Terminal Themes**:
-  - Default, Pro, Homebrew, Ocean, Dracula, Solarized
-  - **Neon**: Cyan/blue with immersive effects
-  - **Aurora**: Orange/gold theme
+- **14 Terminal Themes**:
+  - Default, Pro, Homebrew, Ocean, Dracula, Solarized, Neon, Aurora
+  - Midnight, Ember, Matrix, Frost, Synthwave, Tokyo Night
 - **Split View**: Terminal and files side by side
 - **Smooth Transitions**: Page transitions with animations
 - **Reduced Motion**: Respects accessibility preferences
@@ -189,13 +216,14 @@ View documents directly in the app:
 - **Error Boundaries**: Graceful error handling with recovery
 
 ### System
-- **One-Click Setup**: Auto-install Claude Code CLI if not present
+- **One-Click Setup**: Auto-install Claude Code CLI and/or Codex CLI if not present
+- **Nested Session Fix**: Strips `CLAUDECODE` env var so CLIs launch correctly from within the app
 - **Cross-Platform**: macOS, Windows, and Linux
 
 ## Prerequisites
 
 - macOS, Windows, or Linux
-- [Claude Code CLI](https://github.com/anthropics/claude-code) (auto-installs if missing)
+- [Claude Code CLI](https://github.com/anthropics/claude-code) and/or [OpenAI Codex CLI](https://github.com/openai/codex) (auto-installs if missing)
 
 ## Installation
 
@@ -236,14 +264,15 @@ npm run build
 
 ## Usage
 
-1. **Launch**: Open ClaudeCodeUI - it will check for Claude CLI and offer to install
+1. **Launch**: Open ClaudeCodeUI - it checks for both Claude Code and Codex CLIs and offers to install
 2. **Select Project**: Click "Open Project" or drag a folder
-3. **Start Session**: Click "Start Session" or press Cmd+Enter
-4. **Browse History**: Click "History" to view past conversations
-5. **Manage Skills**: Click "Skills & Agents" to browse and create extensions
-6. **Use Toolbelt**: Click the toolbelt icon to quickly insert agents/skills
-7. **Git Actions**: Use the Git dropdown for commits, push, and PRs
-8. **Deploy**: Click the deploy button for Vercel/GitHub Pages
+3. **Start Session**: Click "Start Session" or press Cmd+Enter (launches your default CLI)
+4. **Add Provider Tabs**: Click "+" to open a new Claude Code or Codex tab
+5. **Browse History**: Click "History" to view past conversations
+6. **Manage Skills**: Click "Skills & Agents" to browse and create extensions
+7. **Use Toolbelt**: Click the toolbelt icon to quickly insert agents/skills
+8. **Git Actions**: Use the Git dropdown for commits, push, and PRs
+9. **Deploy**: Click the deploy button for Vercel/GitHub Pages
 
 ## Keyboard Shortcuts
 
@@ -302,7 +331,8 @@ ClaudeCodeUI-V2/
 │   ├── main/              # Electron main process
 │   │   ├── index.ts       # Main entry
 │   │   └── ipc/           # IPC handlers (modular)
-│   │       ├── terminal.ts
+│   │       ├── terminal.ts    # PTY management, buffer tracking
+│   │       ├── superagent.ts  # LLM API calls (Groq/OpenAI)
 │   │       ├── files.ts
 │   │       ├── skills.ts
 │   │       ├── mcp.ts
@@ -322,12 +352,13 @@ ClaudeCodeUI-V2/
 │   │   │   ├── history/   # HistoryBrowser
 │   │   │   ├── settings/  # SettingsPanel
 │   │   │   └── common/    # Toast, Modal, Toolbelt, etc.
-│   │   ├── hooks/         # Custom React hooks
-│   │   ├── store/         # Zustand stores
+│   │   ├── hooks/         # Custom React hooks (useSuperAgent, etc.)
+│   │   ├── store/         # Zustand stores (superAgentStore, etc.)
 │   │   └── styles/
 │   │
 │   └── shared/
-│       └── types.ts       # Shared types
+│       ├── types.ts       # Shared types
+│       └── providers.ts   # CLI provider configs (Claude Code, Codex)
 │
 ├── assets/
 │   ├── starter-skills/

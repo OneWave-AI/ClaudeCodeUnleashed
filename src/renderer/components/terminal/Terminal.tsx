@@ -5,6 +5,7 @@ import { SearchAddon } from '@xterm/addon-search'
 import { WebLinksAddon } from '@xterm/addon-web-links'
 import '@xterm/xterm/css/xterm.css'
 import { useAppStore } from '../../store'
+import { CLI_PROVIDERS } from '../../../shared/providers'
 import { ChevronUp, ChevronDown, X, Search, Copy, Clipboard, Trash2, ArrowDownToLine } from 'lucide-react'
 
 // ANSI color codes for terminal highlighting
@@ -182,6 +183,7 @@ interface TerminalProps {
   onLocalhostDetected?: (url: string) => void
   onTerminalData?: (data: string, terminalId: string) => void
   onTerminalIdReady?: (terminalId: string) => void
+  cliProvider?: import('../../../shared/types').CLIProvider
 }
 
 // Regex to detect localhost URLs
@@ -208,7 +210,7 @@ const applyHighlighting = (text: string, enabled: boolean): string => {
   return result
 }
 
-const Terminal = forwardRef<TerminalRef, TerminalProps>(({ onResize, scanLinesEnabled = false, zoomLevel = 100, highlightPatterns = false, onLocalhostDetected, onTerminalData, onTerminalIdReady }, ref) => {
+const Terminal = forwardRef<TerminalRef, TerminalProps>(({ onResize, scanLinesEnabled = false, zoomLevel = 100, highlightPatterns = false, onLocalhostDetected, onTerminalData, onTerminalIdReady, cliProvider: cliProviderProp }, ref) => {
   const containerRef = useRef<HTMLDivElement>(null)
   const terminalRef = useRef<XTerm | null>(null)
   const fitAddonRef = useRef<FitAddon | null>(null)
@@ -549,22 +551,48 @@ const Terminal = forwardRef<TerminalRef, TerminalProps>(({ onResize, scanLinesEn
       // Notify parent immediately when terminal ID is ready
       onTerminalIdReady?.(id)
 
-      // Check if Claude is installed before starting
+      // Load settings once for both provider and session context
+      const settings = await window.api.loadSettings()
+
+      // Use the provider prop if available, otherwise fall back to settings
+      let provider = cliProviderProp
+      if (!provider) {
+        provider = settings?.cliProvider || 'claude'
+      }
+      const config = CLI_PROVIDERS[provider]
+
+      // Generate session context if enabled (non-blocking — don't delay CLI launch)
+      if (settings?.sessionContextEnabled !== false) {
+        void (async () => {
+          try {
+            const cwd = await window.api.getCwd()
+            const days = settings?.sessionContextDays ?? 7
+            const context = await window.api.generateSessionContext(cwd, days)
+            if (context) {
+              await window.api.writeSessionContext(cwd, context)
+            }
+          } catch (err) {
+            console.error('Failed to generate session context:', err)
+          }
+        })()
+      }
+
+      // Check if CLI is installed before starting
       try {
-        const isClaudeInstalled = await window.api.checkClaudeInstalled()
-        if (isClaudeInstalled) {
-          // Start Claude CLI
-          window.api.terminalInput('claude\n', id)
+        const isInstalled = await window.api.checkCliInstalled(provider)
+        if (isInstalled) {
+          // Start CLI
+          window.api.terminalInput(`${config.binaryName}\n`, id)
         } else {
-          // Show message that Claude is not installed
-          terminal.writeln('\x1b[33mClaude CLI is not installed.\x1b[0m')
-          terminal.writeln('Run \x1b[36mnpm install -g @anthropic-ai/claude-code\x1b[0m to install it.')
+          // Show message that CLI is not installed
+          terminal.writeln(`\x1b[33m${config.name} CLI is not installed.\x1b[0m`)
+          terminal.writeln(`Run \x1b[36m${config.installCommand}\x1b[0m to install it.`)
           terminal.writeln('')
         }
       } catch (err) {
-        console.error('Failed to check Claude installation:', err)
-        // Try to start Claude anyway
-        window.api.terminalInput('claude\n', id)
+        console.error(`Failed to check ${config.name} installation:`, err)
+        // Try to start CLI anyway
+        window.api.terminalInput(`${config.binaryName}\n`, id)
       }
     }).catch((err) => {
       console.error('Failed to create terminal:', err)

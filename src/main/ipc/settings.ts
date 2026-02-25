@@ -36,7 +36,14 @@ function getDefaultSettings(): AppSettings {
     autoUpdate: true,
 
     // API
-    claudeApiKey: ''
+    claudeApiKey: '',
+
+    // CLI Provider
+    cliProvider: 'claude',
+
+    // Session Context
+    sessionContextEnabled: true,
+    sessionContextDays: 7
   }
 }
 

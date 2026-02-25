@@ -163,6 +163,8 @@
               <a href="#quick-start" class="toc-link">Quick Start</a>
               <a href="#installation" class="toc-link">Installation</a>
               <a href="#first-session" class="toc-link">First Session</a>
+              <a href="#super-agent" class="toc-link">Super Agent</a>
+              <a href="#teams" class="toc-link">Teams</a>
               <a href="#shortcuts" class="toc-link">Keyboard Shortcuts</a>
               <a href="#configuration" class="toc-link">Configuration</a>
               <a href="#troubleshooting" class="toc-link">Troubleshooting</a>
@@ -355,7 +357,192 @@
                   <svg class="w-4 h-4 text-primary mt-0.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
                   Use <strong>Agent Hive</strong> to run multiple audits (security, performance, tests) in parallel
                 </li>
+                <li class="flex items-start gap-2">
+                  <svg class="w-4 h-4 text-primary mt-0.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+                  Use <strong>Teams</strong> to coordinate multiple agents with shared task lists on complex features
+                </li>
+                <li class="flex items-start gap-2">
+                  <svg class="w-4 h-4 text-primary mt-0.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+                  Click the <strong>Grid</strong> button to launch a 3x2 grid of 6 terminals for multi-project workflows
+                </li>
               </ul>
+            </div>
+          </section>
+
+          <!-- Super Agent -->
+          <section id="super-agent" class="mb-16 scroll-mt-24">
+            <h2 class="text-2xl font-bold mb-6 fade-up">Super Agent</h2>
+            <p class="text-zinc-400 mb-8 fade-up stagger-1">Super Agent is an autonomous layer that monitors Claude's terminal and makes decisions on your behalf. It uses a fast outer LLM (Groq or OpenAI) to keep Claude working without manual intervention.</p>
+
+            <div class="space-y-6">
+              <!-- How It Works -->
+              <div class="glass rounded-xl p-6 fade-up stagger-1">
+                <h4 class="font-semibold mb-4">How It Works</h4>
+                <p class="text-sm text-zinc-400 mb-4">Super Agent uses a two-tier decision system:</p>
+                <ul class="text-sm text-zinc-300 space-y-3">
+                  <li class="flex items-start gap-3">
+                    <span class="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-semibold bg-teal-400/10 text-teal-400 border border-teal-400/20 mt-0.5">AUTO</span>
+                    <span><strong>Fast-path decisions</strong> handle known patterns instantly without calling the LLM. This includes y/n prompts, spinner detection, trust prompts, and sending the initial task. These show as teal "Auto" entries in the activity log.</span>
+                  </li>
+                  <li class="flex items-start gap-3">
+                    <span class="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-semibold bg-indigo-400/10 text-indigo-400 border border-indigo-400/20 mt-0.5">LLM</span>
+                    <span><strong>LLM decisions</strong> are used for creative responses like answering questions, choosing options, or suggesting improvements. These show as indigo "LLM" entries.</span>
+                  </li>
+                  <li class="flex items-start gap-3">
+                    <span class="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-semibold bg-amber-400/10 text-amber-400 border border-amber-400/20 mt-0.5">APPROVED</span>
+                    <span><strong>Permission approvals</strong> auto-approve y/n prompts and show the question that was approved, so you can see exactly what was allowed.</span>
+                  </li>
+                </ul>
+              </div>
+
+              <!-- Safety Levels -->
+              <div class="glass rounded-xl p-6 fade-up stagger-2">
+                <h4 class="font-semibold mb-4">Safety Levels</h4>
+                <p class="text-sm text-zinc-400 mb-4">Control how much autonomy the agent has:</p>
+                <div class="space-y-3">
+                  <div class="flex items-start gap-3 text-sm">
+                    <span class="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-semibold bg-green-400/10 text-green-400 border border-green-400/20 mt-0.5 w-20 justify-center">SAFE</span>
+                    <span class="text-zinc-300">Dangerous commands (<code class="px-1 bg-white/5 rounded text-xs">rm -rf</code>, <code class="px-1 bg-white/5 rounded text-xs">git push --force</code>, <code class="px-1 bg-white/5 rounded text-xs">drop database</code>, etc.) are <strong>not auto-approved</strong>. They fall through to the LLM for evaluation instead of blindly sending "y".</span>
+                  </div>
+                  <div class="flex items-start gap-3 text-sm">
+                    <span class="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-semibold bg-yellow-400/10 text-yellow-400 border border-yellow-400/20 mt-0.5 w-20 justify-center">MODERATE</span>
+                    <span class="text-zinc-300">Dangerous commands are blocked from being sent, but all y/n prompts are auto-approved.</span>
+                  </div>
+                  <div class="flex items-start gap-3 text-sm">
+                    <span class="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-semibold bg-red-400/10 text-red-400 border border-red-400/20 mt-0.5 w-20 justify-center">YOLO</span>
+                    <span class="text-zinc-300">No restrictions. Everything is auto-approved and nothing is blocked. Use with caution.</span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Session Stats -->
+              <div class="glass rounded-xl p-6 fade-up stagger-3">
+                <h4 class="font-semibold mb-4">Session Stats</h4>
+                <p class="text-sm text-zinc-400 mb-4">During a session, the status bar tracks real-time metrics:</p>
+                <ul class="text-sm text-zinc-300 space-y-2">
+                  <li class="flex items-center gap-2">
+                    <span class="text-blue-400 font-mono text-xs">N written</span>
+                    <span class="text-zinc-500">-</span>
+                    <span>Files created or edited by Claude</span>
+                  </li>
+                  <li class="flex items-center gap-2">
+                    <span class="text-green-400 font-mono text-xs">N passed</span>
+                    <span class="text-zinc-500">-</span>
+                    <span>Tests that passed during the session</span>
+                  </li>
+                  <li class="flex items-center gap-2">
+                    <span class="text-red-400 font-mono text-xs">N failed</span>
+                    <span class="text-zinc-500">-</span>
+                    <span>Tests that failed or errors encountered</span>
+                  </li>
+                </ul>
+              </div>
+
+              <!-- Setup -->
+              <div class="glass rounded-xl p-6 fade-up">
+                <h4 class="font-semibold mb-4">Setup</h4>
+                <p class="text-sm text-zinc-400 mb-4">Super Agent requires an API key for the outer LLM. Configure it in Settings:</p>
+                <ol class="text-sm text-zinc-300 space-y-2">
+                  <li class="flex gap-3">
+                    <span class="text-primary font-bold">1.</span>
+                    <span>Open Settings (<kbd class="kbd text-xs">Cmd</kbd> + <kbd class="kbd text-xs">,</kbd>) and go to the <strong>Super Agent</strong> tab</span>
+                  </li>
+                  <li class="flex gap-3">
+                    <span class="text-primary font-bold">2.</span>
+                    <span>Enter your <strong>Groq</strong> or <strong>OpenAI</strong> API key</span>
+                  </li>
+                  <li class="flex gap-3">
+                    <span class="text-primary font-bold">3.</span>
+                    <span>Choose your preferred provider and model</span>
+                  </li>
+                  <li class="flex gap-3">
+                    <span class="text-primary font-bold">4.</span>
+                    <span>Start a terminal session, then click the Super Agent button in the toolbar to activate</span>
+                  </li>
+                </ol>
+
+                <div class="mt-4 p-3 bg-blue-500/10 border border-blue-500/20 rounded-lg">
+                  <p class="text-xs text-blue-200"><strong>Tip:</strong> Groq's free tier is fast and works great for Super Agent. The agent uses very few tokens per decision since most common patterns are handled by the instant fast-path.</p>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <!-- Teams -->
+          <section id="teams" class="mb-16 scroll-mt-24">
+            <h2 class="text-2xl font-bold mb-6 fade-up">Teams</h2>
+            <p class="text-zinc-400 mb-8 fade-up stagger-1">Teams is Claude Code's native multi-agent coordination system. A lead agent spawns teammates that share a task list and communicate via messages to work on complex projects in parallel.</p>
+
+            <div class="space-y-6">
+              <!-- Overview -->
+              <div class="glass rounded-xl p-6 fade-up stagger-1">
+                <h4 class="font-semibold mb-4">How Teams Work</h4>
+                <p class="text-sm text-zinc-400 mb-4">When Claude creates a team, it establishes a lead agent that coordinates specialized teammates. Each team has:</p>
+                <ul class="text-sm text-zinc-300 space-y-3">
+                  <li class="flex items-start gap-3">
+                    <svg class="w-5 h-5 text-teal-400 flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+                    <span><strong>Team members</strong> with roles like researcher, frontend-developer, test-engineer, each with their own model and capabilities</span>
+                  </li>
+                  <li class="flex items-start gap-3">
+                    <svg class="w-5 h-5 text-teal-400 flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+                    <span><strong>Shared task list</strong> where tasks can be assigned, tracked, and have dependencies (blocks/blockedBy)</span>
+                  </li>
+                  <li class="flex items-start gap-3">
+                    <svg class="w-5 h-5 text-teal-400 flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+                    <span><strong>Direct messaging</strong> between agents for coordination and status updates</span>
+                  </li>
+                </ul>
+              </div>
+
+              <!-- Teams Panel -->
+              <div class="glass rounded-xl p-6 fade-up stagger-2">
+                <h4 class="font-semibold mb-4">Teams Panel</h4>
+                <p class="text-sm text-zinc-400 mb-4">Open the Teams panel from the toolbar (teal Users icon) or from the home screen to manage your teams:</p>
+                <ul class="text-sm text-zinc-300 space-y-3">
+                  <li class="flex items-start gap-3">
+                    <span class="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-semibold bg-teal-400/10 text-teal-400 border border-teal-400/20 mt-0.5">VIEW</span>
+                    <span>See all active teams with member count, task progress bar, and creation date</span>
+                  </li>
+                  <li class="flex items-start gap-3">
+                    <span class="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-semibold bg-teal-400/10 text-teal-400 border border-teal-400/20 mt-0.5">DETAIL</span>
+                    <span>Click a team to see its members (role, model, working directory) and all tasks with status, owner, and dependencies</span>
+                  </li>
+                  <li class="flex items-start gap-3">
+                    <span class="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-semibold bg-teal-400/10 text-teal-400 border border-teal-400/20 mt-0.5">LIVE</span>
+                    <span>Auto-refreshes every 5 seconds so you can watch tasks complete in real time without manual refreshing</span>
+                  </li>
+                </ul>
+              </div>
+
+              <!-- Start Team -->
+              <div class="glass rounded-xl p-6 fade-up stagger-3">
+                <h4 class="font-semibold mb-4">Starting a Team</h4>
+                <p class="text-sm text-zinc-400 mb-4">There are two ways to start a team:</p>
+                <ol class="text-sm text-zinc-300 space-y-2">
+                  <li class="flex gap-3">
+                    <span class="text-primary font-bold">1.</span>
+                    <span><strong>From the terminal:</strong> Ask Claude directly to create a team for your task. Claude will spawn teammates and coordinate them automatically.</span>
+                  </li>
+                  <li class="flex gap-3">
+                    <span class="text-primary font-bold">2.</span>
+                    <span><strong>Start Team button:</strong> Click the "Start Team" button in the Teams panel header. This sends a prompt to your active terminal session asking Claude to analyze your current conversation and suggest a team.</span>
+                  </li>
+                </ol>
+
+                <div class="mt-4 p-3 bg-teal-500/10 border border-teal-500/20 rounded-lg">
+                  <p class="text-xs text-teal-200"><strong>Tip:</strong> Teams work best for complex, multi-step tasks where different parts can be worked on in parallel - like building a full-stack feature with frontend, backend, and tests.</p>
+                </div>
+              </div>
+
+              <!-- Data Location -->
+              <div class="glass rounded-xl p-6 fade-up">
+                <h4 class="font-semibold mb-4">Data Location</h4>
+                <p class="text-sm text-zinc-400 mb-4">Teams are stored on disk and persist across sessions:</p>
+                <div class="code-block">
+                  <code><span class="comment"># Team configurations</span><br>~/.claude/teams/{team-name}/config.json<br><br><span class="comment"># Team task lists</span><br>~/.claude/tasks/{team-name}/{task-id}.json</code>
+                </div>
+                <p class="text-sm text-zinc-400 mt-3">You can delete teams from the Teams panel when they're no longer needed.</p>
+              </div>
             </div>
           </section>
 
@@ -396,6 +583,10 @@
                   <tr>
                     <td class="px-4 py-3 text-zinc-300">Toggle Split View</td>
                     <td class="px-4 py-3"><kbd class="kbd">Cmd</kbd> + <kbd class="kbd">\</kbd></td>
+                  </tr>
+                  <tr>
+                    <td class="px-4 py-3 text-zinc-300">Grid Layout (3x2)</td>
+                    <td class="px-4 py-3">Click <span class="text-emerald-400 font-medium">Grid</span> button or use + menu</td>
                   </tr>
                   <tr>
                     <td class="px-4 py-3 text-zinc-300">New Terminal Tab</td>

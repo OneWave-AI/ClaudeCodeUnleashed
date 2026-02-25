@@ -92,7 +92,7 @@ export function registerSuperAgentHandlers(): void {
             { role: 'user', content: userPrompt }
           ],
           temperature,
-          max_tokens: 500
+          max_tokens: 200
         }),
         signal: controller.signal
       })

@@ -1,6 +1,6 @@
 {
   "name": "claude-code-unleashed",
-  "version": "2.2.1",
+  "version": "2.3.0",
   "description": "Claude Code Unleashed - The Premium Desktop Experience",
   "main": "./out/main/index.js",
   "author": "Gabe",

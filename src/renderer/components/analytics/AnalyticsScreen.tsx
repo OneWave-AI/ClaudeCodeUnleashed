@@ -596,7 +596,7 @@ function ProjectDetailModal({ project, onClose }: { project: ProjectDetail; onCl
                         isToday ? 'bg-[#cc785c]' :
                         day.minutes > 0 ? 'bg-[#cc785c]/40' : 'bg-white/[0.06]'
                       }`}
-                      style={{ height: `${height}%` }}
+                      style={{ height: `${(height / 100) * 80}px` }}
                     />
                   </div>
                 )
@@ -724,7 +724,7 @@ function OverviewTab({ analytics, filteredStats, period, onProjectClick, onViewA
                       isToday ? 'bg-gradient-to-t from-[#cc785c] to-[#e8956e]' :
                       day.sessions > 0 ? 'bg-[#cc785c]/40' : 'bg-white/[0.06]'
                     }`}
-                    style={{ height: `${height}%` }}
+                    style={{ height: `${(height / 100) * 128}px` }}
                   />
                 </div>
               )
@@ -936,7 +936,7 @@ function ProjectsTab({ projects, period, expandedProjects, onToggleExpand, onPro
                             className={`flex-1 rounded-sm ${
                               day.minutes > 0 ? 'bg-[#cc785c]/50' : 'bg-white/[0.06]'
                             }`}
-                            style={{ height: `${height}%` }}
+                            style={{ height: `${(height / 100) * 48}px` }}
                             title={`${day.date}: ${day.minutes}m`}
                           />
                         )
@@ -1026,7 +1026,7 @@ function ActivityTab({ analytics }: { analytics: AnalyticsData }) {
                       isPeak ? 'bg-purple-500' :
                       count > 0 ? 'bg-purple-500/40' : 'bg-white/[0.06]'
                     }`}
-                    style={{ height: `${height}%` }}
+                    style={{ height: `${(height / 100) * 96}px` }}
                   />
                   {hour % 6 === 0 && (
                     <span className="text-[8px] text-gray-600 mt-1">{hour}</span>

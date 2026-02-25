@@ -29,7 +29,9 @@ import {
   Link2,
   Brain,
   ListTodo,
-  FolderTree
+  FolderTree,
+  Users,
+  LayoutGrid
 } from 'lucide-react'
 
 // Custom Bee Icon for Swarm
@@ -84,9 +86,11 @@ interface HeaderProps {
   onNavigate?: (screen: string) => void
   onOpenPreview?: (url: string) => void
   onOpenSuperAgent?: () => void
+  onOpenOrchestrator?: () => void
   onOpenMemory?: () => void
   onOpenBackgroundAgents?: () => void
   onOpenRepoVisualization?: () => void
+  onOpenTeams?: () => void
 }
 
 export default function Header({
@@ -99,9 +103,11 @@ export default function Header({
   onNavigate,
   onOpenPreview,
   onOpenSuperAgent,
+  onOpenOrchestrator,
   onOpenMemory,
   onOpenBackgroundAgents,
-  onOpenRepoVisualization
+  onOpenRepoVisualization,
+  onOpenTeams
 }: HeaderProps) {
   const folderName = cwd ? cwd.split('/').pop() : 'No folder'
   const [mcpCount, setMcpCount] = useState(0)
@@ -908,6 +914,19 @@ Begin researching now. Start with a WebSearch for the most relevant query based 
             <span>Agent</span>
           </button>
         )}
+
+        {/* Orchestrator - Only on terminal */}
+        {screen === 'terminal' && (
+          <button
+            onClick={onOpenOrchestrator}
+            disabled={!activeTerminalId}
+            className="titlebar-no-drag flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all bg-gradient-to-r from-cyan-500/15 to-blue-600/15 hover:from-cyan-500/25 hover:to-blue-600/25 border border-cyan-500/25 text-cyan-400 disabled:opacity-40 disabled:cursor-not-allowed"
+            title="Launch Orchestrator (Multi-Terminal)"
+          >
+            <LayoutGrid size={12} />
+            <span>Orchestrate</span>
+          </button>
+        )}
       </div>
 
       {/* Center: Screen indicator */}
@@ -1072,6 +1091,18 @@ Begin researching now. Start with a WebSearch for the most relevant query based 
           >
             <ListTodo size={14} />
             <span className="text-xs">Queue</span>
+          </button>
+        )}
+
+        {/* Teams - Only on terminal */}
+        {screen === 'terminal' && (
+          <button
+            onClick={onOpenTeams}
+            className="flex items-center gap-1.5 px-2 py-1.5 rounded-lg hover:bg-teal-500/10 text-gray-400 hover:text-teal-400 transition-colors"
+            title="Claude Code Teams"
+          >
+            <Users size={14} />
+            <span className="text-xs">Teams</span>
           </button>
         )}
 
