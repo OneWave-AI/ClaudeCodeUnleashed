@@ -19,6 +19,7 @@ import {
 import { useOrchestratorStore } from '../store/orchestratorStore'
 import { useAgentMemoryStore } from '../store/agentMemoryStore'
 import { loadMemoryForProject, extractMemoryLearnings } from './useAgentMemory'
+import { useProjectSkillsStore } from '../store/projectSkillsStore'
 
 // Helper to get store state without causing re-renders
 const getStore = () => useSuperAgentStore.getState()
@@ -145,7 +146,11 @@ You're taking control of an existing conversation that was already in progress.
     // Inject project memory context (cross-session learnings)
     const memoryContext = useAgentMemoryStore.getState().getContext(store.projectFolder)
 
+    // Inject active skills context so agent knows which /commands are available
+    const skillContext = useProjectSkillsStore.getState().getSkillContext(store.projectFolder)
+
     const systemPrompt = (memoryContext ? memoryContext + '\n\n' : '') +
+      (skillContext ? skillContext + '\n\n' : '') +
       SYSTEM_PROMPT
         .replace('{MODE}', takeoverModeRef.current ? 'TAKEOVER' : 'NEW_TASK')
         .replace('{TASK}', currentTask)
@@ -568,6 +573,10 @@ You're taking control of an existing conversation that was already in progress.
     // Load project memory into cache so it's ready for LLM injection
     if (projectFolder) {
       loadMemoryForProject(projectFolder).catch(() => {})
+      // Load project skill activations into cache so agent knows which /commands are available
+      window.api.projectSkillsLoad(projectFolder)
+        .then((record) => useProjectSkillsStore.getState().setRecord(record))
+        .catch(() => {})
     }
 
     // Set duration timer if time limit is set

@@ -16,6 +16,7 @@ import { registerBackgroundAgentHandlers } from './backgroundAgents'
 import { registerRepoAnalyzerHandlers } from './repoAnalyzer'
 import { registerTeamHandlers } from './teams'
 import { registerAgentMemoryHandlers } from './agentMemory'
+import { registerProjectSkillsHandlers } from './projectSkills'
 import type { CLIProvider } from '../../shared/types'
 import { CLI_PROVIDERS } from '../../shared/providers'
 
@@ -61,6 +62,9 @@ export function registerIpcHandlers(): void {
 
   // Agent Memory handlers (cross-session learning)
   registerAgentMemoryHandlers()
+
+  // Project Skills handlers (library skill activation)
+  registerProjectSkillsHandlers()
 
   // Initialize settings (apply window opacity, etc.)
   initializeSettings()

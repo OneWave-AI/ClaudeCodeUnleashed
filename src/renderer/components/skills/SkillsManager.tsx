@@ -24,7 +24,11 @@ import {
   Check,
   Clock,
   Calendar,
-  Filter
+  Filter,
+  Globe,
+  Plus,
+  CheckCircle2,
+  BookOpen
 } from 'lucide-react'
 import { useToast, LoadingError } from '../common'
 import { logger } from '../../utils'
@@ -33,6 +37,10 @@ import SkillEditor from './SkillEditor'
 import ImportExport from './ImportExport'
 import MCPManager from './MCPManager'
 import type { SkillMetadata, MCPServer } from '../../../shared/types'
+import { useProjectSkills } from '../../hooks/useProjectSkills'
+import { SKILL_LIBRARY, SKILL_CATEGORIES, CATEGORY_COLORS } from '../../../shared/skillLibrary'
+import type { LibrarySkill, SkillCategory } from '../../../shared/skillLibrary'
+import { useAppStore } from '../../store'
 
 interface Skill {
   id: string
@@ -56,7 +64,7 @@ interface Plugin {
   enabled: boolean
 }
 
-type Tab = 'skills' | 'agents' | 'plugins' | 'mcp'
+type Tab = 'library' | 'skills' | 'agents' | 'plugins' | 'mcp'
 type ViewMode = 'grid' | 'list'
 type SortOption = 'name' | 'created' | 'lastUsed'
 
@@ -79,7 +87,7 @@ const AVAILABLE_CATEGORIES = [
 ]
 
 export default function SkillsManager({ onBack }: SkillsManagerProps) {
-  const [activeTab, setActiveTab] = useState<Tab>('skills')
+  const [activeTab, setActiveTab] = useState<Tab>('library')
   const [skills, setSkills] = useState<Skill[]>([])
   const [agents, setAgents] = useState<Agent[]>([])
   const [plugins, setPlugins] = useState<Plugin[]>([])
@@ -118,6 +126,13 @@ export default function SkillsManager({ onBack }: SkillsManagerProps) {
   const [dragOverItem, setDragOverItem] = useState<string | null>(null)
 
   const { showToast } = useToast()
+  const cwd = useAppStore((s) => s.cwd)
+  const { activeSkillIds, isActive, load: loadProjectSkills, toggle: toggleSkill } = useProjectSkills(cwd)
+
+  // Library filter state
+  const [libraryCategory, setLibraryCategory] = useState<SkillCategory | 'All'>('All')
+  const [librarySearch, setLibrarySearch] = useState('')
+  const [activatingSkillId, setActivatingSkillId] = useState<string | null>(null)
 
   const loadData = useCallback(async () => {
     setLoading(true)
@@ -153,6 +168,29 @@ export default function SkillsManager({ onBack }: SkillsManagerProps) {
   useEffect(() => {
     loadData()
   }, [loadData])
+
+  // Load project skill activations when cwd changes
+  useEffect(() => {
+    if (cwd) loadProjectSkills()
+  }, [cwd, loadProjectSkills])
+
+  const handleToggleLibrarySkill = async (skillId: string) => {
+    if (!cwd) {
+      showToast('error', 'No project', 'Open a project folder first to activate skills')
+      return
+    }
+    setActivatingSkillId(skillId)
+    const wasActive = isActive(skillId)
+    await toggleSkill(skillId)
+    const skill = SKILL_LIBRARY.find((s) => s.id === skillId)
+    if (wasActive) {
+      showToast('success', 'Skill deactivated', `/${skillId} removed from this project`)
+    } else {
+      showToast('success', 'Skill activated!', `/${skillId} is now a command in this project`)
+      if (skill) notifySkillInstalled(skill.name, 1)
+    }
+    setActivatingSkillId(null)
+  }
 
   const handleInstallStarterKit = async () => {
     try {
@@ -397,11 +435,20 @@ export default function SkillsManager({ onBack }: SkillsManagerProps) {
   )
 
   const tabs = [
-    { id: 'skills' as Tab, label: 'Skills', icon: Sparkles, count: skills.length },
+    { id: 'library' as Tab, label: 'Library', icon: Globe, count: SKILL_LIBRARY.length },
+    { id: 'skills' as Tab, label: 'My Skills', icon: Sparkles, count: skills.length },
     { id: 'agents' as Tab, label: 'Agents', icon: Bot, count: agents.length },
     { id: 'plugins' as Tab, label: 'Plugins', icon: Puzzle, count: plugins.length },
     { id: 'mcp' as Tab, label: 'MCP Servers', icon: Server, count: mcpServers.length }
   ]
+
+  // Library filtered skills
+  const filteredLibrarySkills = SKILL_LIBRARY.filter((s) => {
+    const matchesCategory = libraryCategory === 'All' || s.category === libraryCategory
+    const q = librarySearch.toLowerCase()
+    const matchesSearch = !q || s.name.toLowerCase().includes(q) || s.description.toLowerCase().includes(q) || s.tags.some((t) => t.includes(q))
+    return matchesCategory && matchesSearch
+  })
 
   const sortOptions = [
     { id: 'name' as SortOption, label: 'Name', icon: ArrowUpDown },
@@ -597,6 +644,97 @@ export default function SkillsManager({ onBack }: SkillsManagerProps) {
             </div>
           ) : (
             <>
+              {/* Library Tab */}
+              {activeTab === 'library' && (
+                <div>
+                  {/* Library header */}
+                  <div className="mb-5">
+                    <div className="flex items-center gap-3 mb-1">
+                      <Globe size={18} className="text-emerald-400" />
+                      <h2 className="text-white font-semibold text-base">Skill Library</h2>
+                      <span className="text-xs text-[#555] bg-[#111] px-2 py-0.5 rounded-full border border-[#222]">
+                        {activeSkillIds.length} active in this project
+                      </span>
+                    </div>
+                    <p className="text-xs text-[#555] ml-7">
+                      Activate skills to install them as <span className="text-[#888] font-mono">/slash-commands</span> in your project's <span className="text-[#888] font-mono">.claude/commands/</span>
+                    </p>
+                  </div>
+
+                  {/* Category filter pills */}
+                  <div className="flex items-center gap-2 mb-4 flex-wrap">
+                    <button
+                      onClick={() => setLibraryCategory('All')}
+                      className={`px-3 py-1 rounded-full text-xs font-semibold transition-all ${
+                        libraryCategory === 'All'
+                          ? 'bg-white/10 text-white'
+                          : 'text-[#555] hover:text-[#888]'
+                      }`}
+                    >
+                      All ({SKILL_LIBRARY.length})
+                    </button>
+                    {SKILL_CATEGORIES.map((cat) => {
+                      const color = CATEGORY_COLORS[cat]
+                      const count = SKILL_LIBRARY.filter((s) => s.category === cat).length
+                      return (
+                        <button
+                          key={cat}
+                          onClick={() => setLibraryCategory(cat)}
+                          className={`px-3 py-1 rounded-full text-xs font-semibold transition-all ${
+                            libraryCategory === cat
+                              ? `bg-${color}-950/60 text-${color}-300 border border-${color}-800/50`
+                              : 'text-[#555] hover:text-[#888]'
+                          }`}
+                        >
+                          {cat} ({count})
+                        </button>
+                      )
+                    })}
+                  </div>
+
+                  {/* Search within library */}
+                  <div className="relative mb-4">
+                    <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#444]" />
+                    <input
+                      type="text"
+                      placeholder="Search skills by name, description, or tag..."
+                      value={librarySearch}
+                      onChange={(e) => setLibrarySearch(e.target.value)}
+                      className="w-full pl-9 pr-4 py-2 rounded-xl bg-[#111] border border-[#222] text-sm text-white placeholder:text-[#444] focus:outline-none focus:border-emerald-800"
+                    />
+                    {librarySearch && (
+                      <button
+                        onClick={() => setLibrarySearch('')}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-[#444] hover:text-white"
+                      >
+                        <X size={13} />
+                      </button>
+                    )}
+                  </div>
+
+                  {/* Skills grid */}
+                  {filteredLibrarySkills.length === 0 ? (
+                    <div className="flex flex-col items-center justify-center h-40 gap-2">
+                      <BookOpen size={28} className="text-[#2a2a2a]" />
+                      <p className="text-[#444] text-sm">No skills match your search</p>
+                    </div>
+                  ) : (
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                      {filteredLibrarySkills.map((skill) => (
+                        <LibrarySkillCard
+                          key={skill.id}
+                          skill={skill}
+                          isActive={isActive(skill.id)}
+                          isActivating={activatingSkillId === skill.id}
+                          hasProject={!!cwd}
+                          onToggle={() => handleToggleLibrarySkill(skill.id)}
+                        />
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
+
               {/* Skills Tab */}
               {activeTab === 'skills' && (
                 <div>
@@ -876,6 +1014,100 @@ export default function SkillsManager({ onBack }: SkillsManagerProps) {
               </div>
             </div>
           </div>
+        </div>
+      )}
+    </div>
+  )
+}
+
+// ─── Library Skill Card ───────────────────────────────────────────────────────
+
+interface LibrarySkillCardProps {
+  skill: LibrarySkill
+  isActive: boolean
+  isActivating: boolean
+  hasProject: boolean
+  onToggle: () => void
+}
+
+const SOURCE_BADGE: Record<string, { label: string; color: string }> = {
+  onewave: { label: 'OneWave', color: 'emerald' },
+  anthropic: { label: 'Anthropic', color: 'violet' },
+  community: { label: 'Community', color: 'blue' }
+}
+
+function LibrarySkillCard({ skill, isActive, isActivating, hasProject, onToggle }: LibrarySkillCardProps) {
+  const color = CATEGORY_COLORS[skill.category]
+  const badge = SOURCE_BADGE[skill.source]
+
+  return (
+    <div
+      className={`group relative flex flex-col p-4 rounded-xl border transition-all duration-200 ${
+        isActive
+          ? `border-${color}-700/60 bg-${color}-950/20`
+          : 'border-[#1e1e1e] bg-[#0a0a0a] hover:border-[#2a2a2a] hover:bg-[#111]'
+      }`}
+    >
+      {/* Header */}
+      <div className="flex items-start justify-between gap-2 mb-2">
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-1.5 mb-0.5">
+            <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded bg-${color}-950/50 text-${color}-400 border border-${color}-900/50`}>
+              {skill.category}
+            </span>
+            <span className={`text-[10px] px-1.5 py-0.5 rounded bg-${badge.color}-950/30 text-${badge.color}-500`}>
+              {badge.label}
+            </span>
+          </div>
+          <h3 className="text-sm font-semibold text-white leading-tight truncate">{skill.name}</h3>
+        </div>
+        <button
+          onClick={onToggle}
+          disabled={isActivating || !hasProject}
+          title={
+            !hasProject
+              ? 'Open a project folder first'
+              : isActive
+              ? 'Deactivate — removes /' + skill.id + ' command'
+              : 'Activate — adds /' + skill.id + ' as a slash command'
+          }
+          className={`flex-shrink-0 flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-semibold transition-all disabled:opacity-40 disabled:cursor-not-allowed ${
+            isActive
+              ? `bg-${color}-900/40 border border-${color}-700/50 text-${color}-300 hover:bg-red-950/40 hover:border-red-700/50 hover:text-red-300`
+              : `bg-[#1a1a1a] border border-[#2a2a2a] text-[#888] hover:bg-${color}-950/40 hover:border-${color}-700/50 hover:text-${color}-300`
+          }`}
+        >
+          {isActivating ? (
+            <span className="w-3 h-3 border border-current border-t-transparent rounded-full animate-spin" />
+          ) : isActive ? (
+            <CheckCircle2 size={11} />
+          ) : (
+            <Plus size={11} />
+          )}
+          {isActive ? 'Active' : 'Add'}
+        </button>
+      </div>
+
+      {/* Description */}
+      <p className="text-xs text-[#666] line-clamp-2 mb-2 leading-relaxed">{skill.description}</p>
+
+      {/* Tags */}
+      <div className="flex flex-wrap gap-1 mt-auto">
+        {skill.tags.slice(0, 3).map((tag) => (
+          <span key={tag} className="text-[10px] px-1.5 py-0.5 rounded bg-[#141414] text-[#555] border border-[#1e1e1e]">
+            {tag}
+          </span>
+        ))}
+        {skill.tags.length > 3 && (
+          <span className="text-[10px] text-[#444]">+{skill.tags.length - 3}</span>
+        )}
+      </div>
+
+      {/* Active indicator: slash command hint */}
+      {isActive && (
+        <div className={`mt-2 pt-2 border-t border-${color}-900/30 flex items-center gap-1`}>
+          <span className={`text-[10px] font-mono text-${color}-400`}>/{skill.id}</span>
+          <span className="text-[10px] text-[#555]">available in Claude Code</span>
         </div>
       )}
     </div>

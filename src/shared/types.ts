@@ -511,6 +511,12 @@ export interface IpcApi {
   agentMemoryClear: (projectPath: string) => Promise<{ success: boolean }>
   agentMemoryListProjects: () => Promise<{ projectPath: string; entryCount: number; lastUpdated: number }[]>
 
+  // Project Skills (library skill activation)
+  projectSkillsLoad: (projectPath: string) => Promise<ProjectSkillsRecord>
+  projectSkillsActivate: (projectPath: string, skillId: string) => Promise<{ success: boolean; commandPath: string }>
+  projectSkillsDeactivate: (projectPath: string, skillId: string) => Promise<{ success: boolean }>
+  projectSkillsList: () => Promise<{ projectPath: string; skillCount: number; lastUpdated: number }[]>
+
   // Legacy methods (backward compatibility)
   memoryGetContext: (projectPath: string) => Promise<string>
   memorySetGlobalContext: (projectPath: string, context: string) => Promise<{ success: boolean }>
@@ -653,6 +659,14 @@ export interface AgentMemoryRecord {
   projectHash: string
   projectPath: string
   entries: AgentMemoryEntry[]
+  lastUpdated: number
+}
+
+// ─── Library Skills (Project activation) ─────────────────────────────────
+export interface ProjectSkillsRecord {
+  projectHash: string
+  projectPath: string
+  activeSkillIds: string[]
   lastUpdated: number
 }
 

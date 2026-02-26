@@ -241,6 +241,16 @@ const api: IpcApi = {
   agentMemoryListProjects: () =>
     ipcRenderer.invoke('agent-memory:listProjects'),
 
+  // Project Skills (library skill activation)
+  projectSkillsLoad: (projectPath: string) =>
+    ipcRenderer.invoke('project-skills:load', projectPath),
+  projectSkillsActivate: (projectPath: string, skillId: string) =>
+    ipcRenderer.invoke('project-skills:activate', projectPath, skillId),
+  projectSkillsDeactivate: (projectPath: string, skillId: string) =>
+    ipcRenderer.invoke('project-skills:deactivate', projectPath, skillId),
+  projectSkillsList: () =>
+    ipcRenderer.invoke('project-skills:list'),
+
   // Legacy methods (backward compatibility)
   memoryGetContext: (projectPath: string) =>
     ipcRenderer.invoke('memory-get-context', projectPath),
