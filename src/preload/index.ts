@@ -225,6 +225,22 @@ const api: IpcApi = {
   writeSessionContext: (projectPath: string, content: string) =>
     ipcRenderer.invoke('write-session-context', projectPath, content),
 
+  // Agent Memory (cross-session learning)
+  agentMemoryLoad: (projectPath: string) =>
+    ipcRenderer.invoke('agent-memory:load', projectPath),
+  agentMemorySave: (record: import('../shared/types').AgentMemoryRecord) =>
+    ipcRenderer.invoke('agent-memory:save', record),
+  agentMemoryAddEntry: (
+    projectPath: string,
+    entry: Omit<import('../shared/types').AgentMemoryEntry, 'id' | 'createdAt' | 'updatedAt'>
+  ) => ipcRenderer.invoke('agent-memory:addEntry', projectPath, entry),
+  agentMemoryDeleteEntry: (projectPath: string, entryId: string) =>
+    ipcRenderer.invoke('agent-memory:deleteEntry', projectPath, entryId),
+  agentMemoryClear: (projectPath: string) =>
+    ipcRenderer.invoke('agent-memory:clear', projectPath),
+  agentMemoryListProjects: () =>
+    ipcRenderer.invoke('agent-memory:listProjects'),
+
   // Legacy methods (backward compatibility)
   memoryGetContext: (projectPath: string) =>
     ipcRenderer.invoke('memory-get-context', projectPath),

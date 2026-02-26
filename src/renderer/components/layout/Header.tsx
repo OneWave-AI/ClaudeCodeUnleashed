@@ -31,7 +31,9 @@ import {
   ListTodo,
   FolderTree,
   Users,
-  LayoutGrid
+  LayoutGrid,
+  Trophy,
+  Cpu
 } from 'lucide-react'
 
 // Custom Bee Icon for Swarm
@@ -91,6 +93,8 @@ interface HeaderProps {
   onOpenBackgroundAgents?: () => void
   onOpenRepoVisualization?: () => void
   onOpenTeams?: () => void
+  onOpenRace?: () => void
+  onOpenAgentMemory?: () => void
 }
 
 export default function Header({
@@ -107,7 +111,9 @@ export default function Header({
   onOpenMemory,
   onOpenBackgroundAgents,
   onOpenRepoVisualization,
-  onOpenTeams
+  onOpenTeams,
+  onOpenRace,
+  onOpenAgentMemory
 }: HeaderProps) {
   const folderName = cwd ? cwd.split('/').pop() : 'No folder'
   const [mcpCount, setMcpCount] = useState(0)
@@ -927,6 +933,18 @@ Begin researching now. Start with a WebSearch for the most relevant query based 
             <span>Orchestrate</span>
           </button>
         )}
+
+        {/* Agent Race - Only on terminal */}
+        {screen === 'terminal' && (
+          <button
+            onClick={onOpenRace}
+            className="titlebar-no-drag flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all bg-gradient-to-r from-yellow-500/15 to-orange-500/15 hover:from-yellow-500/25 hover:to-orange-500/25 border border-yellow-500/25 text-yellow-400"
+            title="Agent Race — Claude vs Codex on the same task"
+          >
+            <Trophy size={12} />
+            <span>Race</span>
+          </button>
+        )}
       </div>
 
       {/* Center: Screen indicator */}
@@ -1075,10 +1093,22 @@ Begin researching now. Start with a WebSearch for the most relevant query based 
           <button
             onClick={onOpenMemory}
             className="flex items-center gap-1.5 px-2 py-1.5 rounded-lg hover:bg-purple-500/10 text-gray-400 hover:text-purple-400 transition-colors"
-            title="Project Memory"
+            title="Project Memory (CLAUDE.md)"
           >
             <Brain size={14} />
             <span className="text-xs">Memory</span>
+          </button>
+        )}
+
+        {/* Agent Memory - Only on terminal */}
+        {screen === 'terminal' && (
+          <button
+            onClick={onOpenAgentMemory}
+            className="flex items-center gap-1.5 px-2 py-1.5 rounded-lg hover:bg-violet-500/10 text-gray-400 hover:text-violet-400 transition-colors"
+            title="Agent Memory — cross-session learnings"
+          >
+            <Cpu size={14} />
+            <span className="text-xs">Learned</span>
           </button>
         )}
 

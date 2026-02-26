@@ -503,6 +503,14 @@ export interface IpcApi {
   generateSessionContext: (projectPath: string, days?: number) => Promise<string>
   writeSessionContext: (projectPath: string, content: string) => Promise<{ success: boolean }>
 
+  // Agent Memory (cross-session learning)
+  agentMemoryLoad: (projectPath: string) => Promise<AgentMemoryRecord>
+  agentMemorySave: (record: AgentMemoryRecord) => Promise<{ success: boolean }>
+  agentMemoryAddEntry: (projectPath: string, entry: Omit<AgentMemoryEntry, 'id' | 'createdAt' | 'updatedAt'>) => Promise<{ success: boolean }>
+  agentMemoryDeleteEntry: (projectPath: string, entryId: string) => Promise<{ success: boolean }>
+  agentMemoryClear: (projectPath: string) => Promise<{ success: boolean }>
+  agentMemoryListProjects: () => Promise<{ projectPath: string; entryCount: number; lastUpdated: number }[]>
+
   // Legacy methods (backward compatibility)
   memoryGetContext: (projectPath: string) => Promise<string>
   memorySetGlobalContext: (projectPath: string, context: string) => Promise<{ success: boolean }>
@@ -625,6 +633,45 @@ export interface SuperAgentSession {
 export interface OrchestratorSession extends SuperAgentSession {
   mode: 'split' | 'parallel'
   terminalCount: number
+}
+
+// ─── Agent Memory types ────────────────────────────────────────────────────
+export type AgentMemoryCategory = 'command' | 'preference' | 'pattern' | 'failure' | 'workflow'
+
+export interface AgentMemoryEntry {
+  id: string
+  category: AgentMemoryCategory
+  content: string
+  confidence: number // 0-1
+  createdAt: number
+  updatedAt: number
+  sessionCount: number
+  source: 'auto' | 'manual'
+}
+
+export interface AgentMemoryRecord {
+  projectHash: string
+  projectPath: string
+  entries: AgentMemoryEntry[]
+  lastUpdated: number
+}
+
+// ─── Agent Racing types ───────────────────────────────────────────────────
+export type RaceStatus = 'idle' | 'configuring' | 'racing' | 'finished'
+
+export interface RaceTerminalMetrics {
+  terminalId: string
+  provider: CLIProvider
+  status: 'waiting' | 'running' | 'done' | 'error'
+  score: number
+  linesOfCode: number
+  testsPassed: number
+  errorsHit: number
+  filesCreated: number
+  startTime: number | null
+  completionTime: number | null
+  activityLog: ActivityLogEntry[]
+  outputBuffer: string
 }
 
 // Teams types

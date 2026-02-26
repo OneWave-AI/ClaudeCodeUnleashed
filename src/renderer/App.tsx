@@ -21,6 +21,8 @@ import MemoryPanelNatural from './components/memory/MemoryPanelNatural'
 import BackgroundAgentsPanel from './components/agents/BackgroundAgentsPanel'
 import RepoVisualization from './components/repo/RepoVisualization'
 import TeamsPanel from './components/teams/TeamsPanel'
+import RaceModal from './components/modals/RaceModal'
+import AgentMemoryPanel from './components/modals/AgentMemoryPanel'
 
 type Screen = 'home' | 'terminal' | 'skills' | 'history' | 'analytics' | 'hive'
 
@@ -39,6 +41,8 @@ function App() {
   const [backgroundAgentsPanelOpen, setBackgroundAgentsPanelOpen] = useState(false)
   const [repoVisualizationOpen, setRepoVisualizationOpen] = useState(false)
   const [teamsPanelOpen, setTeamsPanelOpen] = useState(false)
+  const [raceModalOpen, setRaceModalOpen] = useState(false)
+  const [agentMemoryOpen, setAgentMemoryOpen] = useState(false)
   const [sidebarOpen, setSidebarOpen] = useState(true)
   const [activeTerminalId, setActiveTerminalId] = useState<string | null>(null)
   const [previewUrl, setPreviewUrl] = useState<string | null>(null)
@@ -150,6 +154,8 @@ function App() {
           onOpenBackgroundAgents={() => setBackgroundAgentsPanelOpen(true)}
           onOpenRepoVisualization={() => setRepoVisualizationOpen(true)}
           onOpenTeams={() => setTeamsPanelOpen(true)}
+          onOpenRace={() => setRaceModalOpen(true)}
+          onOpenAgentMemory={() => setAgentMemoryOpen(true)}
         />
 
         <div className="flex flex-1 overflow-hidden">
@@ -314,6 +320,16 @@ function App() {
           onClose={() => setRepoVisualizationOpen(false)}
           projectPath={cwd}
         />
+
+        {/* Agent Race Modal */}
+        {raceModalOpen && (
+          <RaceModal onClose={() => setRaceModalOpen(false)} />
+        )}
+
+        {/* Agent Memory Panel */}
+        {agentMemoryOpen && (
+          <AgentMemoryPanel onClose={() => setAgentMemoryOpen(false)} />
+        )}
 
         {/* Welcome/Updates Screen */}
         {showWelcome && (

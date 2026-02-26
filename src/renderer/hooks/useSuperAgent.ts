@@ -17,6 +17,8 @@ import {
   type ClaudeStatus
 } from './agentUtils'
 import { useOrchestratorStore } from '../store/orchestratorStore'
+import { useAgentMemoryStore } from '../store/agentMemoryStore'
+import { loadMemoryForProject, extractMemoryLearnings } from './useAgentMemory'
 
 // Helper to get store state without causing re-renders
 const getStore = () => useSuperAgentStore.getState()
@@ -140,10 +142,14 @@ You're taking control of an existing conversation that was already in progress.
 - Focus on helping complete whatever it was working on`
       : ''
 
-    const systemPrompt = SYSTEM_PROMPT
-      .replace('{MODE}', takeoverModeRef.current ? 'TAKEOVER' : 'NEW_TASK')
-      .replace('{TASK}', currentTask)
-      .replace('{TAKEOVER_CONTEXT}', takeoverContext) + stateContext
+    // Inject project memory context (cross-session learnings)
+    const memoryContext = useAgentMemoryStore.getState().getContext(store.projectFolder)
+
+    const systemPrompt = (memoryContext ? memoryContext + '\n\n' : '') +
+      SYSTEM_PROMPT
+        .replace('{MODE}', takeoverModeRef.current ? 'TAKEOVER' : 'NEW_TASK')
+        .replace('{TASK}', currentTask)
+        .replace('{TAKEOVER_CONTEXT}', takeoverContext) + stateContext
 
     // User message contains terminal output (cacheable)
     const userMessage = `TERMINAL OUTPUT:\n\`\`\`\n${truncatedOutput}\n\`\`\`\n\nRespond with JSON: {"action":"wait"|"send"|"done","text":"..."}`
@@ -425,16 +431,20 @@ You're taking control of an existing conversation that was already in progress.
 
     // If waiting for user to get Claude ready, watch for the ready prompt
     if (waitingForReadyRef.current) {
-      const cleanOutput = fullOutput.replace(ANSI_REGEX, '')
-      const lastLines = cleanOutput.split('\n').slice(-5).join('\n')
+      // Strip ANSI codes AND carriage returns for reliable line-by-line matching
+      const cleanOutput = fullOutput.replace(ANSI_REGEX, '').replace(/\r/g, '')
       const currentCliProvider = cliProviderRef.current
       const providerConfig = CLI_PROVIDERS[currentCliProvider]
+
+      // Use last 10 non-empty lines so sparse output doesn't hide the prompt
+      const nonEmptyLines = cleanOutput.split('\n').filter(l => l.trim().length > 0)
+      const lastLines = nonEmptyLines.slice(-10).join('\n')
 
       const hasReadyPrompt = providerConfig.promptChar.test(lastLines)
       const hasTrustPrompt = /trust this project|trust settings|\(y\)|\(n\)|y\/n/i.test(lastLines)
 
       console.log('[SuperAgent] Waiting for ready - hasReadyPrompt:', hasReadyPrompt, 'hasTrustPrompt:', hasTrustPrompt)
-      console.log('[SuperAgent] Last lines:', lastLines.slice(-100))
+      console.log('[SuperAgent] Last lines:', lastLines.slice(-200))
 
       if (hasReadyPrompt && !hasTrustPrompt) {
         if (!waitingForReadyRef.current) {
@@ -555,6 +565,11 @@ You're taking control of an existing conversation that was already in progress.
     const projectFolder = options?.projectFolder || ''
     store.startSession(taskDescription, terminalId, projectFolder)
 
+    // Load project memory into cache so it's ready for LLM injection
+    if (projectFolder) {
+      loadMemoryForProject(projectFolder).catch(() => {})
+    }
+
     // Set duration timer if time limit is set
     const limit = options?.timeLimit ?? store.timeLimit
     if (limit > 0) {
@@ -587,7 +602,7 @@ You're taking control of an existing conversation that was already in progress.
       }
       waitingForReadyTimeoutRef.current = setTimeout(() => {
         if (waitingForReadyRef.current && getStore().isRunning) {
-          console.log('[SuperAgent] Fallback: waited 30s, starting anyway')
+          console.log('[SuperAgent] Fallback: waited 10s, starting anyway')
           waitingForReadyRef.current = false
           const currentTask = getStore().task
           getStore().addLog('ready', 'Auto-starting after timeout...')
@@ -596,7 +611,7 @@ You're taking control of an existing conversation that was already in progress.
           getStore().markSent(currentTask)
           setTimeout(() => handleIdle(), 2000)
         }
-      }, 30000)
+      }, 10000)
     }
 
     return true
@@ -649,7 +664,17 @@ You're taking control of an existing conversation that was already in progress.
     }
     lastStatusRef.current = 'unknown'
     takeoverModeRef.current = false
-    getStore().stopSession()
+
+    // Snapshot state before stopping so we can extract learnings
+    const storeState = getStore()
+    const { projectFolder, activityLog, config } = storeState
+
+    storeState.stopSession()
+
+    // Fire-and-forget: extract learnings from this session asynchronously
+    if (projectFolder && activityLog.length >= 5 && config) {
+      extractMemoryLearnings(projectFolder, activityLog, config)
+    }
   }, [])
 
   // Cleanup on unmount
