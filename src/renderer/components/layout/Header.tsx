@@ -648,9 +648,9 @@ Begin researching now. Start with a WebSearch for the most relevant query based 
   }, [activeTerminalId, showToast])
 
   return (
-    <header className="titlebar-drag h-12 flex items-center justify-between px-3 bg-[#1a1a1c] border-b border-white/[0.06] relative z-40">
+    <header className="titlebar-drag h-12 flex items-center px-3 bg-[#1a1a1c] border-b border-white/[0.06] relative z-40">
       {/* Left: Traffic light space + Logo + Folder + Plan/Hive/SuperAgent */}
-      <div className="flex items-center gap-2">
+      <div className="flex-1 flex items-center gap-2 min-w-0">
         {/* Spacer for macOS native traffic lights */}
         <div className="w-16" />
 
@@ -930,12 +930,12 @@ Begin researching now. Start with a WebSearch for the most relevant query based 
       </div>
 
       {/* Center: Screen indicator */}
-      <div className="absolute left-1/2 -translate-x-1/2 flex items-center gap-2">
+      <div className="flex-shrink-0 flex items-center gap-2 px-4">
         <span className="text-xs text-gray-500 capitalize">{screen}</span>
       </div>
 
       {/* Right: Actions */}
-      <div className="titlebar-no-drag flex items-center gap-0.5">
+      <div className="flex-1 titlebar-no-drag flex items-center justify-end gap-0.5 min-w-0">
         {/* Git Menu - Only on terminal */}
         {screen === 'terminal' && (
           <div className="relative" ref={gitMenuRef}>
