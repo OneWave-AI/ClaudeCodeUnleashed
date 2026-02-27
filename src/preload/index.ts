@@ -93,6 +93,9 @@ const api: IpcApi = {
   getDetailedUsageStats: (days?: number) =>
     ipcRenderer.invoke('get-detailed-usage-stats', days),
 
+  // Race auth pre-flight
+  raceCheckAuth: (provider) => ipcRenderer.invoke('race-check-auth', provider),
+
   // Claude CLI (legacy)
   checkClaudeInstalled: () => ipcRenderer.invoke('check-claude-installed'),
   installClaude: () => ipcRenderer.invoke('install-claude'),
@@ -224,6 +227,32 @@ const api: IpcApi = {
     ipcRenderer.invoke('generate-session-context', projectPath, days),
   writeSessionContext: (projectPath: string, content: string) =>
     ipcRenderer.invoke('write-session-context', projectPath, content),
+
+  // Agent Memory (cross-session learning)
+  agentMemoryLoad: (projectPath: string) =>
+    ipcRenderer.invoke('agent-memory:load', projectPath),
+  agentMemorySave: (record: import('../shared/types').AgentMemoryRecord) =>
+    ipcRenderer.invoke('agent-memory:save', record),
+  agentMemoryAddEntry: (
+    projectPath: string,
+    entry: Omit<import('../shared/types').AgentMemoryEntry, 'id' | 'createdAt' | 'updatedAt'>
+  ) => ipcRenderer.invoke('agent-memory:addEntry', projectPath, entry),
+  agentMemoryDeleteEntry: (projectPath: string, entryId: string) =>
+    ipcRenderer.invoke('agent-memory:deleteEntry', projectPath, entryId),
+  agentMemoryClear: (projectPath: string) =>
+    ipcRenderer.invoke('agent-memory:clear', projectPath),
+  agentMemoryListProjects: () =>
+    ipcRenderer.invoke('agent-memory:listProjects'),
+
+  // Project Skills (library skill activation)
+  projectSkillsLoad: (projectPath: string) =>
+    ipcRenderer.invoke('project-skills:load', projectPath),
+  projectSkillsActivate: (projectPath: string, skillId: string) =>
+    ipcRenderer.invoke('project-skills:activate', projectPath, skillId),
+  projectSkillsDeactivate: (projectPath: string, skillId: string) =>
+    ipcRenderer.invoke('project-skills:deactivate', projectPath, skillId),
+  projectSkillsList: () =>
+    ipcRenderer.invoke('project-skills:list'),
 
   // Legacy methods (backward compatibility)
   memoryGetContext: (projectPath: string) =>

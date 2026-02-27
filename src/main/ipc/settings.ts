@@ -37,6 +37,7 @@ function getDefaultSettings(): AppSettings {
 
     // API
     claudeApiKey: '',
+    openaiApiKey: '',
 
     // CLI Provider
     cliProvider: 'claude',
@@ -76,6 +77,12 @@ async function saveSettings(settings: AppSettings): Promise<void> {
     console.error('Failed to save settings:', error)
     throw error
   }
+}
+
+/** Returns the stored OpenAI API key (or empty string if not configured). */
+export async function getStoredOpenaiApiKey(): Promise<string> {
+  const s = await loadSettings()
+  return s.openaiApiKey ?? ''
 }
 
 // Apply window opacity to all windows

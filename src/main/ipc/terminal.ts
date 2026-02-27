@@ -2,6 +2,7 @@ import { ipcMain, BrowserWindow, app } from 'electron'
 import * as pty from 'node-pty'
 import { homedir } from 'os'
 import type { IDisposable } from 'node-pty'
+import { getStoredOpenaiApiKey } from './settings'
 
 interface Terminal {
   id: string
@@ -33,9 +34,12 @@ export function registerTerminalHandlers(): void {
     currentCwd = path
   })
 
-  ipcMain.handle('create-terminal', (event, cols: number, rows: number) => {
+  ipcMain.handle('create-terminal', async (event, cols: number, rows: number) => {
     const id = `terminal-${++terminalCounter}`
     const shell = process.platform === 'win32' ? 'powershell.exe' : process.env.SHELL || '/bin/zsh'
+
+    // Load the stored OpenAI API key so Codex can authenticate even if not in shell env
+    const storedOpenaiKey = await getStoredOpenaiApiKey()
 
     try {
       // Extend PATH to include common locations for npm/homebrew binaries
@@ -59,7 +63,9 @@ export function registerTerminalHandlers(): void {
           ...cleanEnv,
           TERM: 'xterm-256color',
           COLORTERM: 'truecolor',
-          PATH: `${extraPaths}:${process.env.PATH || ''}`
+          PATH: `${extraPaths}:${process.env.PATH || ''}`,
+          // Inject stored OpenAI key so Codex works even without it in the shell profile
+          ...(storedOpenaiKey && !cleanEnv.OPENAI_API_KEY ? { OPENAI_API_KEY: storedOpenaiKey } : {})
         }
       })
 
@@ -181,6 +187,48 @@ export function registerTerminalHandlers(): void {
       return allLines.slice(-lines).join('\n')
     }
     return buffer
+  })
+
+  // Race pre-flight: check if a CLI provider is authenticated and ready
+  ipcMain.handle('race-check-auth', async (_, provider: string) => {
+    const home = homedir()
+
+    if (provider === 'codex') {
+      // Codex requires OPENAI_API_KEY — check env first, then app settings
+      const envKey = process.env.OPENAI_API_KEY
+      const storedKey = await getStoredOpenaiApiKey()
+      if (!envKey && !storedKey) {
+        return { ready: false, error: 'OpenAI API key is not configured. Enter it below to enable Codex.' }
+      }
+      return { ready: true }
+    }
+
+    if (provider === 'claude') {
+      // Claude auth check: run claude --version to confirm it's installed
+      const { exec } = await import('child_process')
+      return new Promise<{ ready: boolean; error?: string }>((resolve) => {
+        exec(
+          'claude --version',
+          {
+            shell: '/bin/zsh',
+            env: {
+              ...process.env,
+              PATH: `${home}/.npm-global/bin:/usr/local/bin:/opt/homebrew/bin:${process.env.PATH || ''}`
+            },
+            timeout: 5000
+          },
+          (err) => {
+            if (err) {
+              resolve({ ready: false, error: 'Claude CLI not found. Run: npm install -g @anthropic-ai/claude-code' })
+            } else {
+              resolve({ ready: true })
+            }
+          }
+        )
+      })
+    }
+
+    return { ready: true }
   })
 
   // Clean up all terminals when app quits
