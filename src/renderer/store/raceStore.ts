@@ -70,11 +70,11 @@ export const useRaceStore = create<RaceState>((set, get) => ({
       startTime: Date.now(),
       endTime: null,
       winnerId: null,
-      // Reset all terminal metrics to fresh start
+      // Reset numeric metrics but keep activityLog (it may already have 'start' entries)
       terminals: new Map(
         Array.from(s.terminals.entries()).map(([id, m]) => [
           id,
-          { ...m, status: 'waiting', score: 0, linesOfCode: 0, testsPassed: 0, errorsHit: 0, filesCreated: 0, startTime: null, completionTime: null, activityLog: [], outputBuffer: '' }
+          { ...m, status: 'waiting', score: 0, linesOfCode: 0, testsPassed: 0, errorsHit: 0, filesCreated: 0, startTime: null, completionTime: null, outputBuffer: '' }
         ])
       )
     })),
@@ -130,6 +130,21 @@ export const useRaceStore = create<RaceState>((set, get) => ({
       status = 'running'
     }
 
+    // Add a throttled activity log snippet so users can see live output.
+    // Only log meaningful text (not pure ANSI noise) and at most every 2 seconds per terminal.
+    const cleanForLog = clean.replace(/\s+/g, ' ').trim()
+    let { activityLog } = existing
+    const now = Date.now()
+    const lastLog = activityLog[activityLog.length - 1]
+    const timeSinceLast = lastLog ? now - lastLog.timestamp : Infinity
+    if (cleanForLog.length > 8 && timeSinceLast > 2000) {
+      const snippet = cleanForLog.slice(0, 100)
+      activityLog = [
+        ...activityLog.slice(-199),
+        { timestamp: now, type: 'output' as const, message: snippet }
+      ]
+    }
+
     const updated: RaceTerminalMetrics = {
       ...existing,
       outputBuffer: newBuf.length > MAX_BUF ? newBuf.slice(-MAX_BUF) : newBuf,
@@ -137,7 +152,8 @@ export const useRaceStore = create<RaceState>((set, get) => ({
       errorsHit,
       filesCreated,
       linesOfCode,
-      status
+      status,
+      activityLog
     }
     updated.score = calculateScore(updated)
     terminals.set(terminalId, updated)

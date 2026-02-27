@@ -260,6 +260,7 @@ export interface AppSettings {
 
   // API
   claudeApiKey: string
+  openaiApiKey: string
 
   // CLI Provider
   cliProvider: CLIProvider
@@ -394,6 +395,9 @@ export interface IpcApi {
   searchConversations: (query: string) => Promise<Conversation[]>
   getCurrentSessionTodos: (projectFolder: string) => Promise<Array<{ id: string; content: string; status: string; activeForm?: string; createdAt: Date }>>
   getDetailedUsageStats: (days?: number) => Promise<DetailedUsageStats>
+
+  // Race auth pre-flight
+  raceCheckAuth: (provider: string) => Promise<{ ready: boolean; error?: string }>
 
   // Claude CLI (legacy, defaults to current provider)
   checkClaudeInstalled: () => Promise<boolean>

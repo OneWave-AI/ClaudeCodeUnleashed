@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { Trophy, Flag, Zap, X, Play, Square, RotateCcw, Clock, CheckCircle, AlertCircle, Code2, TestTube, FileCode } from 'lucide-react'
+import { Trophy, Flag, Zap, X, Play, Square, RotateCcw, Clock, CheckCircle, AlertCircle, Code2, TestTube, FileCode, ShieldAlert, Lightbulb } from 'lucide-react'
 import { useRace } from '../../hooks/useRace'
 import { useAppStore } from '../../store'
 import type { CLIProvider, RaceTerminalMetrics } from '../../../shared/types'
@@ -118,6 +118,11 @@ export default function RaceModal({ onClose }: Props) {
   const [taskInput, setTaskInput] = useState('')
   const [selectedProviders, setSelectedProviders] = useState<CLIProvider[]>(['claude', 'codex'])
   const [elapsed, setElapsed] = useState(0)
+  const [authErrors, setAuthErrors] = useState<Partial<Record<CLIProvider, string>>>({})
+  const [authChecking, setAuthChecking] = useState(false)
+  const [openaiKeyInput, setOpenaiKeyInput] = useState('')
+  const [savingKey, setSavingKey] = useState(false)
+  const [keyVisible, setKeyVisible] = useState(false)
 
   // Elapsed timer
   useEffect(() => {
@@ -131,8 +136,41 @@ export default function RaceModal({ onClose }: Props) {
     return () => clearInterval(interval)
   }, [status, startTime])
 
+  const runAuthCheck = async () => {
+    setAuthChecking(true)
+    const results = await Promise.all(
+      selectedProviders.map(async (p) => {
+        const result = await window.api.raceCheckAuth(p)
+        return [p, result] as const
+      })
+    )
+    const errors: Partial<Record<CLIProvider, string>> = {}
+    for (const [p, result] of results) {
+      if (!result.ready && result.error) errors[p] = result.error
+    }
+    setAuthErrors(errors)
+    setAuthChecking(false)
+  }
+
+  // Run auth pre-flight when providers change
+  useEffect(() => {
+    if (status !== 'idle' && status !== 'configuring') return
+    runAuthCheck()
+  }, [selectedProviders, status])
+
+  const handleSaveOpenaiKey = async () => {
+    if (!openaiKeyInput.trim()) return
+    setSavingKey(true)
+    const settings = await window.api.loadSettings()
+    await window.api.saveSettings({ ...settings, openaiApiKey: openaiKeyInput.trim() })
+    setSavingKey(false)
+    // Re-run auth check now that key is saved
+    await runAuthCheck()
+  }
+
   const handleStart = async () => {
     if (!taskInput.trim() || selectedProviders.length < 2) return
+    if (Object.keys(authErrors).length > 0) return // block if auth issues
     await startRace(taskInput.trim(), selectedProviders, cwd)
   }
 
@@ -236,6 +274,63 @@ export default function RaceModal({ onClose }: Props) {
                 )}
               </div>
 
+              {/* Auth errors */}
+              {Object.entries(authErrors).map(([provider, error]) => (
+                <div key={provider} className="rounded-xl border border-red-900 bg-red-950/20 overflow-hidden">
+                  <div className="flex gap-2 px-3 py-2.5 text-xs text-red-300">
+                    <ShieldAlert size={14} className="text-red-400 shrink-0 mt-0.5" />
+                    <div>
+                      <span className="font-semibold text-red-200">{PROVIDER_LABELS[provider as CLIProvider]}: </span>
+                      {error}
+                    </div>
+                  </div>
+
+                  {/* Inline OpenAI key input */}
+                  {provider === 'codex' && (
+                    <div className="px-3 pb-3 space-y-2 border-t border-red-900/50 pt-2">
+                      <p className="text-[10px] text-[#666] uppercase tracking-wider font-semibold">Enter OpenAI API Key</p>
+                      <div className="flex gap-2">
+                        <div className="relative flex-1">
+                          <input
+                            type={keyVisible ? 'text' : 'password'}
+                            value={openaiKeyInput}
+                            onChange={(e) => setOpenaiKeyInput(e.target.value)}
+                            onKeyDown={(e) => e.key === 'Enter' && handleSaveOpenaiKey()}
+                            placeholder="sk-..."
+                            className="w-full bg-[#0a0a0a] border border-[#333] rounded-lg px-3 py-1.5 text-xs text-white placeholder:text-[#444] focus:outline-none focus:border-blue-600 font-mono pr-8"
+                          />
+                          <button
+                            onClick={() => setKeyVisible(!keyVisible)}
+                            className="absolute right-2 top-1/2 -translate-y-1/2 text-[#555] hover:text-[#999] text-[10px]"
+                          >
+                            {keyVisible ? 'hide' : 'show'}
+                          </button>
+                        </div>
+                        <button
+                          onClick={handleSaveOpenaiKey}
+                          disabled={!openaiKeyInput.trim() || savingKey}
+                          className="px-3 py-1.5 rounded-lg bg-blue-700 hover:bg-blue-600 text-white text-xs font-semibold disabled:opacity-40 transition-all whitespace-nowrap"
+                        >
+                          {savingKey ? 'Saving...' : 'Save & Retry'}
+                        </button>
+                      </div>
+                      <p className="text-[10px] text-[#555]">
+                        Stored in app settings — never shared, never sent to any server.
+                      </p>
+                    </div>
+                  )}
+                </div>
+              ))}
+
+              {/* Task hint */}
+              <div className="flex gap-2 p-3 rounded-xl border border-[#1e1e1e] bg-[#0a0a0a] text-xs text-[#666]">
+                <Lightbulb size={13} className="text-yellow-500 shrink-0 mt-0.5" />
+                <div>
+                  <span className="text-[#888] font-semibold">Use code-generating tasks to see scores. </span>
+                  Simple tasks like "create a folder" score 0. Try: <span className="text-emerald-400">Write a Python script to parse CSV files</span> or <span className="text-emerald-400">Build a TypeScript utility class with unit tests</span>
+                </div>
+              </div>
+
               {/* Scoring explanation */}
               <div className="rounded-xl border border-[#1e1e1e] bg-[#0a0a0a] p-4 text-xs text-[#666] space-y-1">
                 <div className="text-[#888] font-semibold mb-2">Scoring formula</div>
@@ -250,11 +345,11 @@ export default function RaceModal({ onClose }: Props) {
               {/* Start button */}
               <button
                 onClick={handleStart}
-                disabled={!taskInput.trim() || selectedProviders.length < 2}
+                disabled={!taskInput.trim() || selectedProviders.length < 2 || Object.keys(authErrors).length > 0 || authChecking}
                 className="w-full flex items-center justify-center gap-2 py-3 rounded-xl bg-gradient-to-r from-yellow-600 to-orange-600 text-white font-bold text-sm disabled:opacity-40 disabled:cursor-not-allowed hover:from-yellow-500 hover:to-orange-500 transition-all"
               >
                 <Play size={15} />
-                Start Race
+                {authChecking ? 'Checking auth...' : 'Start Race'}
               </button>
             </div>
           )}

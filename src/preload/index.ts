@@ -93,6 +93,9 @@ const api: IpcApi = {
   getDetailedUsageStats: (days?: number) =>
     ipcRenderer.invoke('get-detailed-usage-stats', days),
 
+  // Race auth pre-flight
+  raceCheckAuth: (provider) => ipcRenderer.invoke('race-check-auth', provider),
+
   // Claude CLI (legacy)
   checkClaudeInstalled: () => ipcRenderer.invoke('check-claude-installed'),
   installClaude: () => ipcRenderer.invoke('install-claude'),
