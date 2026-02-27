@@ -6,12 +6,13 @@ import { homedir } from 'os'
 const CLAUDE_DIR = join(homedir(), '.claude')
 const SKILLS_DIR = join(CLAUDE_DIR, 'skills')
 const AGENTS_DIR = join(CLAUDE_DIR, 'agents')
+const COMMANDS_DIR = join(CLAUDE_DIR, 'commands')
 const METADATA_FILE = join(CLAUDE_DIR, 'skills-metadata.json')
 
-// Validate that a path is within allowed directories (skills or agents)
+// Validate that a path is within allowed directories (skills, agents, or commands)
 function isPathAllowed(path: string): boolean {
   const normalizedPath = normalize(resolve(path))
-  return normalizedPath.startsWith(SKILLS_DIR) || normalizedPath.startsWith(AGENTS_DIR)
+  return normalizedPath.startsWith(SKILLS_DIR) || normalizedPath.startsWith(AGENTS_DIR) || normalizedPath.startsWith(COMMANDS_DIR)
 }
 
 interface SkillMetadata {
@@ -79,30 +80,83 @@ export function registerSkillsHandlers(): void {
   ipcMain.handle('list-skills', async (): Promise<Skill[]> => {
     await ensureDirectories()
     const skills: Skill[] = []
+    const seenIds = new Set<string>()
 
+    // Read from ~/.claude/skills/ (directories with SKILL.md and standalone .md files)
     try {
       const entries = await fs.readdir(SKILLS_DIR, { withFileTypes: true })
 
       for (const entry of entries) {
-        if (!entry.isDirectory()) continue
+        if (entry.name.startsWith('.')) continue
 
-        const skillPath = join(SKILLS_DIR, entry.name, 'SKILL.md')
-        try {
-          const content = await fs.readFile(skillPath, 'utf-8')
-          const frontmatter = parseFrontmatter(content)
+        if (entry.isDirectory()) {
+          // Directory-based skill with SKILL.md
+          const skillPath = join(SKILLS_DIR, entry.name, 'SKILL.md')
+          try {
+            const content = await fs.readFile(skillPath, 'utf-8')
+            const frontmatter = parseFrontmatter(content)
 
-          skills.push({
-            id: entry.name,
-            name: frontmatter.name || entry.name,
-            description: frontmatter.description || '',
-            path: skillPath
-          })
-        } catch {
-          // Skip invalid skills
+            skills.push({
+              id: entry.name,
+              name: frontmatter.name || entry.name,
+              description: frontmatter.description || '',
+              path: skillPath
+            })
+            seenIds.add(entry.name)
+          } catch {
+            // Skip invalid skills
+          }
+        } else if (entry.name.endsWith('.md')) {
+          // Standalone .md file skill
+          const skillPath = join(SKILLS_DIR, entry.name)
+          try {
+            const content = await fs.readFile(skillPath, 'utf-8')
+            const frontmatter = parseFrontmatter(content)
+            const id = entry.name.replace('.md', '')
+
+            skills.push({
+              id,
+              name: frontmatter.name || id,
+              description: frontmatter.description || '',
+              path: skillPath
+            })
+            seenIds.add(id)
+          } catch {
+            // Skip invalid skills
+          }
         }
       }
     } catch {
       // Directory doesn't exist yet
+    }
+
+    // Also read from ~/.claude/commands/ (CLI slash commands)
+    try {
+      const commandEntries = await fs.readdir(COMMANDS_DIR)
+
+      for (const entry of commandEntries) {
+        if (!entry.endsWith('.md') || entry.startsWith('.')) continue
+
+        const id = entry.replace('.md', '')
+        if (seenIds.has(id)) continue // Skip duplicates
+
+        const commandPath = join(COMMANDS_DIR, entry)
+        try {
+          const content = await fs.readFile(commandPath, 'utf-8')
+          const frontmatter = parseFrontmatter(content)
+
+          skills.push({
+            id,
+            name: frontmatter.name || id,
+            description: frontmatter.description || '',
+            path: commandPath
+          })
+        } catch {
+          // Skip invalid commands
+        }
+      }
+    } catch {
+      // Commands directory doesn't exist
     }
 
     return skills.sort((a, b) => a.name.localeCompare(b.name))
@@ -484,4 +538,74 @@ ${desc}
     await saveMetadata(metadata)
     return { success: true }
   })
+}
+
+/**
+ * Auto-install starter kit for new users on app startup.
+ * Checks if skills and agents directories are empty (ignoring hidden files)
+ * and copies bundled starter content if so.
+ */
+export async function autoInstallStarterKit(): Promise<void> {
+  await ensureDirectories()
+
+  const skills = (await fs.readdir(SKILLS_DIR).catch(() => [])).filter((f: string) => !f.startsWith('.'))
+  const agents = (await fs.readdir(AGENTS_DIR).catch(() => [])).filter((f: string) => !f.startsWith('.'))
+
+  if (skills.length > 0 || agents.length > 0) {
+    console.log(`User already has ${skills.length} skills and ${agents.length} agents - skipping starter kit`)
+    return
+  }
+
+  console.log('New user detected - auto-installing starter kit...')
+
+  const isDev = !app.isPackaged
+  const assetsPath = isDev
+    ? join(app.getAppPath(), 'assets')
+    : join(process.resourcesPath, 'assets')
+
+  const starterSkillsPath = join(assetsPath, 'starter-skills')
+  const starterAgentsPath = join(assetsPath, 'starter-agents')
+
+  let skillsInstalled = 0
+  let agentsInstalled = 0
+
+  // Copy starter skills
+  try {
+    const exists = await fs.access(starterSkillsPath).then(() => true).catch(() => false)
+    if (exists) {
+      const skillEntries = await fs.readdir(starterSkillsPath, { withFileTypes: true })
+      for (const entry of skillEntries) {
+        if (!entry.isDirectory()) continue
+        const destPath = join(SKILLS_DIR, entry.name)
+        const destExists = await fs.access(destPath).then(() => true).catch(() => false)
+        if (!destExists) {
+          await fs.cp(join(starterSkillsPath, entry.name), destPath, { recursive: true })
+          skillsInstalled++
+        }
+      }
+    }
+  } catch (err) {
+    console.error('Error copying starter skills:', err)
+  }
+
+  // Copy starter agents
+  try {
+    const exists = await fs.access(starterAgentsPath).then(() => true).catch(() => false)
+    if (exists) {
+      const agentFiles = await fs.readdir(starterAgentsPath)
+      for (const agentFile of agentFiles) {
+        if (!agentFile.endsWith('.md')) continue
+        const destPath = join(AGENTS_DIR, agentFile)
+        const destExists = await fs.access(destPath).then(() => true).catch(() => false)
+        if (!destExists) {
+          await fs.copyFile(join(starterAgentsPath, agentFile), destPath)
+          agentsInstalled++
+        }
+      }
+    }
+  } catch (err) {
+    console.error('Error copying starter agents:', err)
+  }
+
+  console.log(`Starter kit installed: ${skillsInstalled} skills, ${agentsInstalled} agents`)
 }

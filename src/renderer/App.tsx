@@ -77,22 +77,6 @@ function App() {
       window.api.checkClaudeInstalled().then(setCliInstalled)
     })
     window.api.getCwd().then(setCwd)
-
-    // Auto-install starter kit for new users (empty skills & agents directories)
-    window.api.checkStarterKit().then((result) => {
-      if (!result.hasSkills && !result.hasAgents) {
-        console.log('New user detected - auto-installing starter kit...')
-        window.api.installStarterKit().then((installResult) => {
-          if (installResult.success) {
-            console.log(`Starter kit installed: ${installResult.skillsInstalled} skills, ${installResult.agentsInstalled} agents`)
-          }
-        }).catch((err) => {
-          console.error('Failed to auto-install starter kit:', err)
-        })
-      }
-    }).catch(() => {
-      // Ignore - not critical
-    })
   }, [setCwd])
 
   // Cmd+B to toggle sidebar

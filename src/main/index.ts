@@ -3,6 +3,7 @@ import { join } from 'path'
 import { pathToFileURL } from 'url'
 import { electronApp, optimizer, is } from '@electron-toolkit/utils'
 import { registerIpcHandlers } from './ipc'
+import { autoInstallStarterKit } from './ipc/skills'
 
 // Register custom protocol as privileged (must be before app ready)
 protocol.registerSchemesAsPrivileged([
@@ -106,6 +107,11 @@ app.whenReady().then(() => {
 
   // Register all IPC handlers
   registerIpcHandlers()
+
+  // Auto-install starter kit for new users before showing the window
+  autoInstallStarterKit().catch((err) => {
+    console.error('Failed to auto-install starter kit:', err)
+  })
 
   createWindow()
 
