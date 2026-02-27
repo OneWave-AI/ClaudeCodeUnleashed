@@ -54,9 +54,6 @@ const BeeIcon = ({ className, size = 24 }: { className?: string; size?: number }
     <path d="M12 20 L12 22"/>
   </svg>
 )
-import Particles, { initParticlesEngine } from '@tsparticles/react'
-import { loadSlim } from '@tsparticles/slim'
-import type { ISourceOptions, Engine } from '@tsparticles/engine'
 import { useAppStore } from '../store'
 
 interface HomeScreenProps {
@@ -154,63 +151,12 @@ export default function HomeScreen({
   const [isStarting, setIsStarting] = useState(false)
   const [dataError, setDataError] = useState<string | null>(null)
   const [mounted, setMounted] = useState(false)
-  const [particlesReady, setParticlesReady] = useState(false)
   const containerRef = useRef<HTMLDivElement>(null)
-
-  // Initialize particles engine
-  useEffect(() => {
-    initParticlesEngine(async (engine: Engine) => {
-      await loadSlim(engine)
-    }).then(() => {
-      setParticlesReady(true)
-    })
-  }, [])
 
   // Trigger mount animation
   useEffect(() => {
     requestAnimationFrame(() => setMounted(true))
   }, [])
-
-  // Lightweight particle configuration for performance
-  const particlesOptions: ISourceOptions = useMemo(() => ({
-    fullScreen: false,
-    background: { color: { value: 'transparent' } },
-    fpsLimit: 30,
-    particles: {
-      number: {
-        value: 40,
-        density: { enable: true, width: 1920, height: 1080 }
-      },
-      color: {
-        value: ['#cc785c', '#a78bfa', '#60a5fa', '#ffffff']
-      },
-      shape: { type: 'circle' },
-      opacity: {
-        value: { min: 0.1, max: 0.4 }
-      },
-      size: {
-        value: { min: 1, max: 3 }
-      },
-      move: {
-        enable: true,
-        speed: 0.3,
-        direction: 'none',
-        random: true,
-        straight: false,
-        outModes: { default: 'out' }
-      },
-      links: {
-        enable: false
-      }
-    },
-    interactivity: {
-      events: {
-        onHover: { enable: false },
-        resize: { enable: true }
-      }
-    },
-    detectRetina: false
-  }), [])
 
   // Load data
   useEffect(() => {
@@ -416,12 +362,8 @@ export default function HomeScreen({
         {/* Base gradient */}
         <div className="absolute inset-0" style={{ background: 'radial-gradient(ellipse at 50% 20%, #0a0a12 0%, #030305 100%)' }} />
 
-        {/* Particles */}
-        {particlesReady && <Particles id="space-dust" options={particlesOptions} className="absolute inset-0" />}
-
-        {/* Static gradient orbs - no animation for performance */}
+        {/* Static gradient orb */}
         <div className="absolute w-96 h-96 -top-20 -left-20 rounded-full bg-[#cc785c]/5 blur-3xl" />
-        <div className="absolute w-80 h-80 -bottom-20 -right-20 rounded-full bg-purple-500/5 blur-3xl" />
 
         {/* Subtle grid */}
         <div className="absolute inset-0 opacity-[0.02]" style={{
@@ -431,22 +373,16 @@ export default function HomeScreen({
 
         {/* Vignette */}
         <div className="absolute inset-0" style={{ background: 'radial-gradient(ellipse at center, transparent 30%, rgba(0,0,0,0.5) 100%)' }} />
-
-        {/* Top glow */}
-        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[600px] h-[300px]" style={{
-          background: 'radial-gradient(ellipse at center bottom, rgba(204,120,92,0.04) 0%, transparent 70%)',
-          filter: 'blur(40px)'
-        }} />
       </div>
 
       {/* Content */}
       <div className={`relative z-10 max-w-3xl mx-auto px-6 py-12 transition-all duration-700 ${mounted ? 'opacity-100' : 'opacity-0 translate-y-4'}`}>
         {/* Compact Hero */}
         <div className="text-center mb-10">
-          <h1 className="text-4xl font-bold mb-3 tracking-tight">
+          <h1 className="text-3xl font-bold mb-3 tracking-tight">
             <span className="text-white">Claude</span>
             <span className="bg-gradient-to-r from-[#cc785c] to-[#e8956e] bg-clip-text text-transparent">Code</span>
-            <span className="bg-gradient-to-r from-purple-400 to-purple-300 bg-clip-text text-transparent ml-2">Unleashed</span>
+            <span className="text-gray-400 font-light ml-2">Unleashed</span>
           </h1>
           <p className="text-gray-400 text-sm max-w-md mx-auto">
             Your autonomous AI coding companion. Let Claude build, debug, and ship while you focus on what matters.
@@ -467,7 +403,7 @@ export default function HomeScreen({
         {/* Analytics Dashboard - Skeleton Loader */}
         {loadingState === 'loading' && (
           <div className="mb-6 animate-pulse">
-            <div className="floating-card bg-white/[0.03] backdrop-blur-sm rounded-2xl border border-white/[0.08] p-5">
+            <div className="bg-[#111113] rounded-2xl border border-white/[0.06] p-5">
               {/* Header skeleton */}
               <div className="flex items-center justify-between mb-5">
                 <div className="flex items-center gap-2">
@@ -480,7 +416,7 @@ export default function HomeScreen({
               {/* Stats Cards skeleton */}
               <div className="grid grid-cols-4 gap-3 mb-5">
                 {[1, 2, 3, 4].map((i) => (
-                  <div key={i} className="bg-black/30 rounded-xl p-3 border border-white/[0.04]">
+                  <div key={i} className="bg-black/20 rounded-xl p-3 border border-white/[0.04]">
                     <div className="flex items-center gap-2 mb-2">
                       <div className="w-5 h-5 rounded bg-white/[0.06]" />
                       <div className="w-12 h-2 rounded bg-white/[0.06]" />
@@ -492,7 +428,7 @@ export default function HomeScreen({
 
               {/* Two columns skeleton */}
               <div className="grid grid-cols-2 gap-4">
-                <div className="bg-black/30 rounded-xl p-4 border border-white/[0.04]">
+                <div className="bg-black/20 rounded-xl p-4 border border-white/[0.04]">
                   <div className="flex items-center justify-between mb-3">
                     <div className="w-20 h-2 rounded bg-white/[0.06]" />
                     <div className="w-3 h-3 rounded bg-white/[0.06]" />
@@ -509,7 +445,7 @@ export default function HomeScreen({
                     ))}
                   </div>
                 </div>
-                <div className="bg-black/30 rounded-xl p-4 border border-white/[0.04]">
+                <div className="bg-black/20 rounded-xl p-4 border border-white/[0.04]">
                   <div className="flex items-center justify-between mb-3">
                     <div className="w-20 h-2 rounded bg-white/[0.06]" />
                     <div className="w-3 h-3 rounded bg-white/[0.06]" />
@@ -528,7 +464,7 @@ export default function HomeScreen({
               </div>
 
               {/* Time Analysis Section skeleton */}
-              <div className="mt-4 bg-black/30 rounded-xl p-4 border border-white/[0.04]">
+              <div className="mt-4 bg-black/20 rounded-xl p-4 border border-white/[0.04]">
                 <div className="flex items-center justify-between mb-3">
                   <div className="w-24 h-2 rounded bg-white/[0.06]" />
                   <div className="w-3 h-3 rounded bg-white/[0.06]" />
@@ -576,7 +512,7 @@ export default function HomeScreen({
         {/* Analytics Dashboard - Actual Content */}
         {loadingState === 'loaded' && (
           <div className="mb-6 animate-in fade-in duration-500">
-            <div className="floating-card bg-white/[0.03] backdrop-blur-sm rounded-2xl border border-white/[0.08] p-5">
+            <div className="bg-[#111113] rounded-2xl border border-white/[0.06] p-5">
               {/* Dashboard Header with View Details link */}
               <div className="flex items-center justify-between mb-5">
                 <div className="flex items-center gap-2">
@@ -601,35 +537,31 @@ export default function HomeScreen({
                   icon={MessageSquare}
                   label="This Week"
                   value={detailedStats.sessions7Days}
-                  color="orange"
                 />
                 <StatCard
                   icon={Timer}
                   label="Time Coded"
                   value={formatMinutes(detailedStats.time7Days)}
-                  color="purple"
                 />
                 <StatCard
                   icon={Activity}
                   label="Projects"
                   value={detailedStats.totalProjects}
-                  color="blue"
                 />
                 <StatCard
                   icon={TrendingUp}
                   label="Tokens"
                   value={formatNumber(detailedStats.totalTokens)}
-                  color="green"
                 />
               </div>
 
               {/* Two columns: Activity Chart + Top Projects */}
               <div className="grid grid-cols-2 gap-4">
                 {/* Activity Chart */}
-                <div className="bg-black/30 rounded-xl p-4 border border-white/[0.04]">
+                <div className="bg-black/20 rounded-xl p-4 border border-white/[0.04]">
                   <div className="flex items-center justify-between mb-3">
-                    <span className="text-[10px] uppercase tracking-wider text-gray-500 font-medium">7-Day Activity</span>
-                    <TrendingUp size={12} className="text-green-400" />
+                    <span className="text-[11px] uppercase tracking-wider text-gray-500 font-medium">7-Day Activity</span>
+                    <TrendingUp size={12} className="text-gray-400" />
                   </div>
                   <div className="flex items-end gap-1 h-16">
                     {(detailedStats.recentActivity.length > 0 ? detailedStats.recentActivity :
@@ -652,7 +584,7 @@ export default function HomeScreen({
                             }`}
                             style={{ height: `${height}%` }}
                           />
-                          <span className="text-[8px] text-gray-600">
+                          <span className="text-[10px] text-gray-600">
                             {new Date(day.date).toLocaleDateString('en-US', { weekday: 'short' }).charAt(0)}
                           </span>
                         </div>
@@ -662,10 +594,10 @@ export default function HomeScreen({
                 </div>
 
                 {/* Top Projects by TIME */}
-                <div className="bg-black/30 rounded-xl p-4 border border-white/[0.04]">
+                <div className="bg-black/20 rounded-xl p-4 border border-white/[0.04]">
                   <div className="flex items-center justify-between mb-3">
-                    <span className="text-[10px] uppercase tracking-wider text-gray-500 font-medium">Top Projects</span>
-                    <Clock size={12} className="text-purple-400" />
+                    <span className="text-[11px] uppercase tracking-wider text-gray-500 font-medium">Top Projects</span>
+                    <Clock size={12} className="text-gray-400" />
                   </div>
                   <div className="space-y-2">
                     {detailedStats.topProjects.slice(0, 4).map((project) => {
@@ -674,53 +606,53 @@ export default function HomeScreen({
                       return (
                         <div key={project.folder} className="flex items-center gap-2">
                           <Code2 size={10} className="text-gray-500 flex-shrink-0" />
-                          <span className="text-[10px] text-gray-400 truncate flex-1">{project.name}</span>
+                          <span className="text-[11px] text-gray-400 truncate flex-1">{project.name}</span>
                           <div className="w-16 h-1.5 rounded-full bg-white/[0.06] overflow-hidden flex-shrink-0">
                             <div
-                              className="h-full rounded-full bg-gradient-to-r from-purple-500 to-purple-400 transition-all"
+                              className="h-full rounded-full bg-gradient-to-r from-[#cc785c] to-[#e8956e] transition-all"
                               style={{ width: `${percent}%` }}
                             />
                           </div>
-                          <span className="text-[9px] text-gray-500 w-10 text-right flex-shrink-0">{formatMinutes(project.timeMinutes)}</span>
+                          <span className="text-[10px] text-gray-500 w-10 text-right flex-shrink-0">{formatMinutes(project.timeMinutes)}</span>
                         </div>
                       )
                     })}
                     {detailedStats.topProjects.length === 0 && (
-                      <p className="text-[10px] text-gray-600 text-center py-2">No project data yet</p>
+                      <p className="text-[11px] text-gray-600 text-center py-2">No project data yet</p>
                     )}
                   </div>
                 </div>
               </div>
 
               {/* Time Analysis Section */}
-              <div className="mt-4 bg-black/30 rounded-xl p-4 border border-white/[0.04]">
+              <div className="mt-4 bg-black/20 rounded-xl p-4 border border-white/[0.04]">
                 <div className="flex items-center justify-between mb-3">
-                  <span className="text-[10px] uppercase tracking-wider text-gray-500 font-medium">Work Patterns</span>
-                  <Clock size={12} className="text-cyan-400" />
+                  <span className="text-[11px] uppercase tracking-wider text-gray-500 font-medium">Work Patterns</span>
+                  <Clock size={12} className="text-gray-400" />
                 </div>
                 <div className="grid grid-cols-3 gap-4">
                   {/* Peak Hour */}
                   <div className="text-center">
-                    <div className="text-2xl font-bold text-cyan-400">
+                    <div className="text-2xl font-bold text-[#cc785c]">
                       {detailedStats.peakHour > 12 ? detailedStats.peakHour - 12 : detailedStats.peakHour || 12}
                       <span className="text-sm ml-1">{detailedStats.peakHour >= 12 ? 'PM' : 'AM'}</span>
                     </div>
-                    <p className="text-[9px] text-gray-500 mt-1">Peak Hour</p>
+                    <p className="text-[10px] text-gray-500 mt-1">Peak Hour</p>
                   </div>
                   {/* Peak Day */}
                   <div className="text-center">
-                    <div className="text-lg font-bold text-purple-400">{detailedStats.peakDay.slice(0, 3)}</div>
-                    <p className="text-[9px] text-gray-500 mt-1">Most Active Day</p>
+                    <div className="text-lg font-bold text-[#cc785c]">{detailedStats.peakDay.slice(0, 3)}</div>
+                    <p className="text-[10px] text-gray-500 mt-1">Most Active Day</p>
                   </div>
                   {/* Productivity Score */}
                   <div className="text-center">
-                    <div className="text-2xl font-bold text-green-400">{detailedStats.productivityScore}</div>
-                    <p className="text-[9px] text-gray-500 mt-1">Consistency</p>
+                    <div className="text-2xl font-bold text-[#cc785c]">{detailedStats.productivityScore}</div>
+                    <p className="text-[10px] text-gray-500 mt-1">Consistency</p>
                   </div>
                 </div>
                 {/* Hourly Distribution Mini Chart */}
                 <div className="mt-4">
-                  <p className="text-[8px] text-gray-600 mb-2">24h Activity</p>
+                  <p className="text-[10px] text-gray-600 mb-2">24h Activity</p>
                   <div className="flex items-end gap-0.5 h-8">
                     {detailedStats.hourlyDistribution.map((count, hour) => {
                       const max = Math.max(...detailedStats.hourlyDistribution, 1)
@@ -730,7 +662,7 @@ export default function HomeScreen({
                         <div
                           key={hour}
                           className={`flex-1 rounded-t-sm transition-all ${
-                            count > 0 ? (isWorkHour ? 'bg-cyan-500/60' : 'bg-cyan-500/30') : 'bg-white/[0.04]'
+                            count > 0 ? (isWorkHour ? 'bg-[#cc785c]/60' : 'bg-[#cc785c]/30') : 'bg-white/[0.04]'
                           }`}
                           style={{ height: `${height}%` }}
                           title={`${hour}:00 - ${count} sessions`}
@@ -739,35 +671,35 @@ export default function HomeScreen({
                     })}
                   </div>
                   <div className="flex justify-between mt-1">
-                    <span className="text-[7px] text-gray-600">12am</span>
-                    <span className="text-[7px] text-gray-600">6am</span>
-                    <span className="text-[7px] text-gray-600">12pm</span>
-                    <span className="text-[7px] text-gray-600">6pm</span>
-                    <span className="text-[7px] text-gray-600">12am</span>
+                    <span className="text-[9px] text-gray-600">12am</span>
+                    <span className="text-[9px] text-gray-600">6am</span>
+                    <span className="text-[9px] text-gray-600">12pm</span>
+                    <span className="text-[9px] text-gray-600">6pm</span>
+                    <span className="text-[9px] text-gray-600">12am</span>
                   </div>
                 </div>
               </div>
 
               {/* Footer Insights */}
               <div className="mt-4 pt-4 border-t border-white/[0.04] flex items-center justify-between">
-                <div className="flex items-center gap-4 text-[10px] text-gray-500">
+                <div className="flex items-center gap-4 text-[11px] text-gray-500">
                   <span className="flex items-center gap-1">
-                    <Cpu size={10} className="text-[#cc785c]" />
+                    <Cpu size={10} className="text-gray-400" />
                     Avg session: <span className="text-gray-400">{detailedStats.avgSessionLength}m</span>
                   </span>
                   <span className="flex items-center gap-1">
-                    <Plug size={10} className="text-purple-400" />
+                    <Plug size={10} className="text-gray-400" />
                     30-day: <span className="text-gray-400">{detailedStats.sessions30Days} sessions</span>
                   </span>
                 </div>
-                <span className="text-[9px] text-gray-700">Updated just now</span>
+                <span className="text-[10px] text-gray-700">Updated just now</span>
               </div>
             </div>
           </div>
         )}
 
         {/* Main Card */}
-        <div className="floating-card bg-white/[0.04] backdrop-blur-sm rounded-2xl border border-white/[0.08] p-6 mb-6">
+        <div className="bg-[#111113] rounded-2xl border border-white/[0.06] p-6 mb-6">
           {/* Folder Selector - Premium */}
           <button onClick={onSelectFolder} className="w-full group flex items-center gap-4 rounded-xl bg-black/40 hover:bg-black/60 border border-white/[0.08] hover:border-[#cc785c]/40 p-4 mb-4 transition-all duration-300 hover:shadow-lg hover:shadow-[#cc785c]/10">
             <div className="relative">
@@ -777,7 +709,7 @@ export default function HomeScreen({
               </div>
             </div>
             <div className="flex-1 text-left min-w-0">
-              <p className="text-[10px] text-gray-500 uppercase tracking-wider mb-1 font-medium">Project Folder</p>
+              <p className="text-[11px] text-gray-500 uppercase tracking-wider mb-1 font-medium">Project Folder</p>
               <p className="text-white text-sm font-mono truncate">{cwd || 'Select a folder...'}</p>
             </div>
             <div className="w-8 h-8 rounded-lg bg-white/5 flex items-center justify-center group-hover:bg-[#cc785c]/20 transition-all duration-300">
@@ -819,7 +751,7 @@ export default function HomeScreen({
                 disabled={!canStart || isStarting}
                 className={`relative w-full flex items-center justify-center gap-3 rounded-xl py-4 font-semibold text-lg transition-all duration-300 ${
                   canStart && !isStarting
-                    ? 'bg-gradient-to-r from-[#cc785c] via-[#d4856a] to-[#cc785c] bg-[length:200%_100%] animate-gradient-x text-white shadow-xl shadow-[#cc785c]/30 hover:shadow-2xl hover:shadow-[#cc785c]/40 hover:scale-[1.02] active:scale-[0.98]'
+                    ? 'bg-gradient-to-r from-[#cc785c] to-[#e8956e] text-white shadow-xl shadow-[#cc785c]/30 hover:shadow-2xl hover:shadow-[#cc785c]/40 hover:scale-[1.02] active:scale-[0.98]'
                     : 'bg-gray-800/50 text-gray-500 cursor-not-allowed'
                 }`}
               >
@@ -856,7 +788,7 @@ export default function HomeScreen({
               <span className="text-sm">Blank</span>
             </button>
           </div>
-          <p className="text-center text-[10px] text-gray-600 mt-3">
+          <p className="text-center text-[11px] text-gray-600 mt-3">
             <kbd className="px-1.5 py-1 rounded-md bg-white/5 border border-white/10 text-gray-500 font-mono shadow-sm">⌘</kbd>
             <span className="mx-1">+</span>
             <kbd className="px-1.5 py-1 rounded-md bg-white/5 border border-white/10 text-gray-500 font-mono shadow-sm">↵</kbd>
@@ -867,26 +799,7 @@ export default function HomeScreen({
         {/* Command Panel */}
         <div className="flex justify-center mb-8">
           <div className="relative max-w-md w-full">
-            {/* Animated border */}
-            <div className="absolute -inset-[1px] rounded-2xl pointer-events-none" style={{
-              background: 'linear-gradient(90deg, rgba(204,120,92,0.3), rgba(168,85,247,0.25), rgba(6,182,212,0.3), rgba(204,120,92,0.3))',
-              backgroundSize: '300% 100%',
-              animation: 'borderGlow 8s linear infinite',
-              opacity: 0.4
-            }} />
-
-            {/* Glass container */}
-            <div className="relative rounded-2xl overflow-hidden" style={{
-              background: 'linear-gradient(165deg, rgba(255,255,255,0.04) 0%, rgba(255,255,255,0.015) 100%)',
-              backdropFilter: 'blur(16px)',
-              border: '1px solid rgba(255,255,255,0.07)',
-              boxShadow: '0 20px 60px -12px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.06)'
-            }}>
-              {/* Top edge highlight */}
-              <div className="absolute inset-x-0 top-0 h-px pointer-events-none" style={{
-                background: 'linear-gradient(90deg, transparent 20%, rgba(255,255,255,0.1) 50%, transparent 80%)'
-              }} />
-
+            <div className="bg-white/[0.03] border border-white/[0.08] rounded-2xl">
               <div className="relative px-2 py-2.5">
                 {/* Top row */}
                 <div className="grid grid-cols-4 gap-0.5">
@@ -911,7 +824,7 @@ export default function HomeScreen({
 
                 {/* Agent row separator */}
                 <div className="mx-6 my-1.5 h-px" style={{
-                  background: 'linear-gradient(90deg, transparent, rgba(168,85,247,0.1), transparent)'
+                  background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.06), transparent)'
                 }} />
 
                 {/* Agent buttons row */}
@@ -923,26 +836,26 @@ export default function HomeScreen({
                       disabled={claudeInstalled === false}
                       className="agent-btn group/sa relative flex items-center gap-2.5 rounded-xl px-3 py-2 transition-all duration-200 active:scale-[0.97]"
                       style={{ background: 'transparent' }}
-                      onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(168,85,247,0.04)' }}
+                      onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(204,120,92,0.04)' }}
                       onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent' }}
                     >
                       <div
                         className="relative w-8 h-8 rounded-lg flex items-center justify-center shrink-0 transition-transform duration-200 group-hover/sa:scale-105"
                         style={{
-                          background: 'linear-gradient(135deg, rgba(168,85,247,0.18), rgba(236,72,153,0.1))',
-                          border: '1px solid rgba(168,85,247,0.15)',
-                          boxShadow: 'inset 0 1px 0 rgba(168,85,247,0.08)',
+                          background: 'linear-gradient(135deg, rgba(204,120,92,0.18), rgba(232,149,110,0.1))',
+                          border: '1px solid rgba(204,120,92,0.15)',
+                          boxShadow: 'inset 0 1px 0 rgba(204,120,92,0.08)',
                         }}
                       >
-                        <Zap className="w-3.5 h-3.5 text-purple-400 opacity-80 group-hover/sa:opacity-100 transition-opacity duration-200" />
+                        <Zap className="w-3.5 h-3.5 text-[#cc785c] opacity-80 group-hover/sa:opacity-100 transition-opacity duration-200" />
                       </div>
                       <div className="flex-1 text-left min-w-0">
-                        <div className="text-[10px] font-semibold tracking-wide text-gray-400 group-hover/sa:text-gray-200 transition-colors duration-200 truncate">
+                        <div className="text-[11px] font-semibold tracking-wide text-gray-400 group-hover/sa:text-gray-200 transition-colors duration-200 truncate">
                           Super Agent
                         </div>
-                        <div className="text-[8px] text-gray-600 truncate">AI task execution</div>
+                        <div className="text-[10px] text-gray-600 truncate">AI task execution</div>
                       </div>
-                      <ChevronRight className="w-3 h-3 text-gray-700 group-hover/sa:text-purple-400 group-hover/sa:translate-x-0.5 transition-all duration-200 shrink-0" />
+                      <ChevronRight className="w-3 h-3 text-gray-700 group-hover/sa:text-[#cc785c] group-hover/sa:translate-x-0.5 transition-all duration-200 shrink-0" />
                     </button>
                   )}
 
@@ -952,28 +865,28 @@ export default function HomeScreen({
                       onClick={onOpenSuperAgent}
                       className="agent-btn group/orch relative flex items-center gap-2.5 rounded-xl px-3 py-2 transition-all duration-200 active:scale-[0.97]"
                       style={{ background: 'transparent' }}
-                      onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(6,182,212,0.04)' }}
+                      onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(204,120,92,0.04)' }}
                       onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent' }}
                     >
                       <div
                         className="relative w-8 h-8 rounded-lg flex items-center justify-center shrink-0 transition-transform duration-200 group-hover/orch:scale-105"
                         style={{
-                          background: 'linear-gradient(135deg, rgba(6,182,212,0.18), rgba(168,85,247,0.1))',
-                          border: '1px solid rgba(6,182,212,0.15)',
-                          boxShadow: 'inset 0 1px 0 rgba(6,182,212,0.08)',
+                          background: 'linear-gradient(135deg, rgba(204,120,92,0.18), rgba(232,149,110,0.1))',
+                          border: '1px solid rgba(204,120,92,0.15)',
+                          boxShadow: 'inset 0 1px 0 rgba(204,120,92,0.08)',
                         }}
                       >
-                        <div style={{ color: '#67e8f9' }} className="opacity-80 group-hover/orch:opacity-100 transition-opacity duration-200">
+                        <div style={{ color: '#cc785c' }} className="opacity-80 group-hover/orch:opacity-100 transition-opacity duration-200">
                           <GeometricIcons.orchestrator className="w-4 h-4" />
                         </div>
                       </div>
                       <div className="flex-1 text-left min-w-0">
-                        <div className="text-[10px] font-semibold tracking-wide text-gray-400 group-hover/orch:text-gray-200 transition-colors duration-200 truncate">
+                        <div className="text-[11px] font-semibold tracking-wide text-gray-400 group-hover/orch:text-gray-200 transition-colors duration-200 truncate">
                           Orchestrator
                         </div>
-                        <div className="text-[8px] text-gray-600 truncate">Multi-agent swarm</div>
+                        <div className="text-[10px] text-gray-600 truncate">Multi-agent swarm</div>
                       </div>
-                      <ChevronRight className="w-3 h-3 text-gray-700 group-hover/orch:text-cyan-400 group-hover/orch:translate-x-0.5 transition-all duration-200 shrink-0" />
+                      <ChevronRight className="w-3 h-3 text-gray-700 group-hover/orch:text-[#cc785c] group-hover/orch:translate-x-0.5 transition-all duration-200 shrink-0" />
                     </button>
                   )}
                 </div>
@@ -985,7 +898,7 @@ export default function HomeScreen({
         {/* Recent Projects - Premium */}
         {recentProjects.length > 0 && (
           <div className="mb-6">
-            <h3 className="text-[10px] uppercase tracking-wider text-gray-500 mb-3 flex items-center gap-2 font-medium">
+            <h3 className="text-[11px] uppercase tracking-wider text-gray-500 mb-3 flex items-center gap-2 font-medium">
               <Clock size={10} className="text-gray-600" /> Recent Projects
             </h3>
             <div className="space-y-2">
@@ -993,15 +906,14 @@ export default function HomeScreen({
                 <button
                   key={project.folder}
                   onClick={() => handleProjectClick(project.folder)}
-                  className="w-full group flex items-center gap-3 rounded-xl bg-white/[0.02] hover:bg-white/[0.06] border border-white/[0.06] hover:border-[#cc785c]/30 p-3.5 text-left transition-all duration-300 hover:shadow-lg hover:shadow-[#cc785c]/5"
-                  style={{ animationDelay: `${index * 100}ms` }}
+                  className="w-full group flex items-center gap-3 rounded-xl bg-[#111113] hover:bg-[#111113]/80 border border-white/[0.06] hover:border-[#cc785c]/30 p-3.5 text-left transition-all duration-300 hover:translate-y-[-1px] hover:shadow-lg hover:shadow-[#cc785c]/5"
                 >
                   <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-gray-800 to-gray-900 flex items-center justify-center group-hover:from-[#cc785c]/20 group-hover:to-[#cc785c]/5 transition-all duration-300 border border-white/5">
                     <Code2 className="w-4 h-4 text-gray-500 group-hover:text-[#cc785c] transition-colors duration-300" />
                   </div>
                   <div className="flex-1 min-w-0">
                     <span className="block text-sm text-white truncate font-medium">{project.name}</span>
-                    <span className="text-[10px] text-gray-600">{formatTime(project.timestamp)}</span>
+                    <span className="text-[11px] text-gray-600">{formatTime(project.timestamp)}</span>
                   </div>
                   <div className="w-7 h-7 rounded-lg bg-white/0 group-hover:bg-white/5 flex items-center justify-center transition-all duration-300">
                     <ArrowRight className="w-3.5 h-3.5 text-gray-600 group-hover:text-[#cc785c] group-hover:translate-x-0.5 transition-all duration-300" />
@@ -1014,188 +926,11 @@ export default function HomeScreen({
 
         {/* Footer */}
         <div className="text-center">
-          <span className="text-[10px] text-gray-700">Claude Code Unleashed • Built with <Rocket className="w-2.5 h-2.5 inline text-purple-400" /></span>
+          <span className="text-[11px] text-gray-700">Claude Code Unleashed • Built with <Rocket className="w-2.5 h-2.5 inline text-gray-400" /></span>
         </div>
       </div>
 
       <style>{`
-        .floating-card {
-          animation: float 12s cubic-bezier(0.4, 0, 0.2, 1) infinite;
-          transform-style: preserve-3d;
-        }
-
-        /* Nebula orbs - smaller and much slower */
-        .nebula {
-          position: absolute;
-          border-radius: 50%;
-          filter: blur(100px);
-          transform-style: preserve-3d;
-          will-change: transform, opacity;
-        }
-
-        .nebula-1 {
-          width: 400px;
-          height: 400px;
-          top: -10%;
-          left: -10%;
-          background: radial-gradient(ellipse at center,
-            rgba(204,120,92,0.12) 0%,
-            rgba(204,120,92,0.04) 40%,
-            transparent 70%);
-          animation: nebula1 120s cubic-bezier(0.4, 0, 0.2, 1) infinite;
-        }
-
-        .nebula-2 {
-          width: 350px;
-          height: 350px;
-          bottom: -5%;
-          right: -5%;
-          background: radial-gradient(ellipse at center,
-            rgba(139,92,246,0.1) 0%,
-            rgba(139,92,246,0.03) 45%,
-            transparent 70%);
-          animation: nebula2 150s cubic-bezier(0.4, 0, 0.2, 1) infinite;
-        }
-
-        .nebula-3 {
-          width: 250px;
-          height: 250px;
-          top: 50%;
-          left: 60%;
-          background: radial-gradient(ellipse at center,
-            rgba(59,130,246,0.08) 0%,
-            rgba(59,130,246,0.02) 50%,
-            transparent 70%);
-          animation: nebula3 100s cubic-bezier(0.4, 0, 0.2, 1) infinite;
-        }
-
-        .nebula-4 {
-          width: 180px;
-          height: 180px;
-          top: 30%;
-          right: 30%;
-          background: radial-gradient(ellipse at center,
-            rgba(251,191,36,0.06) 0%,
-            rgba(251,191,36,0.02) 50%,
-            transparent 70%);
-          animation: nebula4 90s cubic-bezier(0.4, 0, 0.2, 1) infinite;
-        }
-
-        @keyframes float {
-          0%, 100% {
-            transform: translateY(0) translateZ(0) rotateX(0deg);
-          }
-          25% {
-            transform: translateY(-2px) translateZ(3px) rotateX(0.3deg);
-          }
-          50% {
-            transform: translateY(-4px) translateZ(6px) rotateX(0.6deg);
-          }
-          75% {
-            transform: translateY(-2px) translateZ(3px) rotateX(0.3deg);
-          }
-        }
-
-        @keyframes nebula1 {
-          0% {
-            transform: translate3d(0, 0, 0) scale(1);
-            opacity: 0.6;
-          }
-          25% {
-            transform: translate3d(30px, -20px, 10px) scale(1.05);
-            opacity: 0.7;
-          }
-          50% {
-            transform: translate3d(15px, 25px, -5px) scale(0.98);
-            opacity: 0.55;
-          }
-          75% {
-            transform: translate3d(-20px, 10px, 8px) scale(1.02);
-            opacity: 0.65;
-          }
-          100% {
-            transform: translate3d(0, 0, 0) scale(1);
-            opacity: 0.6;
-          }
-        }
-
-        @keyframes nebula2 {
-          0% {
-            transform: translate3d(0, 0, 0) scale(1);
-            opacity: 0.5;
-          }
-          33% {
-            transform: translate3d(-25px, 15px, 12px) scale(1.04);
-            opacity: 0.6;
-          }
-          66% {
-            transform: translate3d(20px, -12px, -8px) scale(0.96);
-            opacity: 0.45;
-          }
-          100% {
-            transform: translate3d(0, 0, 0) scale(1);
-            opacity: 0.5;
-          }
-        }
-
-        @keyframes nebula3 {
-          0% {
-            transform: translate3d(0, 0, 0) scale(1);
-            opacity: 0.4;
-          }
-          50% {
-            transform: translate3d(-18px, -22px, 15px) scale(1.08);
-            opacity: 0.55;
-          }
-          100% {
-            transform: translate3d(0, 0, 0) scale(1);
-            opacity: 0.4;
-          }
-        }
-
-        @keyframes nebula4 {
-          0% {
-            transform: translate3d(0, 0, 0) scale(1);
-            opacity: 0.35;
-          }
-          40% {
-            transform: translate3d(15px, -12px, 8px) scale(1.06);
-            opacity: 0.5;
-          }
-          70% {
-            transform: translate3d(-10px, 18px, -5px) scale(0.94);
-            opacity: 0.3;
-          }
-          100% {
-            transform: translate3d(0, 0, 0) scale(1);
-            opacity: 0.35;
-          }
-        }
-
-        /* Add perspective to container */
-        .perspective-wrap {
-          perspective: 1000px;
-          transform-style: preserve-3d;
-        }
-
-        @keyframes gradient-x {
-          0%, 100% { background-position: 0% 50%; }
-          50% { background-position: 100% 50%; }
-        }
-
-        .animate-gradient-x {
-          animation: gradient-x 3s ease infinite;
-        }
-
-        @keyframes pulse-slow {
-          0%, 100% { opacity: 0.5; }
-          50% { opacity: 0.75; }
-        }
-
-        .animate-pulse-slow {
-          animation: pulse-slow 3s ease-in-out infinite;
-        }
-
         @keyframes shine {
           0% { transform: skewX(-20deg) translateX(-150%); }
           100% { transform: skewX(-20deg) translateX(250%); }
@@ -1203,11 +938,6 @@ export default function HomeScreen({
 
         .animate-shine {
           animation: shine 0.8s ease-out forwards;
-        }
-
-        @keyframes borderGlow {
-          0% { background-position: 0% 50%; }
-          100% { background-position: 300% 50%; }
         }
 
         /* Panel item hover states */
@@ -1228,7 +958,7 @@ export default function HomeScreen({
         }
 
         @media (prefers-reduced-motion: reduce) {
-          .floating-card, .nebula, .animate-gradient-x, .animate-pulse-slow, .animate-shine { animation: none; }
+          .animate-shine { animation: none; }
         }
       `}</style>
     </div>
@@ -1266,42 +996,18 @@ function getToolIcon(name: string): typeof Terminal {
 }
 
 // Stat Card Component
-function StatCard({ icon: Icon, label, value, color }: {
+function StatCard({ icon: Icon, label, value }: {
   icon: React.ComponentType<{ className?: string; size?: number }>
   label: string
   value: string | number
-  color: 'orange' | 'blue' | 'green' | 'purple'
 }) {
-  const colors = {
-    orange: {
-      bg: 'bg-[#cc785c]/10',
-      icon: 'text-[#cc785c]',
-      glow: 'shadow-[#cc785c]/10'
-    },
-    blue: {
-      bg: 'bg-blue-500/10',
-      icon: 'text-blue-400',
-      glow: 'shadow-blue-500/10'
-    },
-    green: {
-      bg: 'bg-emerald-500/10',
-      icon: 'text-emerald-400',
-      glow: 'shadow-emerald-500/10'
-    },
-    purple: {
-      bg: 'bg-purple-500/10',
-      icon: 'text-purple-400',
-      glow: 'shadow-purple-500/10'
-    }
-  }
-
   return (
-    <div className={`relative bg-black/30 rounded-xl p-3 border border-white/[0.04] hover:border-white/[0.08] transition-all hover:shadow-lg ${colors[color].glow}`}>
+    <div className="relative bg-black/20 rounded-xl p-3 border border-white/[0.04] border-l-2 border-l-[#cc785c]/30 hover:border-white/[0.08] hover:border-l-[#cc785c]/50 transition-all hover:translate-y-[-1px]">
       <div className="flex items-center gap-2 mb-2">
-        <div className={`p-1.5 rounded-lg ${colors[color].bg}`}>
-          <Icon size={12} className={colors[color].icon} />
+        <div className="p-1.5 rounded-lg bg-[#cc785c]/10">
+          <Icon size={12} className="text-[#cc785c]" />
         </div>
-        <span className="text-[9px] uppercase tracking-wider text-gray-500 font-medium">{label}</span>
+        <span className="text-[11px] uppercase tracking-wider text-gray-500 font-medium">{label}</span>
       </div>
       <p className="text-xl font-bold text-white">{value}</p>
     </div>
@@ -1722,7 +1428,7 @@ function PanelItem({ label, icon, accent, onClick, badge }: {
 
       {/* Label */}
       <span
-        className="panel-label text-[9px] font-medium tracking-wider uppercase transition-colors duration-200"
+        className="panel-label text-[10px] font-medium tracking-wider uppercase transition-colors duration-200"
         style={{ color: 'rgba(156,163,175,0.6)' }}
       >
         {label}

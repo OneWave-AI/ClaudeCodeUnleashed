@@ -74,6 +74,9 @@ interface TerminalWrapperProps {
   showPlanPanel?: boolean
   onClosePlanPanel?: () => void
   onPlanItemsChange?: (items: PlanItem[]) => void
+  // Sidebar
+  sidebarOpen?: boolean
+  onToggleSidebar?: () => void
 }
 
 // Format bytes to human readable
@@ -105,7 +108,9 @@ export default function TerminalWrapper({
   onOpenPreview,
   showPlanPanel = false,
   onClosePlanPanel,
-  onPlanItemsChange
+  onPlanItemsChange,
+  sidebarOpen,
+  onToggleSidebar
 }: TerminalWrapperProps) {
   // Multi-panel state - initial tab uses store's default provider
   const defaultProvider = useAppStore((state) => state.cliProvider) || 'claude'
@@ -1863,8 +1868,26 @@ export default function TerminalWrapper({
 
       {/* Status Bar */}
       <footer className="relative flex items-center justify-between px-3 py-1.5 bg-[#0e0e0e] border-t border-white/[0.06]">
-        {/* Left: Status + Model + Mode */}
+        {/* Left: Sidebar Toggle + Status + Model + Mode */}
         <div className="flex items-center gap-2">
+          {/* Sidebar Toggle */}
+          {onToggleSidebar && (
+            <>
+              <button
+                onClick={onToggleSidebar}
+                className={`p-1.5 rounded-md transition-all ${
+                  sidebarOpen
+                    ? 'bg-white/[0.08] text-gray-200'
+                    : 'text-gray-500 hover:text-gray-300 hover:bg-white/[0.06]'
+                }`}
+                title={sidebarOpen ? 'Hide Sidebar (Cmd+B)' : 'Show Sidebar (Cmd+B)'}
+              >
+                <PanelLeft size={13} />
+              </button>
+              <div className="w-px h-3.5 bg-white/[0.06]" />
+            </>
+          )}
+
           {/* Status Indicator */}
           <div className={`flex items-center gap-1.5 px-2 py-1 rounded-md transition-colors ${
             claudeStatus === 'working' ? 'bg-green-500/10 text-green-400' :

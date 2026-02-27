@@ -310,9 +310,12 @@ ${desc}
     await ensureDirectories()
     const skills = await fs.readdir(SKILLS_DIR).catch(() => [])
     const agents = await fs.readdir(AGENTS_DIR).catch(() => [])
+    // Filter out hidden files like .DS_Store that macOS creates
+    const realSkills = skills.filter((f: string) => !f.startsWith('.'))
+    const realAgents = agents.filter((f: string) => !f.startsWith('.'))
     return {
-      hasSkills: skills.length > 0,
-      hasAgents: agents.length > 0
+      hasSkills: realSkills.length > 0,
+      hasAgents: realAgents.length > 0
     }
   })
 
