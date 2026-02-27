@@ -1,8 +1,28 @@
 import { CLI_PROVIDERS } from '../../shared/providers'
 import type { SafetyLevel, CLIProvider } from '../../shared/types'
 
-// ANSI escape code regex for stripping terminal colors
-export const ANSI_REGEX = /\x1b\[[0-9;]*[a-zA-Z]/g
+// Comprehensive ANSI/terminal escape stripping
+export function stripAnsi(input: string): string {
+  let s = input
+  // CSI sequences (including private modes like \x1b[?25h)
+  s = s.replace(/\x1b\[[\x30-\x3f]*[\x20-\x2f]*[\x40-\x7e]/g, '')
+  // OSC sequences: \x1b]...BEL or \x1b]...\x1b\\
+  s = s.replace(/\x1b\][^\x07\x1b]*(?:\x07|\x1b\\)/g, '')
+  // Single-char escapes: \x1b followed by one char (e.g. \x1b7, \x1b8, \x1bM, \x1b(B)
+  s = s.replace(/\x1b[()#][A-Za-z0-9]/g, '')
+  s = s.replace(/\x1b[78DEHM=>Nco]/g, '')
+  // Stray BEL and ST control chars
+  s = s.replace(/[\x07]/g, '')
+  s = s.replace(/\x1b\\/g, '')
+  // Carriage return overwrites: content\rReplacement → keep only Replacement
+  s = s.replace(/^([^\n]*)\r(?!\n)/gm, (_match, _overwritten) => '')
+  // Any remaining lone ESC sequences
+  s = s.replace(/\x1b/g, '')
+  return s
+}
+
+// Legacy export for compatibility
+export const ANSI_REGEX = /\x1b\[[\x30-\x3f]*[\x20-\x2f]*[\x40-\x7e]|\x1b\][^\x07\x1b]*(?:\x07|\x1b\\)|\x1b[()#][A-Za-z0-9]|\x1b[78DEHM=>Nco]|[\x07]|\x1b\\/g
 
 // System prompt for the Super Agent / Orchestrator LLM
 export const SYSTEM_PROMPT = `You are an autonomous agent controlling a CLI coding assistant. Your job is to keep it working on the task until it's PERFECT.
@@ -52,15 +72,20 @@ export type ClaudeStatus = 'working' | 'waiting' | 'unknown'
 
 export function detectClaudeStatus(cleanOutput: string, cliProvider: CLIProvider): ClaudeStatus {
   const config = CLI_PROVIDERS[cliProvider]
-  const lastLines = cleanOutput.split('\n').slice(-10).join('\n')
+  const allLines = cleanOutput.split('\n')
+  const last15 = allLines.slice(-15).join('\n')
+  const last10 = allLines.slice(-10).join('\n')
 
+  // Check working patterns against last 15 lines
   for (const pattern of config.workingPatterns) {
-    if (pattern.test(lastLines)) return 'working'
+    if (pattern.test(last15)) return 'working'
   }
+  // Check waiting patterns against last 15 lines
   for (const pattern of config.waitingPatterns) {
-    if (pattern.test(lastLines)) return 'waiting'
+    if (pattern.test(last15)) return 'waiting'
   }
-  if (config.promptChar.test(lastLines)) return 'waiting'
+  // Check prompt char against last 10 lines only to avoid false matches from earlier content
+  if (config.promptChar.test(last10)) return 'waiting'
   return 'unknown'
 }
 
@@ -191,28 +216,29 @@ export function detectTaskCompletion(cleanOutput: string, cliProvider: CLIProvid
   return false
 }
 
-// Smart output summarization - keeps head, important middle, and tail
-export function summarizeTerminalOutput(cleanOutput: string, maxChars: number = 4000): string {
+// Conversation-aware output summarization - preserves conversation thread and recent state
+export function summarizeTerminalOutput(cleanOutput: string, maxChars: number = 6000): string {
   if (cleanOutput.length <= maxChars) return cleanOutput
 
   const lines = cleanOutput.split('\n')
 
-  // Always keep: first 10 lines (task context), last 30 lines (current state)
-  const head = lines.slice(0, 10).join('\n')
-  const tail = lines.slice(-30).join('\n')
+  // Keep first 5 lines for initial context, last 60 lines for recent state (most critical)
+  const head = lines.slice(0, 5).join('\n')
+  const tail = lines.slice(-60).join('\n')
 
-  // From the middle, extract only important lines
-  const middleLines = lines.slice(10, -30)
+  // From the middle, keep conversation turns and important events
+  const middleLines = lines.slice(5, -60)
+  const conversationPattern = /^(?:❯|>|\$|---\s*AGENT SENT:|Human:|Assistant:|claude|You:|Error|error|warning|failed|success|✓|✗)/i
   const importantPatterns = /(?:error|warning|created|wrote|updated|failed|success|test|passed|TODO|FIXME)/i
   const importantMiddle = middleLines
-    .filter(l => importantPatterns.test(l))
-    .slice(-20) // Cap at 20 important lines
+    .filter(l => conversationPattern.test(l.trim()) || importantPatterns.test(l))
+    .slice(-30) // Cap at 30 important lines
     .join('\n')
 
   const budget = maxChars - head.length - tail.length - 100 // 100 for separators
   const middleTruncated = importantMiddle.slice(0, Math.max(0, budget))
 
-  return `${head}\n\n--- [${middleLines.length} lines summarized, showing errors/key events] ---\n${middleTruncated}\n\n--- [Recent output] ---\n${tail}`
+  return `${head}\n\n--- [${middleLines.length} lines summarized, showing conversation turns & key events] ---\n${middleTruncated}\n\n--- [Recent output] ---\n${tail}`
 }
 
 // Semantic duplicate detection

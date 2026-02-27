@@ -22,19 +22,17 @@ export const CLI_PROVIDERS: Record<CLIProvider, CLIProviderConfig> = {
     modelCommand: '/model',
     hasPlanMode: true,
     configDir: '.claude',
-    promptChar: /❯\s*$/m,
+    promptChar: /❯[\s\x00-\x1f]*$/m,
     workingPatterns: [
       /\.\.\.\s*$/m,
       /⠋|⠙|⠹|⠸|⠼|⠴|⠦|⠧|⠇|⠏/m,
       /^\s*(?:thinking|analyzing|searching|reading|writing|running|executing|loading|processing|building|compiling|installing|fetching|creating|updating|downloading)\b/im,
       /\[(?:thinking|analyzing|searching|reading|writing|running|executing|loading|processing|building|compiling|installing|fetching|creating|updating|downloading)\]/i,
       /Tool:|Read\(|Write\(|Edit\(|Bash\(|Task\(|Glob\(|Grep\(|WebFetch\(|WebSearch\(/i,
-      /npm|yarn|pnpm|pip|cargo|go build|make/i,
-      /✓.*modules? transformed/i,
-      /Compiling|Bundling|Generating/i
+      /✓.*modules? transformed/i
     ],
     waitingPatterns: [
-      /❯\s*$/m,
+      /❯[\s\x00-\x1f]*$/m,
       />\s*$/m,
       /\(y\/n\)\s*$/im,
       /\[Y\/n\]\s*$/im,
@@ -73,8 +71,6 @@ export const CLI_PROVIDERS: Record<CLIProvider, CLIProviderConfig> = {
       /⠋|⠙|⠹|⠸|⠼|⠴|⠦|⠧|⠇|⠏/m,
       /^\s*(?:thinking|analyzing|searching|reading|writing|running|executing|loading|processing|building|compiling|installing|fetching|creating|updating|downloading)\b/im,
       /\[(?:thinking|analyzing|searching|reading|writing|running|executing|loading|processing|building|compiling|installing|fetching|creating|updating|downloading)\]/i,
-      /npm|yarn|pnpm|pip|cargo|go build|make/i,
-      /Compiling|Bundling|Generating/i
     ],
     waitingPatterns: [
       />\s*$/m,

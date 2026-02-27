@@ -5,7 +5,7 @@ import { useAppStore } from '../store'
 import { CLI_PROVIDERS } from '../../shared/providers'
 import type { SafetyLevel, CLIProvider } from '../../shared/types'
 import {
-  ANSI_REGEX,
+  stripAnsi,
   SYSTEM_PROMPT,
   detectClaudeStatus,
   detectTaskCompletion,
@@ -224,7 +224,7 @@ export function useOrchestrator() {
     refs.processing = true
 
     try {
-      const cleanBuffer = termState.outputBuffer.replace(ANSI_REGEX, '')
+      const cleanBuffer = stripAnsi(termState.outputBuffer)
       const currentCliProvider = cliProviderRef.current
 
       // Update stats
@@ -407,7 +407,7 @@ export function useOrchestrator() {
     // If waiting for ready, watch for the ready prompt
     if (refs.waitingForReady) {
       const fullOutput = termState.outputBuffer + data
-      const cleanOutput = fullOutput.replace(ANSI_REGEX, '')
+      const cleanOutput = stripAnsi(fullOutput)
       const lastLines = cleanOutput.split('\n').slice(-5).join('\n')
       const currentCliProvider = cliProviderRef.current
       const providerConfig = CLI_PROVIDERS[currentCliProvider]
@@ -437,7 +437,7 @@ export function useOrchestrator() {
     if (refs.idleTimer) clearTimeout(refs.idleTimer)
 
     const fullOutput = termState.outputBuffer + data
-    const cleanFull = fullOutput.replace(ANSI_REGEX, '')
+    const cleanFull = stripAnsi(fullOutput)
     const currentCliProvider = cliProviderRef.current
     const currentStatus = detectClaudeStatus(cleanFull, currentCliProvider)
 

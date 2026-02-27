@@ -4,7 +4,7 @@ import { useAppStore } from '../store'
 import { CLI_PROVIDERS } from '../../shared/providers'
 import type { SafetyLevel, CLIProvider } from '../../shared/types'
 import {
-  ANSI_REGEX,
+  stripAnsi,
   SYSTEM_PROMPT,
   detectClaudeStatus,
   fastPathResponse,
@@ -236,7 +236,7 @@ You're taking control of an existing conversation that was already in progress.
       console.log('[SuperAgent] Output buffer length:', outputBuffer.length)
 
       // Strip ANSI once for the whole cycle
-      const cleanBuffer = outputBuffer.replace(ANSI_REGEX, '')
+      const cleanBuffer = stripAnsi(outputBuffer)
       const currentCliProvider = cliProviderRef.current
 
       // Update session stats from output
@@ -425,7 +425,7 @@ You're taking control of an existing conversation that was already in progress.
 
     // If waiting for user to get Claude ready, watch for the ready prompt
     if (waitingForReadyRef.current) {
-      const cleanOutput = fullOutput.replace(ANSI_REGEX, '')
+      const cleanOutput = stripAnsi(fullOutput)
       const lastLines = cleanOutput.split('\n').slice(-5).join('\n')
       const currentCliProvider = cliProviderRef.current
       const providerConfig = CLI_PROVIDERS[currentCliProvider]
@@ -461,7 +461,7 @@ You're taking control of an existing conversation that was already in progress.
     console.log('[SuperAgent] Received data, setting idle timer')
 
     // Strip ANSI once for status detection
-    const cleanFull = fullOutput.replace(ANSI_REGEX, '')
+    const cleanFull = stripAnsi(fullOutput)
     const currentCliProvider = cliProviderRef.current
 
     // Detect Claude's current status with debouncing
